@@ -102,9 +102,12 @@ Evaluación final en la DGX, los tres cerebros con Qwen3-1.7B y el corpus comple
 | Código | `thinking` | 35 % | 40 % | 60 % | 5,7 | 31 565 |
 | Código | `base` | 40 % | 45 % | 60 % | 5,4 | 28 214 |
 
-- **`rlm` no funciona como cerebro**: el LoRA de la fase 1 responde siempre en un único paso con
-  su formato `<answer>`, sin usar herramientas. Por eso el modelo de la fase 1 entra en el agente
-  como **herramienta** (`code_meddra`).
+- **`rlm` no funciona como cerebro**: el LoRA de la fase 1 escribe de una vez toda la traza
+  ReAct, con observaciones inventadas, sin el bloque `<tool_call>` que el bucle ejecuta; sus dos
+  "aciertos" son falsos positivos de comprobaciones débiles. Por eso el modelo de la fase 1 entra
+  en el agente como **herramienta** (`code_meddra`).
+- **El agente de código gana donde hay que calcular** (ficha + calculadora, 3/5) y pierde donde
+  hay que leer el resultado estructurado de FAERS y llamar al PRR (0–1 de 3 frente a 3 de 3).
 - **El thinking no mejora el agente a 1,7B** (55 % los dos) y sigue peor el protocolo.
 - **El agente de código rinde menos y cuesta casi el triple de tokens**: el modelo pequeño se
   enreda corrigiendo su propio Python y agota los pasos. Una llamada JSON por paso es más robusta.

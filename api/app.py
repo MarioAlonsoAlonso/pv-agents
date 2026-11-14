@@ -18,11 +18,16 @@ import logging
 import time
 
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 
-from api.backends import Backends, env
-from api.schemas import (
+# Configuration from .env (see .env.example) before any phase reads os.environ. Variables that
+# are already set win, so Docker's `environment:` and the test suite keep their values.
+load_dotenv()
+
+from api.backends import Backends, env  # noqa: E402
+from api.schemas import (  # noqa: E402
     AgentRequest,
     AgentResponse,
     HealthResponse,

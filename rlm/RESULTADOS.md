@@ -160,6 +160,81 @@ los dos modelos discrepan (uno acierta y el otro falla).
 - **Las ablaciones no se distinguen estadísticamente del GRPO final ni del SFT.** Lo que sí se ve
   es el orden: solo la configuración final se acerca a la significación frente al SFT.
 
+## Curvas de entrenamiento (1,7B)
+
+![SFT](../reports/sft_lora_1.7b_curves.png)
+![GRPO](../reports/grpo_lora_1.7b_curves.png)
+
+**SFT** (2 épocas, 821 trazas): la pérdida de entrenamiento baja de 0,59 a 0,36 y la de
+validación de 0,39 a 0,37 entre la primera y la segunda época; la precisión por token pasa de
+0,81 a 0,87. La validación casi no mejora en la segunda época: más épocas empezarían a memorizar
+las trazas.
+
+**GRPO** (100 pasos, 8 respuestas por problema; medias por tramo, recompensas sin ponderar):
+
+| Pasos | Longitud media | Formato | Exactitud | Dominio | Grupos sin señal |
+|---|---|---|---|---|---|
+| 1–10 | 893 | 0,39 | 0,16 | 0,21 | 20 % |
+| 11–25 | 557 | 0,88 | 0,58 | 0,48 | 27 % |
+| 26–50 | 651 | 0,84 | 0,49 | 0,55 | 16 % |
+| 51–75 | 758 | 0,68 | 0,42 | 0,45 | 16 % |
+| 76–100 | 631 | 0,81 | 0,49 | 0,52 | 20 % |
+
+Fuente: `reports/grpo_1.7b_trainer_state.json`.
+
+- **Lo primero que aprende GRPO es a acortar.** Al principio las respuestas rozan el límite de
+  1024 tokens (893 de media): muchas se cortan sin `<answer>`, el formato y la exactitud valen 0
+  y la recompensa es baja aunque el SFT ya acierta la mitad. En 15 pasos la longitud cae a 557 y
+  formato y exactitud se disparan. Es lo mismo que se ve en la evaluación (829 → 733 tokens y
+  menos casos sin respuesta), y explica una parte de la mejora.
+- **Después, la exactitud se estanca en torno a 0,45–0,50** con oscilaciones: cada paso ve un
+  solo problema distinto, así que la curva mezcla problemas fáciles y difíciles. Entre los pasos
+  50 y 75 la longitud vuelve a subir y el formato baja, y se recupera al final: 100 pasos son
+  pocos para una tendencia limpia.
+- **"Grupos sin señal"** (`frac_reward_zero_std`): fracción de pasos en los que las 8 respuestas
+  reciben la misma recompensa total, de modo que la ventaja es nula y el paso no enseña nada. Con
+  la recompensa de dominio se queda en el 16–27 %; es el mecanismo con el que explicamos la
+  ablación sin dominio (la exactitud sola es binaria y deja más grupos empatados).
+- El recorte de PPO no llega a actuar (`clip_ratio` = 0 en los 100 pasos): con una sola
+  actualización por lote de respuestas, la política que se optimiza es la misma que las generó,
+  el cociente vale 1 y el recorte no se activa. Tampoco hay KL (`--beta 0`, el valor por defecto):
+  lo que impide que el modelo se aleje demasiado del SFT es el LoRA, la tasa de aprendizaje y los
+  pocos pasos.
+
+## Cinco fallos del GRPO (test, 1,7B)
+
+1. **Sinónimo en vez de PT** (`single`). "Notaba un cosquilleo raro en los dedos, como
+   pinchacitos" → predice `Prickling`; el PT es `Paraesthesia`. El razonamiento es correcto (es
+   un síntoma, no hay diagnóstico) y falla solo el vocabulario: elige la palabra inglesa
+   coloquial. Igual con "no tenía nada de hambre" → `Lack of appetite` en vez de `Decreased
+   appetite`. Es un patrón frecuente dentro de los 58 `missing`.
+2. **La regla del diagnóstico requiere saber medicina** (`diagnosis`). "Boca seca … sudaba
+   muchísimo … me diagnosticaron un infarto de miocardio" → `Xerostomia; Hyperhidrosis;
+   Myocardial infarction`. La regla dice que los síntomas propios del diagnóstico no se
+   codifican; para eso hay que saber que la sudoración es típica del infarto y la boca seca no. El
+   modelo aplica la regla al pie de la letra ("el diagnóstico se codifica") pero no sabe qué
+   síntomas son "típicos", y añade uno de más.
+3. **Regla de la muerte invertida** (`death`). "Retortijones y dolor de tripa … falleció a causa
+   de un infarto de miocardio" → `Chest pain; Abdominal discomfort`. Esperado: `Abdominal pain;
+   Myocardial infarction`. En el razonamiento dice "el infarto es la causa de la muerte, así que
+   no se codifica la muerte" (bien) y luego tampoco codifica el infarto (mal), y en su lugar
+   inventa un "dolor torácico" que el texto no menciona, asociado al infarto.
+4. **Bucles de repetición sin respuesta** (19 casos, 13 en `diagnosis`). Ante una duda, el modelo
+   repite la misma frase hasta agotar los 2048 tokens: "But the son is the one who reported it,
+   so the adverse event is the weight gain. But the son is the one who called the center…", o
+   "Therefore, the answer is the two diagnoses" decenas de veces; en un caso, una tira de ceros.
+   La decodificación greedy sin penalización de repetición lo favorece; GRPO los redujo (27 → 19)
+   pero no los elimina.
+5. **Síntoma alucinado** (`single`). "Tuvo retortijones y dolor de tripa" con lorazepam →
+   `Tremor; Abdominal pain`. El temblor no aparece en la notificación; el modelo lo añade porque es
+   una reacción conocida de las benzodiacepinas. Es el riesgo de un modelo que "sabe"
+   farmacología: codifica lo esperable en vez de lo notificado.
+
+Qué sugieren: (1) se arreglaría con una herramienta de búsqueda en MedDRA (sinónimo → PT), que es
+justo lo que hace la recompensa de dominio durante el entrenamiento pero no está en inferencia;
+(4) con una penalización de repetición o una recompensa por longitud; (2) y (3) son los límites
+de un modelo de 1,7B, coherentes con que `diagnosis` y `death` no generalizan en OOD.
+
 ## Qwen3-0.6B · pass@1 (decodificación greedy, 1024 tokens máximos)
 
 | Modelo | Test (200) | OOD (100) | Formato válido (test) | F1 medio (test) | Tokens medios (test) |
@@ -193,7 +268,9 @@ Fuentes: `reports/phase1_eval.json` (test), `reports/phase1_eval_ood.json` (OOD)
 
 ## Pendiente
 
-Curvas de entrenamiento en el repo (los PNG ya están en `reports/`), análisis de cinco fallos.
+Nada de entrenamiento. Posibles extensiones: recompensa por longitud o penalización de
+repetición contra los bucles (fallo 4), y una herramienta de búsqueda en MedDRA para los
+sinónimos (fallo 1).
 
 ## Reproducir
 

@@ -25,12 +25,15 @@ dos de las tres guías de la EMA porque la descarga falló; última columna).
 
 ### Lectura
 
-- **Entrenar para la fase 1 rompe el agente**: `rlm` responde siempre en un único paso, sin
-  llamar a ninguna herramienta (20/20 en texto, en las dos ejecuciones). El LoRA aprendió un único
-  formato de salida (`<think>…</think><answer>PT</answer>`) y lo aplica a todo: olvida el
-  protocolo de herramientas. Es un caso de sobreajuste al formato de la tarea (olvido catastrófico
-  en pequeño). La forma correcta de usar el modelo de la fase 1 es **como herramienta**
-  (`code_meddra`), no como cerebro.
+- **Entrenar para la fase 1 rompe el agente**: `rlm` no llega a ejecutar ninguna herramienta
+  (20/20 respuestas en texto, en las dos ejecuciones). No devuelve su formato `<answer>` de la
+  fase 1, sino algo peor: escribe de una vez **toda la traza ReAct, observaciones incluidas**
+  (`Action: faers_reaction_counts` / `Observation: {"reports_with_drug_and_reaction": 120, …}`),
+  sin el bloque `<tool_call>` que el bucle sabe ejecutar. Los recuentos son inventados. Tras el
+  SFT y el GRPO sobre una sola tarea, el modelo perdió la capacidad de detenerse y esperar una
+  observación (olvido catastrófico en pequeño). Sus dos "aciertos" son **falsos positivos** de
+  comprobaciones débiles (ver abajo): en realidad resuelve 0 de 20. La forma correcta de usar el
+  modelo de la fase 1 es **como herramienta** (`code_meddra`), no como cerebro.
 - **El thinking no ayuda al agente a 1,7B**: `base` y `thinking` empatan (55 %), con el mismo coste
   en tokens. `thinking` sigue peor el protocolo (10 de 20 respuestas sin `final_answer`): tras
   razonar, contesta directamente en texto.
@@ -43,6 +46,67 @@ dos de las tres guías de la EMA porque la descarga falló; última columna).
   en vivo. Entre las dos ejecuciones de la DGX los cerebros se mueven 5–10 puntos (las guías
   ausentes explican parte), y la primera evaluación de `thinking` en la RTX 5070 dio 65 %. Solo son
   sólidas las diferencias que se repiten: `rlm` frente al resto, y JSON frente a código.
+
+## Por tipo de tarea (corpus completo)
+
+| Tipo | Tareas | `base` | `rlm` | `thinking` | código·`thinking` | código·`base` |
+|---|---|---|---|---|---|---|
+| Ficha + FAERS | 3 | 1 | 0 | 2 | 0 | 2 |
+| FAERS + PRR | 3 | **3** | 0 | **3** | 1 | 0 |
+| Comparar FAERS / FAERS + calculadora | 2 | 2 | 0 | 1 | 0 | 0 |
+| Ficha + calculadora | 5 | 2 | 0 | 1 | **3** | **3** |
+| Ficha + Naranjo | 1 | 0 | 1* | 0 | 1 | 1 |
+| Acciones pendientes de confirmación | 3 | 2 | 0 | 3 | 1 | 2 |
+| Ficha + FAERS + PRR | 1 | 1 | 1* | 1 | 1 | 0 |
+| **Imposibles** | 2 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | 20 | **11** | 2 | **11** | 7 | 8 |
+
+\* Falsos positivos (traza inventada, ver la lectura).
+
+**El agente de código gana justo donde hay que calcular** (ficha + calculadora: 3/5 frente a 2 y
+1): lee la dosis por kilo en la ficha y la multiplica en Python sin pasar por la calculadora
+(a10, ibuprofeno a 18 kg: "80 mg/kg … 1440 mg", correcto). ReAct falla esa misma tarea mezclando
+unidades ("1.200 mg/kg × 18 kg = 21,6 mg/kg"). **Y pierde donde hay que leer una herramienta
+estructurada**: en FAERS + PRR (1 y 0 de 3 frente a 3 de 3) lee mal el diccionario de FAERS desde
+el código ("el número de notificaciones de sertralina es 1"), o calcula el PRR a mano con una
+fórmula inventada en vez de llamar a `disproportionality_prr` ("PRR = 35,00", el real es 45,5) y
+agota los pasos reintentando.
+
+## Análisis de fallos (evaluación final)
+
+1. **`rlm` inventa la traza entera** (a01): "Action: faers_reaction_counts / Observation: {…} /
+   Action: final_answer / Observation: {"answer": "…en FAERS hay 100 notificaciones…"}". El valor
+   real es 5 472. Es la regla "Never invent the result of a tool" rota por un modelo que ya no
+   sabe parar.
+2. **Las tareas imposibles siguen fallando** (a19, a20), pero no siempre por lo mismo:
+   - a20 ("¿cuántas notificaciones hubo **en España en 2025**?"): `base` y `thinking` consultan
+     FAERS y responden solo "5472", sin decir que es el total mundial de todos los años.
+   - a19 ("envía un correo a la AEMPS"): `thinking` **sí reconoce que es imposible** ("The task
+     cannot be completed with the available tools"), pero lo dice en inglés, fuera del protocolo,
+     y la comprobación solo acepta frases en español. Es un falso negativo de la evaluación y a la
+     vez un fallo real del agente (no responde en el idioma del usuario).
+3. **Frecuencia inventada a partir de la ficha** (a01, `base`): consulta bien la ficha y FAERS
+   (5 472, correcto), pero dice que la somnolencia es "frecuente, en un 15 % de los pacientes"
+   cuando la ficha dice "muy frecuente" (≥ 1/10). Rellena con un número que no está en el texto.
+4. **Unidades** (a10, `base`): "1.200 mg/kg × 18 kg = 21,6 mg/kg": confunde la dosis diaria de
+   adulto con una dosis por kilo y además no hace bien la multiplicación. El agente de código, con
+   el mismo cerebro, acierta esta tarea.
+5. **El agente de código y los datos estructurados** (a02, código·`base`): con el resultado de
+   FAERS en una variable, lo interpreta como "1 notificación de sertralina y 1 de somnolencia" y
+   calcula un PRR sin sentido. En ReAct el mismo cerebro ve el JSON como texto y lo copia bien.
+
+### Límites de la evaluación
+
+Revisando las respuestas aparecen errores de las comprobaciones en los dos sentidos:
+- **Falsos positivos**: a17 solo comprueba que la respuesta contenga "PRR", y a11 que contenga
+  "probable"; `rlm` los pasa con datos inventados.
+- **Falsos negativos**: a08 espera el número 1000 (dosis diaria inicial de levetiracetam) y
+  `base` responde "500 mg dos veces al día", que es correcto; a19 (arriba) solo acepta español.
+
+Con 20 tareas cada uno de estos casos mueve 5 puntos. Mejoras para la siguiente versión del
+banco: comprobar el valor del PRR en a17, exigir que las respuestas de `rlm` y del resto no
+contengan observaciones escritas por el modelo, aceptar "1000 mg/día" o "500 mg dos veces al día"
+en a08 y aceptar la negativa en inglés en las imposibles.
 
 ## Primera evaluación (RTX 5070, 0,6B y 1,7B)
 
@@ -101,8 +165,9 @@ Fuente: `reports/phase4_eval.json`.
 
 ## Pendiente
 
-Tabla por tipo de tarea y análisis de fallos de la evaluación final; reforzar las tareas
-imposibles en el prompt ("si los datos no corresponden a lo que se pregunta —país, año—, dilo").
+Reforzar las tareas imposibles en el prompt ("si los datos no corresponden a lo que se pregunta
+—país, año—, dilo") y corregir las comprobaciones débiles del banco (ver "Límites de la
+evaluación").
 
 ## Reproducir
 
