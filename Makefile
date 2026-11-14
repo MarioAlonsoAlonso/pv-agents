@@ -35,34 +35,50 @@ smoke: ## Entrenamiento GRPO de prueba en GPU (10-15 min)
 smoke-dry: ## Prueba de instalación en CPU con un modelo diminuto (~1 min)
 	$(UV) run arca-smoke --dry-run
 
-# Fase 1: codificación MedDRA. Pasos y justificación en rlm/MEDDRA.md
-RLM_MODEL ?= Qwen/Qwen3-0.6B
+# Fase 1: codificación MedDRA. Pasos y justificación en rlm/MEDDRA.md. Los valores son los de la
+# versión final (Qwen3-1.7B, DGX); RLM_MODEL=Qwen/Qwen3-0.6B reproduce la primera versión.
+RLM_MODEL ?= Qwen/Qwen3-1.7B
 RLM_TEACHER ?= Qwen/Qwen3-4B
+RLM_W ?= rlm/weights
+RLM_GRPO_ARGS = --data rlm/data/train.jsonl --model $(RLM_MODEL) --init-adapter $(RLM_W)/sft_lora \
+	--steps 100 --max-completion-length 1024 --batch-size 1 --save-steps 25
+RLM_EVAL_ARGS = --data rlm/data/test.jsonl --model $(RLM_MODEL) --max-new-tokens 2048
 
 rlm-data: ## Fase 1: genera train, test y test_ood (semilla fija) y sus estadísticas
 	$(UV) run python -m rlm.generate_meddra --stats reports/phase1_dataset_stats.json
 
 rlm-distill: ## Fase 1: trazas del profesor filtradas por el verificador MedDRA (GPU)
 	$(UV) run python -m rlm.distill --data rlm/data/train.jsonl --teacher $(RLM_TEACHER) \
-		--samples 4 --n-problems 600 --batch-size 4 --max-new-tokens 1536 \
+		--samples 4 --n-problems 400 --batch-size 2 --max-new-tokens 1536 \
 		--output rlm/data/sft_traces.jsonl
 
 rlm-sft: ## Fase 1: SFT con LoRA sobre las trazas verificadas (GPU)
-	$(UV) run python -m rlm.train_sft --data rlm/data/sft_traces.jsonl --model $(RLM_MODEL) \
-		--output rlm/weights/sft_lora
+	$(UV) run python -u -m rlm.train_sft --data rlm/data/sft_traces.jsonl --model $(RLM_MODEL) \
+		--output $(RLM_W)/sft_lora
 
-rlm-grpo: ## Fase 1: GRPO desde el adaptador de SFT con las tres recompensas (GPU)
-	$(UV) run python -m rlm.train_grpo --data rlm/data/train.jsonl --model $(RLM_MODEL) \
-		--init-adapter rlm/weights/sft_lora --output rlm/weights/final_rlm_lora \
-		--steps 300 --max-completion-length 1024
+rlm-grpo: ## Fase 1: GRPO desde el adaptador de SFT con las tres recompensas (GPU, ~1 h)
+	$(UV) run python -u -m rlm.train_grpo $(RLM_GRPO_ARGS) --output $(RLM_W)/final_rlm_lora
 
-rlm-eval: ## Fase 1: pass@1 base / SFT / GRPO en test y OOD, y curvas de entrenamiento
-	$(UV) run python -m rlm.evaluate --data rlm/data/test.jsonl --model $(RLM_MODEL) \
-		--adapters base=none sft=rlm/weights/sft_lora grpo=rlm/weights/final_rlm_lora \
-		--history rlm/weights/sft_lora/trainer_state.json rlm/weights/final_rlm_lora/trainer_state.json
-	$(UV) run python -m rlm.evaluate --data rlm/data/test_ood.jsonl --model $(RLM_MODEL) \
-		--n-examples 100 --out reports/phase1_eval_ood.json \
-		--adapters base=none sft=rlm/weights/sft_lora grpo=rlm/weights/final_rlm_lora
+rlm-eval: ## Fase 1: pass@1 base / SFT / GRPO en test y OOD, y curvas de entrenamiento (GPU)
+	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --out reports/phase1_eval_1.7b.json \
+		--adapters base=none sft=$(RLM_W)/sft_lora grpo=$(RLM_W)/final_rlm_lora \
+		--history $(RLM_W)/sft_lora/trainer_state.json $(RLM_W)/final_rlm_lora/trainer_state.json
+	$(UV) run python -u -m rlm.evaluate --data rlm/data/test_ood.jsonl --model $(RLM_MODEL) \
+		--max-new-tokens 2048 --n-examples 100 --out reports/phase1_eval_ood_1.7b.json \
+		--adapters base=none sft=$(RLM_W)/sft_lora grpo=$(RLM_W)/final_rlm_lora
+
+rlm-ablations: ## Fase 1: GRPO sin recompensa de dominio y con crédito parcial, y su evaluación (GPU)
+	$(UV) run python -u -m rlm.train_grpo $(RLM_GRPO_ARGS) --output $(RLM_W)/grpo_nodomain \
+		--reward-weights 0.5 2.0 0
+	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --adapters grpo_nodomain=$(RLM_W)/grpo_nodomain \
+		--out reports/phase1_eval_ablation_nodomain_1.7b.json
+	$(UV) run python -u -m rlm.train_grpo $(RLM_GRPO_ARGS) --output $(RLM_W)/grpo_partial --partial-credit
+	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --adapters grpo_partial=$(RLM_W)/grpo_partial \
+		--out reports/phase1_eval_ablation_partial_1.7b.json
+
+# Fase 2: herramientas
+tools-eval: ## Fase 2: banco de 30 casos con y sin herramientas (GPU)
+	$(UV) run python -m tool_use.evaluate --out reports/phase2_eval.json
 
 # Fase 3: RAG sobre fichas técnicas (CIMA) y guías de la EMA. Detalle en rag/CORPUS.md
 rag-corpus: ## Fase 3: descarga el corpus (fichas técnicas de CIMA y guías de la EMA)
@@ -79,6 +95,12 @@ rag-eval-gen: ## Fase 3: lo anterior más la generación con citas sobre el conj
 
 rag-test: ## Fase 3: mide UNA vez el conjunto de test (100 preguntas) con la configuración fijada (GPU)
 	$(UV) run python -m rag.evaluate --gold rag/gold/gold_test.jsonl --strategies recursive 		--fixed-lambda 0.3 --generation --out reports/phase3_test.json
+
+# Fase 4: agente. Un proceso por cerebro (en GPUs de 8 GB no caben dos a la vez)
+agent-eval: ## Fase 4: los tres cerebros ReAct y el agente de código sobre las 20 tareas (GPU)
+	for b in base rlm thinking code-thinking code-base; do \
+		$(UV) run python -u -m agent.evaluate --brains $$b --out reports/phase4_eval_1.7b.json; \
+	done
 
 api: ## Levanta la API en local con recarga automática
 	$(UV) run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload

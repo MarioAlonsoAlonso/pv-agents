@@ -63,7 +63,7 @@ proceso y la GPU es de 8-16 GB).
 | **ngrok** | Exponer la API local con una URL pública | Para que el profesor la llame |
 | **ruff** | Estilo y errores de Python | `uv run ruff check .`, `ruff format` |
 | **pytest** | Tests | `uv run pytest`: 112 tests, sin GPU ni red |
-| `.env` | Variables locales (no se suben) | Ver `.env.example`: `ARCA_TEAM`, `ARCA_DOMAIN`, `ARCA_RLM_ADAPTER`, `ARCA_LLM_MODEL`, `ARCA_RAG_*`, `OPENFDA_API_KEY`… |
+| `.env` | Variables locales (no se suben). La API las carga al arrancar (`load_dotenv` en `api/app.py`) y `docker compose` las pasa al contenedor | Ver `.env.example`: `ARCA_TEAM`, `ARCA_DOMAIN`, `ARCA_RLM_ADAPTER`, `ARCA_LLM_MODEL`, `ARCA_RAG_*`, `OPENFDA_API_KEY`… |
 
 **La DGX** es el clúster de GPU de la universidad (sesiones de 24 h, una GPU de 16 GB, sin Docker
 dentro; se trabaja con uv desde Code Server). No tiene copias de seguridad: todo debe estar en

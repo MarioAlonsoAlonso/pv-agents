@@ -9,7 +9,8 @@ laptop, on the DGX and inside Docker:
 
 * ``ARCA_RLM_BASE_MODEL``  base model id (default: the one recorded in the adapter)
 * ``ARCA_RLM_ADAPTER``     the trained LoRA adapter: a local folder (e.g.
-  ``rlm/weights/grpo_lora_1.7b``) or a Hugging Face Hub id (``Matteofermar/arca-meddra-qwen3-1.7b``, our final one)
+  ``rlm/weights/grpo_lora_1.7b``) or a Hugging Face Hub id; our final one is
+  ``Matteofermar/arca-meddra-qwen3-1.7b``
 * ``ARCA_RLM_VERIFIER``    ``meddra`` (default, our MedDRA coding task), ``numeric`` or
   ``exact_match``; the registry is ``VERIFIERS`` in ``rlm/verifier.py``
 
