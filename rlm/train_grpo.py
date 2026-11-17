@@ -200,7 +200,7 @@ def main() -> None:
         "--batch-size",
         type=int,
         default=2,
-        help="completions per forward/backward micro-batch; lower it (1) if CUDA runs out of memory",
+        help="completions per forward/backward micro-batch; lower it (1) on CUDA out of memory",
     )
     parser.add_argument("--max-completion-length", type=int, default=768)
     parser.add_argument("--learning-rate", type=float, default=5e-6)

@@ -1,218 +1,187 @@
-# ARCA — Agente con Razonamiento, Conocimiento y Acción
+# ARCA · Agente de farmacovigilancia
 
-**Práctica final de Modelos Generativos Profundos · Máster en Inteligencia Artificial · ICAI · 2026-2027**
+**Un agente que codifica notificaciones de reacciones adversas en MedDRA, consulta fichas técnicas
+y datos de FAERS, calcula señales de desproporcionalidad y prepara el ICSR, con un humano que
+confirma antes de registrar nada.**
 
-Durante el cuatrimestre hemos visto cómo un modelo de lenguaje aprende a razonar, cómo se
-le enseña a usar herramientas, cómo se le conecta a una base de conocimiento y cómo todo
-eso se junta en un agente que actúa en bucle. En esta práctica vais a recorrer ese camino
-completo, de principio a fin, sobre un tema que elegís vosotros.
+Práctica final de Modelos Generativos Profundos · Máster en Inteligencia Artificial · ICAI ·
+2026-2027. Todo con modelos abiertos pequeños (Qwen3-1.7B) entrenados y evaluados en una GPU de
+16 GB. El enunciado de la práctica está en [`docs/practica.md`](docs/practica.md).
 
-La llamamos ARCA porque cada letra es una de las piezas que vais a construir: **R**azonamiento,
-**C**onocimiento, **A**cción, y el **A**gente que las une. Y porque la metáfora es
-intencionada: vais a montar vuestra propia arca con lo que decidáis meter dentro.
+## Para quién y qué problema resuelve
 
----
+Un técnico de farmacovigilancia de un centro autonómico recibe notificaciones en lenguaje
+natural ("llevo una semana con sertralina y me da muchísimo sueño") y tiene que:
 
-> **El enunciado en PDF está en [`docs/enunciado.pdf`](docs/enunciado.pdf)** (5 páginas). Es el
-> resumen de todo esto; el detalle de cada fase está en el README de su carpeta.
+1. **Codificarlas** en *Preferred Terms* de MedDRA aplicando las reglas de *Term Selection: Points
+   to Consider* (lo negado no se codifica, el diagnóstico absorbe sus síntomas, la muerte es un
+   desenlace…).
+2. **Comprobar** en la ficha técnica si la reacción es conocida y con qué frecuencia.
+3. **Mirar** cuántas notificaciones hay en FAERS y si hay señal (PRR, regla de Evans).
+4. **Valorar** la causalidad (algoritmo de Naranjo) y **registrar** el caso (ICSR).
 
-## La idea: vosotros elegís el tema
+Hoy eso son cuatro pestañas, un diccionario con licencia y una hoja de cálculo. ARCA lo resuelve
+en una petición, y deja el registro pendiente de que una persona lo confirme.
 
-No os voy a dar un dominio cerrado. Cada equipo escoge un problema real que le interese y
-construye un agente experto en ese problema, pasando por las cuatro fases. Un asistente
-para preparar unas oposiciones, un agente que lee la normativa de un ayuntamiento y rellena
-instancias, un tutor de matemáticas que corrige y explica, un copiloto para autónomos que
-calcula impuestos y recuerda plazos, un entrenador de programación competitiva que ejecuta
-vuestras soluciones. Lo que queráis, con una condición: que resuelva un problema a alguien
-de verdad, aunque ese alguien seáis vosotros. Si al terminar podéis poner el enlace en
-vuestro currículum y enseñárselo a alguien en una entrevista, habréis hecho bien el trabajo.
-En [`docs/temas_ejemplo.md`](docs/temas_ejemplo.md) hay una docena de temas desarrollados, de
-farmacia a marketing, con cómo se corregiría cada uno. Son para inspirar, no para elegir de
-una lista.
+## Ejemplo real (agente, cerebro `base`, del banco de evaluación)
 
-¿Por qué lo planteo así? Porque sé que vais a programar con ayuda de agentes de código, y
-no os lo voy a prohibir. Precisamente por eso, lo que vale aquí no es escribir código: es
-**decidir qué construir, saber si funciona y explicar por qué**. Un agente de código os
-escribe un bucle GRPO en dos minutos. Lo que no puede hacer es decidir qué tarea de vuestro
-dominio tiene una recompensa verificable, qué herramientas necesita de verdad vuestro
-usuario, qué documentos merecen estar en el corpus, ni interpretar por qué la recompensa se
-estanca en el paso 40. Eso es lo que os pido y eso es lo que evalúo.
+> *Mira en la ficha técnica si el edema periférico es una reacción conocida del amlodipino y
+> calcula su PRR en FAERS.*
 
-Tres condiciones tiene que cumplir el tema para que las fases sean posibles:
+| Paso | Acción | Observación (real) |
+|---|---|---|
+| 1 | `search_knowledge_base("Is peripheral edema a known adverse reaction of amlodipine?")` | `[1d381329ee-0023]` Ficha técnica de amlodipino, 4.8 Reacciones adversas … |
+| 2 | `faers_reaction_counts(drug="amlodipino", reaction="Oedema peripheral")` | 8 358 notificaciones con el fármaco y la reacción, de 434 733 con amlodipino (openFDA) |
+| 3 | `disproportionality_prr(8358, 434733, 122014, 21054159)` | PRR 3,49 (IC 95 % 3,41–3,57), **señal** según Evans |
+| 4 | `final_answer(…)` | "El PRR del edema periférico con amlodipino en FAERS es 3,49 … señal significativa" |
 
-1. **Una tarea con respuesta verificable automáticamente**: un número, una fecha, un código
-   que pasa tests, una consulta que devuelve un resultado, una etiqueta. Sin verificador no
-   hay recompensa, y sin recompensa no hay aprendizaje por refuerzo (fase 1).
-2. **Herramientas con sentido en ese dominio**: algo que consultar fuera del modelo, algo
-   que calcular, algo que hacer (fase 2).
-3. **Documentación real** sobre el tema que se pueda recopilar y usar (fase 3).
+El agente normaliza "amlodipino" a "amlodipine", copia los recuentos de FAERS al PRR sin
+tocarlos y no inventa ningún número. La traza completa (pensamientos incluidos) la devuelve
+`POST /agent`, y `uv run python -m agent.ui` la muestra en un visor.
 
-Al principio del cuatrimestre me diréis qué tema queréis hacer. Con esa lista formaré los
-equipos y, tema por tema, os diré qué se va a evaluar exactamente en vuestro caso. Los
-criterios generales son los mismos para todos; la concreción se adapta a lo que cada equipo
-haya elegido. Los detalles de equipos, fechas y entregables se irán publicando aquí.
+## Arquitectura
 
----
-
-## Cómo está organizada
-
-La práctica sigue el orden de las clases. Cada fase vive en su carpeta, tiene su propio
-README con lo que se espera y cómo se corrige, y termina en un endpoint de la API que yo
-puedo llamar. Las cuatro fases se corrigen por separado, pero todas hablan del mismo tema.
-
-| Fase | Carpeta | Qué construís | Endpoint | Clase |
-|------|---------|---------------|----------|-------|
-| 0 | [`docs/00_propuesta.md`](docs/00_propuesta.md) | La propuesta de tema | — | — |
-| 1 | [`rlm/`](rlm/README.md) | Un modelo que razona: SFT por destilación + GRPO con recompensas verificables | `POST /reasoning` | Reasoning language models |
-| 2 | [`tool_use/`](tool_use/README.md) | Herramientas reales y el flujo de tool use escrito a mano | `POST /tools` | The augmented LLM: tool use |
-| 3 | [`rag/`](rag/README.md) | Corpus, chunking, embeddings, BM25, híbrido, citas | `POST /rag` | The augmented LLM: RAG |
-| 4 | [`agent/`](agent/README.md) | El bucle ReAct con todo lo anterior dentro | `POST /agent` | The augmented LLM: agents |
-| — | [`api/`](api/README.md) | La API que expone las cuatro fases | `GET /health` | — |
-| — | [`smoke/`](smoke/README.md) | Diagnóstico de GPU y entrenamiento de prueba para la primera sesión en la DGX | — | — |
-
-El orden no es casual. Primero enseñamos al modelo a pensar. Luego le damos manos. Luego
-memoria externa. Y al final lo ponemos a trabajar solo, usando todo lo anterior: en la fase 4
-reutilizaréis el modelo de la fase 1, las herramientas de la fase 2 y el retriever de la fase 3.
-
-En [`docs/`](docs/) tenéis la plantilla de la propuesta, los temas de ejemplo, la guía para
-construir el dataset de la fase 1, la rúbrica detallada, la guía de la DGX, la de GitHub, la
-plantilla del informe y la del cuaderno de experimentos.
-
----
-
-## Empezar
-
-Este repositorio es una plantilla. Pulsad **Use this template** en GitHub para crear vuestro
-propio repositorio con una copia limpia (mejor que un fork: será vuestro, sin historial
-ajeno, y es el que enseñaréis como portfolio). Después clonad el vuestro. Si no tenéis cuenta
-de GitHub, o no sabéis cómo hacer `push` desde la DGX, está explicado paso a paso en
-[`docs/github.md`](docs/github.md).
-
-Necesitáis Python 3.11 y [`uv`](https://docs.astral.sh/uv/). Con eso:
-
-```bash
-git clone https://github.com/kendrickcetina/dgm-arca.git
-cd dgm-arca
-uv sync --extra train --extra rag --extra agent   # o `make setup`
-uv run pytest                                     # todo verde antes de tocar nada
-uv run arca-check-gpu                             # ¿ve torch la GPU?
-uv run arca-smoke                                 # entrenamiento GRPO de prueba (GPU)
-uv run arca-api                                   # API en http://localhost:8000/docs
+```mermaid
+flowchart LR
+    U[Usuario] -->|POST /agent| A
+    subgraph A[Fase 4 · Agente ReAct]
+        B{{Cerebro<br/>Qwen3-1.7B}} --> L[Bucle: pensar → actuar → observar<br/>timeouts · bucles · memoria · permisos]
+    end
+    L --> T2[Fase 2 · Herramientas<br/>FAERS · PRR · Naranjo · calculadora · ICSR]
+    L --> T3[Fase 3 · search_knowledge_base<br/>BM25 + denso, λ = 0,3]
+    L --> T1[Fase 1 · code_meddra<br/>Qwen3-1.7B + LoRA SFT + GRPO]
+    T2 --> F[(openFDA FAERS)]
+    T3 --> C[(34 fichas CIMA + 3 guías EMA<br/>2 656 fragmentos)]
+    T2 -.ICSR.-> H[/Confirmación humana/]
 ```
 
-En la DGX se trabaja exactamente así, con `uv`, desde la terminal de Code Server: no hay
-SSH ni Docker dentro de las sesiones, cada uno recibe una GPU de 16 GB y las sesiones duran
-como máximo 24 horas. La guía completa, incluida la prueba de la primera sesión, está en
-[`docs/dgx.md`](docs/dgx.md). Leedla antes de conectaros.
+| Fase | Qué es | Endpoint | Carpeta |
+|---|---|---|---|
+| 1 · Razonamiento | Codificación MedDRA: destilación de Qwen3-4B → SFT → GRPO con tres recompensas verificables, sobre Qwen3-1.7B con LoRA | `POST /reasoning` | [`rlm/`](rlm/) |
+| 2 · Herramientas | 5 herramientas tipadas con Pydantic (FAERS en vivo, PRR, Naranjo, calculadora segura, ICSR con confirmación) y el bucle de tool use escrito a mano | `POST /tools` | [`tool_use/`](tool_use/) |
+| 3 · Conocimiento | RAG sobre fichas técnicas de CIMA y guías de la EMA: troceado recursivo, BM25, Qwen3-Embedding-0.6B, híbrido y respuestas con citas verificadas | `POST /rag` | [`rag/`](rag/) |
+| 4 · Agente | Harness ReAct propio: una acción por paso, timeouts, recuperación de errores, detección de bucles, memoria con resumen, confirmación humana, tres cerebros intercambiables; y un agente de código (smolagents) para comparar | `POST /agent` | [`agent/`](agent/) |
 
-Docker es para lo otro: que la API se despliegue con una orden en cualquier máquina, para la
-corrección y para vuestro portfolio.
+Decisiones y alternativas descartadas, fase a fase, en la [guía del proyecto](docs/guia/README.md).
+
+## Resultados
+
+Todas las cifras son de conjuntos de **test** que no se usaron para tomar decisiones.
+
+**Fase 1 · Codificación MedDRA** (pass@1 = conjunto exacto de PT, decodificación greedy)
+
+| Modelo (Qwen3-1.7B) | Test (200) | Fuera de distribución (100, términos nunca vistos) |
+|---|---|---|
+| Base | 18,5 % | 14 % |
+| + SFT (821 trazas destiladas y verificadas) | 51,5 % | 30 % |
+| **+ SFT + GRPO** | **56,5 %** | **38 %** |
+
+Ablaciones de GRPO: sin la recompensa de dominio, 53,0 %; con crédito parcial (F1), 55,0 %.
+McNemar: SFT frente a base, p < 0,001; GRPO frente a SFT, p = 0,11 (tendencia, no significativo con 200
+problemas). Detalle en [`rlm/RESULTADOS.md`](rlm/RESULTADOS.md).
+
+**Fase 2 · Herramientas** (30 casos): selección de herramienta 1,00 · argumentos 0,83 ·
+respuesta correcta **0,67 con herramientas frente a 0,33 sin ellas** · 6/6 preguntas que no
+necesitan herramienta respondidas sin llamar a ninguna. [`tool_use/RESULTADOS.md`](tool_use/RESULTADOS.md)
+
+**Fase 3 · RAG** (100 preguntas de test)
+
+| Retriever | Hit@5 | MRR |
+|---|---|---|
+| BM25 | 0,66 | 0,530 |
+| Denso | **0,90** | 0,684 |
+| **Híbrido (λ = 0,3)** | 0,86 | **0,716** |
+
+Generación con citas (Qwen3-1.7B): 68 % de respuestas citadas y 15 % de abstenciones falsas. Con
+Qwen3-4B como generador, sobre la misma recuperación, 97 % y 3 %, y se abstiene en las 8 preguntas
+sin respuesta: el cuello de botella era el generador. [`rag/RESULTADOS.md`](rag/RESULTADOS.md)
+
+**Fase 4 · Agente** (20 tareas que encadenan de 2 a 3 herramientas, 2 de ellas imposibles)
+
+| Agente | Cerebro | Éxito | Tokens por tarea |
+|---|---|---|---|
+| ReAct (JSON) | `base` | **55 %** | 11 550 |
+| ReAct (JSON) | `thinking` | **55 %** | 11 127 |
+| ReAct (JSON) | `rlm` (LoRA de la fase 1) | 10 % | 3 152 |
+| Código (smolagents) | `thinking` / `base` | 35 % / 40 % | ~30 000 |
+
+El modelo de la fase 1 como cerebro olvida el protocolo de herramientas (escribe la traza entera
+con observaciones inventadas), así que entra en el agente como herramienta. El agente de código
+gana en las tareas de cálculo, pero gasta casi el triple de tokens y pierde en el resto.
+[`agent/RESULTADOS.md`](agent/RESULTADOS.md)
+
+Lo que no funciona, sin adornos: **las tareas imposibles** ("¿cuántas notificaciones hubo en
+España en 2025?" → da el total mundial de FAERS) fallan con todos los cerebros, y con 20 tareas
+el ruido es de unos ±20 puntos. El cuaderno completo, fechado, está en [`EXPERIMENTS.md`](EXPERIMENTS.md).
+
+## Cómo ejecutarlo
+
+Requisitos: Python 3.11, [`uv`](https://docs.astral.sh/uv/) y una GPU NVIDIA con ≥ 12 GB para
+servir las cuatro fases a la vez (en 8 GB caben de una en una).
 
 ```bash
-docker compose build
-docker compose run --rm check-gpu
-docker compose up api
+git clone <este repositorio> && cd dgm-arca
+cp .env.example .env              # el adaptador de la fase 1 se descarga del Hub
+uv sync --extra train --extra rag --extra agent
+uv run pytest                     # tests en verde
+uv run python -m rag.download_corpus   # corpus: fichas de CIMA y guías de la EMA (~10 min)
+uv run arca-api                   # http://localhost:8000/docs
 ```
 
-Las dependencias están separadas en grupos para que instaléis solo lo que necesitéis:
-`train` (torch, transformers, trl, peft), `rag` (sentence-transformers, chromadb, bm25),
-`agent` (smolagents, gradio). Sin extras se instala lo justo para la API y los tests.
+Con Docker (driver de NVIDIA y `nvidia-container-toolkit` en la máquina):
 
----
+```bash
+cp .env.example .env
+docker compose up api             # http://localhost:8000/docs
+```
 
-## Qué os doy hecho y qué es vuestro
+Si el corpus no está descargado, `/rag` lo descarga la primera vez que se le llama. El adaptador
+LoRA de la fase 1 está en Hugging Face Hub:
+[`Matteofermar/arca-meddra-qwen3-1.7b`](https://huggingface.co/Matteofermar/arca-meddra-qwen3-1.7b).
 
-Hecho, para que veáis código terminado desde el primer día y no solo esqueletos:
+Peticiones de ejemplo:
 
-- La API con los cuatro endpoints y sus contratos fijados (`api/schemas.py`). Una fase sin
-  implementar responde 501 con un mensaje claro, así que la API siempre arranca.
-- Las recompensas de formato y exactitud de la fase 1, con tests (`rlm/rewards.py`).
-- Los verificadores numérico y de texto exacto (`rlm/verifier.py`).
-- El parser de llamadas a herramientas, el registro que convierte funciones tipadas en
-  definiciones JSON, y dos herramientas de ejemplo (`tool_use/`).
-- La ingesta de documentos, el chunking recursivo, el retriever BM25 y las métricas
-  Recall@k y MRR (`rag/`).
-- La memoria con presupuesto de tokens y el visor de trazas (`agent/`).
-- El smoke test de GRPO y el diagnóstico de GPU (`smoke/`), Docker, `uv`, tests, `Makefile`.
+```bash
+curl -s localhost:8000/health
+curl -s localhost:8000/reasoning -H 'Content-Type: application/json' \
+  -d '{"question": "Llevo dos semanas con sertralina y me da muchísimo sueño. No he tenido náuseas."}'
+curl -s localhost:8000/rag -H 'Content-Type: application/json' \
+  -d '{"question": "¿Con qué frecuencia produce somnolencia la sertralina?", "retriever": "hybrid"}'
+curl -s localhost:8000/agent -H 'Content-Type: application/json' \
+  -d '{"task": "¿Hay señal de somnolencia con sertralina en FAERS? Calcula el PRR.", "brain": "base"}'
+```
 
-Vuestro, marcado en el código con bloques **"Tu turno"** que explican qué hay que hacer y
-por qué: el dataset verificable y el verificador de vuestro dominio, la destilación, el SFT,
-el GRPO con vuestra tercera recompensa, el paso de GRPO a mano, vuestras herramientas y el
-flujo de tool use, el chunking semántico, el retriever denso y el híbrido, la generación con
-citas, el bucle ReAct, la política de memoria, y todas las evaluaciones. El README de cada
-carpeta lo detalla.
+## Reproducir los resultados
 
----
+| Fase | Comandos | Dónde |
+|---|---|---|
+| 1 | `make rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-ablations` | GPU de 16 GB (DGX) |
+| 2 | `make tools-eval` | GPU |
+| 3 | `make rag-corpus rag-eval-gen` (desarrollo) y `make rag-test` (test, una sola vez) | GPU |
+| 4 | `make agent-eval` | GPU |
+| Todo lo pesado en una sesión | `bash scripts/dgx_session.sh` | DGX |
 
-## Cómo se evalúa
+Los pesos, el índice y el corpus no están en el repositorio: los scripts anteriores los regeneran
+(y el adaptador final está en el Hub). Los informes JSON y las gráficas de cada evaluación están en
+[`reports/`](reports/).
 
-Los criterios son los de siempre y se aplican a cada una de las cuatro fases por separado,
-de modo que cada fase pesa lo mismo en la nota final:
+## Estructura
 
-| Criterio | Peso | Qué miro |
-|----------|------|----------|
-| Implementación correcta | 30 % | El endpoint responde y hace lo que dice. Lo compruebo lanzando peticiones a vuestra API con un script de corrección. |
-| Completitud | 30 % | Todo lo que el README de la fase describe como "lo que tendréis que hacer" está hecho. Cada pieza que falte resta. |
-| Interpretación y explicación | 30 % | Curvas y métricas explicadas, no solo pintadas. Comparaciones, análisis de fallos, retos abordados, cuaderno de experimentos honesto y la defensa oral. |
-| Limpieza y calidad | 10 % | Sin huecos ni marcadores pendientes, `uv sync` reproduce el entorno, los tests pasan, Docker levanta, README de portfolio, código en inglés con docstrings, sin secretos. |
+```
+rlm/        fase 1: dataset MedDRA, verificador, destilación, SFT, GRPO, evaluación, inferencia
+tool_use/   fase 2: registro de herramientas, parser, bucle de tool use, banco de 30 casos
+rag/        fase 3: descarga del corpus, troceado, embeddings, retrievers, generación con citas
+agent/      fase 4: bucle ReAct, agente de código, memoria, banco de 20 tareas, visor de trazas
+common/     el modelo de chat compartido por las fases 2, 3 y 4
+api/        FastAPI: /health, /reasoning, /tools, /rag, /agent (contratos en api/schemas.py)
+docs/guia/  guía del proyecto: una por fase, API e infraestructura, glosario
+reports/    resultados de todas las evaluaciones (JSON y PNG)
+```
 
-El detalle por fase está en [`docs/rubrica.md`](docs/rubrica.md) y en el README de cada
-carpeta. Cuando conozca vuestro tema os concretaré qué significa cada criterio en vuestro caso.
+## Licencia y datos
 
----
-
-## La entrega
-
-Cuando terminéis tendréis un sistema completo. Tratadlo como lo que es: algo que podéis enseñar.
-
-- Repositorio público con un README de portfolio: qué hace, para quién, un GIF de la demo,
-  un diagrama, la tabla de métricas de las cuatro fases y cómo levantarlo con una orden.
-- `docker compose up api` arranca la API con los cuatro endpoints. Para la corrección la
-  expondréis con [ngrok](https://ngrok.com/) y me pasaréis la URL.
-- [`EXPERIMENTS.md`](docs/EXPERIMENTS_plantilla.md): el cuaderno fechado de qué probasteis,
-  qué salió y qué decidisteis. Una entrada que diga "probamos X, no funcionó, creemos que por
-  Y" vale más que diez que digan "todo bien".
-- Un informe técnico de no más de diez páginas ([plantilla](docs/informe_plantilla.md)).
-- Una defensa oral de unos diez minutos: tres de demo en vivo y el resto de preguntas sobre
-  vuestro código y vuestros resultados.
-
----
-
-## Reglas de la casa
-
-- El texto dirigido a personas (README, informe, comentarios largos) en español. El código,
-  los nombres de variables, funciones y ficheros, en inglés.
-- Nada de `TODO` sueltos en la entrega. Lo que no hayáis hecho, decidlo en el informe.
-- Los pesos, los índices y los datos grandes no van al repositorio. Dejad el script que los regenera.
-- Ninguna clave ni token en el código. Usad `.env` (ya está en `.gitignore`).
-- Usad los agentes de código todo lo que queráis, pero leed lo que os escriben. En la
-  defensa el código es vuestro y las preguntas también.
-- La DGX no tiene copias de seguridad. Nada que no esté también en GitHub, en Hugging Face
-  Hub o en vuestro disco existe de verdad. Detalles en [`docs/dgx.md`](docs/dgx.md).
-
----
-
-## Glosario rápido
-
-- **RLM (Reasoning Language Model):** modelo entrenado para generar primero una cadena de
-  razonamiento entre `<think>` y `</think>` y después la respuesta.
-- **CoT (Chain of Thought):** los pasos intermedios de razonamiento. Prompting con CoT fue
-  el punto de partida; SFT y RL lo convierten en un comportamiento aprendido.
-- **SFT (Supervised Fine-Tuning):** ajuste con pares (pregunta, respuesta deseada). Para
-  razonamiento, la respuesta incluye la traza. Cuando las trazas las genera un modelo mayor
-  y se filtran con un verificador, se le llama destilación.
-- **RLVR (Reinforcement Learning with Verifiable Rewards):** RL donde la recompensa la da un
-  verificador determinista (¿acierta?, ¿pasa los tests?, ¿respeta el formato?).
-- **GRPO (Group Relative Policy Optimization):** algoritmo de RL sin crítico. Muestrea un
-  grupo de respuestas a la misma pregunta, calcula la ventaja de cada una respecto a la media
-  del grupo y empuja hacia arriba las mejores. Con recorte del ratio de políticas y,
-  opcionalmente, penalización KL.
-- **Tool use:** el modelo genera una llamada en un formato reconocible, la aplicación la
-  ejecuta y le devuelve el resultado.
-- **ReAct (Reason + Act):** bucle Pensamiento → Acción → Observación hasta llegar a la respuesta.
-- **RAG (Retrieval-Augmented Generation):** recuperar fragmentos relevantes de un corpus y
-  meterlos en el prompt antes de generar.
-- **Embeddings instruction-aware:** la consulta se embebe junto con una instrucción que
-  define qué significa "relevante" para esa tarea.
-- **BM25:** ranking por palabras clave (frecuencia, rareza, normalización por longitud).
-  **Híbrido:** combinación ponderada de BM25 y similitud de embeddings.
+Código bajo licencia MIT. MedDRA es una terminología con licencia de la MSSO: el repositorio solo
+incluye un subconjunto propio de 90 PT con fines docentes y un cargador para los ficheros
+oficiales (`ARCA_MEDDRA_DIR`). Las fichas técnicas proceden de CIMA (AEMPS) y las guías de la EMA
+se reproducen citando su origen; ninguna se redistribuye en el repositorio. FAERS se consulta en
+vivo a través de openFDA.

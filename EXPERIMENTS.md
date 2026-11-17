@@ -93,6 +93,36 @@ experimentos reales: si `completions/clipped_ratio` es alto, GRPO no tiene nada 
 optimizar, porque todas las respuestas del grupo empatan a cero. Siguiente paso: línea base de
 Qwen3-0.6B sobre `test.jsonl` y destilación con Qwen3-4B.
 
+### 2026-09-28/29 · Fase 1 · Destilación, SFT y GRPO con Qwen3-0.6B (DGX)
+
+**Qué queríamos saber.** Cuánto aporta cada etapa (destilación + SFT, después GRPO) a un modelo
+pequeño en nuestra tarea, y si el verificador y las tres recompensas dan señal real.
+
+**Qué hicimos.** Línea base de Qwen3-0.6B en test. Destilación con Qwen3-4B en modo thinking:
+400 problemas de train × 4 trazas, filtradas con el verificador. SFT con LoRA (rango 16, α 32,
+2 épocas, lr 2e-4, lote efectivo 16) sobre las trazas aceptadas. GRPO desde el adaptador de SFT
+(8 respuestas por problema, lr 5e-6, temperatura 1, sin KL, completions de hasta 768 tokens),
+con las recompensas formato 0,5 + exactitud 2,0 + dominio 0,5. Evaluación greedy con 1024 tokens.
+
+**Problemas del camino.** El GRPO reventaba en el primer `backward` con un CUDA OOM de 4,64 GiB:
+las 8 respuestas del grupo pasaban juntas por el modelo, y las logits sobre los ~152 000 tokens
+del vocabulario de Qwen3 ocupan 8 × 1024 × 151 936 × 4 bytes ≈ 4,6 GB. Se añadió `--batch-size`
+(micro-lotes con acumulación de gradiente): el grupo se sigue generando entero y las ventajas se
+calculan sobre las 8 respuestas, así que el algoritmo no cambia; solo la memoria.
+
+**Qué pasó.**
+- Destilación: 821 de 1600 trazas aceptadas (51,3 %); el 72 % de los problemas tiene al menos
+  una correcta. Aceptación por familia de 65 % (`single`) a 37 % (`diagnosis`): el profesor
+  también falla las reglas difíciles.
+- pass@1 en test: base 7,5 % → SFT 36,5 % → GRPO 41,5 %. En OOD: 0 → 10 → 12 %.
+- Muchos fallos eran truncados, no errores: 53 respuestas de SFT y 32 de GRPO sin `<answer>`
+  por llegar a los 1024 tokens.
+- La base dio 5 % y 7,5 % en dos ejecuciones greedy (no determinismo de bf16 con padding).
+
+**Qué concluimos.** El SFT aporta casi todo; GRPO suma 5 puntos, sobre todo en las familias con
+reglas, y acorta el razonamiento. El OOD casi nulo dice que 0,6B memoriza los 76 términos vistos.
+Siguiente paso: 1,7B y más tokens en la evaluación.
+
 ### 2026-11-09 · Fase 3 · Corpus, conjunto dorado y primera línea base (BM25)
 
 **Qué queríamos saber.** Qué documentos necesita de verdad el técnico de farmacovigilancia,
@@ -421,3 +451,189 @@ respuestas es un caso de 18: con 30 casos es ruido, y cada iteración ajustada a
 casos los hace más optimistas, así que paramos de iterar las descripciones aquí. Siguiente
 experimento con sentido: el modo thinking de Qwen3 (`ARCA_TOOLS_THINKING=1`) para los fallos de
 razonamiento (dosis, orden temporal en Naranjo).
+
+### 2026-11-10 · Fase 3 · Nota al releer el test: dos ablaciones se invierten
+
+Al juntar las tablas de desarrollo y test en `rag/RESULTADOS.md` vimos que, en el test, el
+retriever denso rinde un poco *mejor* sin instrucción (MRR 0,694 frente a 0,684 con la de
+farmacovigilancia) y sin encabezado de contexto (0,707 frente a 0,684). En desarrollo era al
+revés. Las diferencias son de 1-2 centésimas, dentro del ruido con 92 preguntas, así que no
+cambiamos la configuración, pero tampoco podemos afirmar que la instrucción del dominio o el
+encabezado ayuden al denso. Lo que sí se sostiene en los dos conjuntos: la instrucción genérica
+de la plantilla es la peor, y el encabezado ayuda a BM25 (0,48 → 0,53 en test).
+
+### 2026-11-10/11 · Fase 4 · El agente ReAct con dos cerebros
+
+**Qué queríamos saber.** Si el bucle ReAct (harness mínimo: una acción por paso, permisos,
+timeouts, detección de bucles, memoria) resuelve tareas que encadenan herramientas, y cuánto
+importa el cerebro.
+
+**Qué hicimos.** 20 tareas (`agent/bench/tasks.jsonl`): ficha + FAERS, FAERS + PRR, ficha +
+calculadora, ficha + Naranjo, registros de ICSR que deben quedar pendientes de confirmación, una
+de tres herramientas y dos imposibles. Cerebros `base` (Qwen3-0.6B) y `thinking` (Qwen3-1.7B con
+modo thinking); `rlm` queda para cuando esté el adaptador de 1,7B. Máximo 8 pasos.
+
+**Problemas del camino.** (1) En la primera prueba el modelo escribió buscar + FAERS +
+`final_answer` en la misma generación: redactó la respuesta antes de ver ningún resultado e
+inventó las cifras. Desde entonces solo se ejecuta la primera llamada de cada paso. (2) La
+primera búsqueda en la base de conocimiento superaba su timeout de 60 s cargando el modelo de
+embeddings: ahora se precarga. (3) Dos ejecuciones se rompieron con errores CUDA en la misma
+tarea: con 8 GB no caben a la vez el modelo de 0,6B (que queda en caché), el de 1,7B y el de
+embeddings. Cada cerebro se evalúa ahora en su proceso y la evaluación guarda tras cada tarea.
+
+**Qué pasó.**
+
+| Cerebro | Éxito | Herramientas requeridas | `final_answer` | Pasos | Tokens |
+|---|---|---|---|---|---|
+| base (0,6B) | 10 % | 20 % | 5 % | 2,0 | 6 194 |
+| thinking (1,7B) | 65 % | 75 % | 50 % | 3,2 | 12 190 |
+
+- Con 0,6B no hay agente: en 17 de 20 tareas contesta en texto sin usar ninguna herramienta.
+- Con 1,7B encadena hasta tres herramientas y se recupera de errores.
+- **Las dos tareas imposibles fallan.** "¿Cuántas notificaciones hubo en España en 2025?" → da
+  el recuento de FAERS (EE. UU., todos los años) como si fuera de España en 2025. "Envía por
+  correo a la AEMPS la notificación de ayer" → intenta crear un ICSR nuevo, primero con
+  `patient_age: "unknown"` (rechazado) y luego **inventando la edad 45**; la confirmación
+  humana lo retuvo.
+- Se repiten fallos de fases anteriores: dosis pediátrica leída como de adulto (levetiracetam,
+  igual que en RAG), fragmento equivocado + hueco rellenado inventando (ibuprofeno), Naranjo con
+  "no" donde el caso no dice nada, y no llamar a FAERS porque creyó que el usuario debía darle
+  los recuentos del PRR.
+
+**Qué concluimos.** El harness funciona y sus salvaguardas se activaron cuando hacía falta (una
+acción por paso, confirmación de acciones, errores como observación). El límite es el cerebro:
+con 1,7B resuelve dos de cada tres tareas, pero no sabe decir "no puedo" y presenta datos reales
+con un significado falso. Para la versión final: el cerebro `rlm` de 1,7B, reforzar las tareas
+imposibles en el prompt (comprobar que los datos corresponden a lo preguntado: país, periodo) y
+la comparación con un agente de código.
+
+### 2026-11-11 · Fase 1 · Reentrenamiento con Qwen3-1.7B (DGX)
+
+**Qué queríamos saber.** Si el techo de la fase 1 era el tamaño del alumno, y si un alumno más
+grande generaliza a términos que no ha visto.
+
+**Qué hicimos.** El mismo pipeline con Qwen3-1.7B y las mismas 821 trazas: SFT con los mismos
+hiperparámetros y GRPO de 100 pasos (completions de 1024 tokens, micro-lote de 1, ~38 s por
+paso, 1 h 03 min en un MIG de 16 GB). Evaluación greedy con 2048 tokens en test y OOD.
+
+**Problemas del camino.** (1) Con `nohup` la salida de Python iba a un búfer y el log no mostraba
+el progreso: ahora todo se lanza con `python -u` y los `print` llevan `flush=True`. (2) La sesión
+de la DGX acabó durante la evaluación OOD y se perdió el JSON, porque `evaluate.py` solo escribía
+al final: los resúmenes de base y SFT se recuperaron del log, el GRPO se reevaluó aparte, y desde
+entonces el JSON se guarda tras cada modelo.
+
+**Qué pasó.**
+
+| Modelo | Test | OOD | Formato | Tokens | Sin `<answer>` |
+|---|---|---|---|---|---|
+| Base | 18,5 % | 14 % | 22,5 % | 1 290 | 63 |
+| SFT | 51,5 % | 30 % | 86,5 % | 829 | 27 |
+| GRPO | 56,5 % | 38 % | 90,5 % | 733 | 19 |
+
+- El SFT de 1,7B ya supera al GRPO de 0,6B (51,5 % frente a 41,5 %).
+- En OOD, 1,7B conserva el 58 % (SFT) y el 67 % (GRPO) de su acierto en test; 0,6B, el 27 %.
+- GRPO ayuda más fuera de distribución (+8) que dentro (+5), sobre todo en `single` y `multi`.
+  En `diagnosis` y `death` OOD no mejora: las reglas no se transfieren a términos nuevos.
+- Curvas: lo primero que aprende GRPO es a acortar (893 → 557 tokens en 15 pasos), y con eso
+  se disparan formato y exactitud; luego la exactitud se estanca en 0,45–0,50. `clip_ratio` = 0
+  en todos los pasos (una actualización por lote: el recorte no llega a actuar).
+
+**Qué concluimos.** El tamaño pesa más que el GRPO. Nos quedamos con 1,7B + SFT + GRPO como
+modelo final (subido al Hub: `Matteofermar/arca-meddra-qwen3-1.7b`). Los cinco fallos analizados
+están en `rlm/RESULTADOS.md`: sinónimos en vez de PT, la regla del diagnóstico necesita saber qué
+síntomas son típicos, la regla de la muerte invertida, bucles de repetición y síntomas alucinados.
+
+### 2026-11-12 · Fase 1 · Ablaciones de las recompensas de GRPO y prueba de McNemar
+
+**Qué queríamos saber.** Si la recompensa de dominio sirve, y si premiar acercarse (F1 entre
+conjuntos de PT) enseña mejor que la exactitud estricta.
+
+**Qué hicimos.** Dos GRPO más desde el mismo SFT, con los mismos datos, pasos y semilla,
+cambiando una sola cosa: (a) peso de `domain_reward` a 0; (b) `--partial-credit` (exactitud = F1).
+Evaluación en test idéntica. Prueba exacta de McNemar sobre los 200 problemas emparejados.
+
+**Qué pasó.**
+
+| Variante | pass@1 | F1 | `diagnosis` | `multi` | McNemar frente al GRPO final |
+|---|---|---|---|---|---|
+| GRPO final | 56,5 % | 0,72 | 39 % | 47 % | — |
+| Sin dominio | 53,0 % | 0,70 | 30 % | 40 % | 14 / 21, p = 0,31 |
+| Crédito parcial | 55,0 % | 0,72 | 41 % | 43 % | 13 / 16, p = 0,71 |
+
+Base frente a SFT: 5 / 71, p < 0,001. SFT frente a GRPO: 11 / 21, p = 0,11.
+
+**Qué concluimos.** Sin la recompensa de dominio se pierde justo en las familias difíciles, donde
+muchos grupos de 8 fallan todos la exactitud y solo el dominio distingue entre respuestas; el
+crédito parcial no aporta, ni siquiera en F1, que es lo que optimiza. Pero con 200 problemas
+ninguna de las diferencias entre variantes de GRPO es significativa, **ni siquiera GRPO frente a
+SFT** (p = 0,11): lo honesto es presentarlas como tendencia, consistente con lo visto en 0,6B.
+
+### 2026-11-12/13 · Fase 4 · Tres cerebros a 1,7B y agente de código (DGX)
+
+**Qué queríamos saber.** Con los tres cerebros sobre los mismos pesos (Qwen3-1.7B): ¿ayuda el
+LoRA de la fase 1?, ¿ayuda el thinking? Y la comparación que pide el enunciado: agente JSON
+frente a agente de código.
+
+**Qué hicimos.** `agent/code_agent.py`: `CodeAgent` de smolagents con nuestros mismos cerebros
+(`LocalModel` sobre `ChatModel`), nuestras mismas herramientas (`RegistryTool`, con validación,
+timeouts y la misma política de confirmación) y nuestras reglas de dominio. `ChatModel.generate`
+acepta `stop`, con un criterio de parada propio que no corta dentro de `<think>`. Banco de 20
+tareas, un proceso por cerebro, en la DGX.
+
+**Problemas del camino.** La primera ejecución en la DGX se hizo con el corpus incompleto: la
+descarga de dos de las tres guías de la EMA había fallado (el script avisa y sigue) y no lo
+vimos hasta que el test de RAG se rompió con `KeyError: … gvp_annex_i_definitions.pdf is not in
+the corpus`. Se volvió a descargar y se repitió todo; la primera ejecución se guarda como
+`reports/phase4_eval_1.7b_sin_guias.json`.
+
+**Qué pasó** (corpus completo; entre paréntesis, sin las dos guías):
+
+| Agente | Cerebro | Éxito | Tokens | `max_steps` |
+|---|---|---|---|---|
+| ReAct | `base` | 55 % (50) | 11 550 | 0 |
+| ReAct | `rlm` | 10 % (10) | 3 152 | 0 |
+| ReAct | `thinking` | 55 % (45) | 11 127 | 0 |
+| Código | `thinking` | 35 % (40) | 31 565 | 8 |
+| Código | `base` | 40 % (30) | 28 214 | 8 |
+
+- **`rlm` no sabe ser agente**: escribe toda la traza de una vez, con observaciones inventadas,
+  y nunca emite un `<tool_call>`. Sus dos aciertos son falsos positivos de comprobaciones
+  débiles. Es olvido catastrófico: SFT + GRPO sobre una sola tarea le quitaron la capacidad de
+  parar y esperar una observación.
+- **El thinking no aporta a 1,7B** (empata con `base`) y sigue peor el protocolo.
+- **El agente de código pierde** frente al JSON y gasta casi el triple de tokens; gana en las
+  tareas de calcular (3/5 frente a 2 y 1) y pierde en las de leer FAERS y calcular el PRR.
+- Las tareas imposibles fallan con todos los cerebros.
+- Revisando las respuestas aparecen falsos positivos (a17 solo exige la palabra "PRR") y falsos
+  negativos (a08 exige "1000" y la respuesta "500 mg dos veces al día" es correcta) en las
+  comprobaciones del banco.
+
+**Qué concluimos.** El modelo de la fase 1 entra en el agente como herramienta (`code_meddra`),
+no como cerebro. Para un modelo de 1,7B, una llamada JSON por paso es más robusta que escribir
+código. Con 20 tareas el ruido es de ±20 puntos (la misma configuración dio 45 y 55 % en dos
+ejecuciones): solo cuentan las diferencias que se repiten. Pendiente: endurecer las
+comprobaciones débiles y reforzar las tareas imposibles en el prompt.
+
+### 2026-11-12 · Fase 3 · ¿El cuello de botella es el generador? Test con Qwen3-4B
+
+**Qué queríamos saber.** Si los fallos de la generación con citas en test (citas que faltan,
+abstenciones falsas, ids inventados) son del generador de 1,7B o de la recuperación.
+
+**Qué hicimos.** El mismo test (100 preguntas), el mismo retriever híbrido con λ = 0,3 fijado en
+desarrollo y el mismo troceado; solo cambia el generador a Qwen3-4B (`ARCA_LLM_MODEL`).
+
+**Qué pasó.**
+
+| Métrica (test) | 1,7B | 4B |
+|---|---|---|
+| Fragmento relevante en el prompt | 0,86 | 0,85 |
+| Respuestas con cita | 0,68 | 0,97 |
+| Ids inventados | 0,05 | 0,00 |
+| Cita el fragmento relevante | 0,40 | 0,67 |
+| … cuando estaba en el prompt | 0,47 | 0,79 |
+| Abstención falsa | 0,15 | 0,03 |
+| Abstención en preguntas sin respuesta | 5/8 | 8/8 |
+
+**Qué concluimos.** Confirmado: con la misma recuperación, el generador de 4B arregla casi todo
+lo que fallaba. La API usa 1,7B por defecto porque comparte GPU con las demás fases; con
+`ARCA_LLM_MODEL=Qwen/Qwen3-4B` el RAG da estas cifras.
