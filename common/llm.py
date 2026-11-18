@@ -369,6 +369,13 @@ class RemoteChatModel:
                     raise httpx.HTTPStatusError(
                         f"HTTP {response.status_code}", request=response.request, response=response
                     )
+                if response.status_code in (401, 403):
+                    raise PermissionError(
+                        f"{response.status_code} from {self.base_url}: the API key is missing or "
+                        "wrong. Put it in .env as ARCA_REMOTE_LLM_API_KEY (and run from the "
+                        f"repository folder). Key received by this process: "
+                        f"{'none' if self.api_key in ('', 'EMPTY') else 'set'}."
+                    )
                 response.raise_for_status()
                 data = response.json()
                 break

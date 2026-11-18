@@ -277,8 +277,11 @@ def prelabel(posts: list[Post], source: FrozenSource, brain: str = "27b", drugs=
 
 
 def main(argv: list[str] | None = None) -> None:
+    from dotenv import load_dotenv
+
     from crawler.text import utf8_stdout
 
+    load_dotenv(".env")  # prenotar talks to the 27B: URL and API key live in .env
     utf8_stdout()
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
