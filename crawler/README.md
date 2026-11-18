@@ -96,8 +96,8 @@ cp .env.example .env    # BSKY_HANDLE y BSKY_APP_PASSWORD (contraseña de aplica
 | 5. Evaluación | `make crawler-eval` | 27B (híbrido y agente) |
 | 6. Vigilancia periódica | `make crawler-vigilar` | 27B (o `--sin-agente`) |
 
-El servidor del 27B escucha en `127.0.0.1:8000` y solo es accesible desde una sesión de la
-DGX; es compartido (5 peticiones simultáneas en total, ~50 tokens/s), así que la evaluación
+El servidor del 27B escucha en `0.0.0.0:8001` con clave API (`ARCA_REMOTE_LLM_API_KEY` en `.env`,
+la del correo de los profesores) y solo es accesible desde una sesión de la DGX; es compartido (5 peticiones simultáneas en total, ~50 tokens/s), así que la evaluación
 del agente puede tardar. `ARCA_REMOTE_LLM_CONCURRENCY` (2 por defecto) limita cuántas lanzamos.
 
 Probar el agente a mano y leer su traza (se guarda en `data/bluesky/demo/`):

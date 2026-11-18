@@ -159,9 +159,11 @@ class RemoteChatModel:
 
     Same interface as ``ChatModel`` (``generate``, ``count_tokens``, ``last_prompt_tokens``,
     ``name``), so the ReAct harness can use it as a brain without changes. In the DGX the
-    teachers serve ``qwen3.8-27b-fp8`` at ``http://127.0.0.1:8000/v1``, reachable only from
-    inside a DGX session (``docs/dgx-instructions.pdf``). Configuration:
-    ``ARCA_REMOTE_LLM_URL`` and ``ARCA_REMOTE_LLM_MODEL``.
+    teachers serve ``qwen3.8-27b-fp8``, reachable only from inside a DGX session. Since
+    November 2026 it listens at ``http://0.0.0.0:8001/v1`` and needs an API key (teachers' e-mail;
+    ``docs/dgx-instructions.pdf`` still shows the old address). Configuration:
+    ``ARCA_REMOTE_LLM_URL``, ``ARCA_REMOTE_LLM_API_KEY`` (only in ``.env``, never in git) and
+    ``ARCA_REMOTE_LLM_MODEL``.
 
     Details that matter:
 
@@ -188,7 +190,7 @@ class RemoteChatModel:
     ):
         self.model_id = model or os.environ.get("ARCA_REMOTE_LLM_MODEL", "qwen3.8-27b-fp8")
         self.base_url = (
-            base_url or os.environ.get("ARCA_REMOTE_LLM_URL", "http://127.0.0.1:8000/v1")
+            base_url or os.environ.get("ARCA_REMOTE_LLM_URL", "http://0.0.0.0:8001/v1")
         ).rstrip("/")
         self.api_key = api_key or os.environ.get("ARCA_REMOTE_LLM_API_KEY", "EMPTY")
         self.timeout, self.retries, self.transport = timeout, retries, transport
@@ -256,9 +258,20 @@ class RemoteChatModel:
             "temperature": temperature,
             "chat_template_kwargs": {"enable_thinking": enable_thinking},
         }
-        if enable_thinking and temperature == 0:
-            # Qwen recommends sampling in thinking mode; greedy decoding loops.
-            payload.update(temperature=0.6, top_p=0.95)
+        if temperature == 0:
+            # No explicit temperature: the model card's recommended sampling for each mode
+            # (huggingface.co/Qwen/Qwen3.8-27B-FP8); greedy decoding makes Qwen loop.
+            payload.update(
+                {"temperature": 1.0, "top_p": 0.95, "top_k": 20, "min_p": 0.0}
+                if enable_thinking
+                else {
+                    "temperature": 0.7,
+                    "top_p": 0.8,
+                    "top_k": 20,
+                    "min_p": 0.0,
+                    "presence_penalty": 1.5,
+                }
+            )
         if stop:
             payload["stop"] = stop
         headers = {"Authorization": f"Bearer {self.api_key}"}

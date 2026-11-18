@@ -341,7 +341,11 @@ def test_remote_chat_model_payload_reasoning_and_retry(monkeypatch):
         "role": "user",
         "content": "<tool_response>\nobs\n</tool_response>",
     }
-    assert sent["temperature"] == 0.6 and sent["chat_template_kwargs"] == {"enable_thinking": True}
+    assert (
+        sent["temperature"] == 1.0
+        and sent["top_k"] == 20
+        and sent["chat_template_kwargs"] == {"enable_thinking": True}
+    )
     assert text.startswith("<think>\npienso\n</think>") and generated == 7
     assert model.last_prompt_tokens == 120
 
