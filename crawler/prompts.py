@@ -13,10 +13,7 @@ The loop format (Thought -> one <tool_call> -> Observation) is the one of
 
 _LOOP = """Resuelve la tarea repitiendo este ciclo:
 (1) Pensamiento: razona qué hacer a continuación. Escríbelo después de "Thought:".
-(2) Acción: llama exactamente a una herramienta, con este formato:
-<tool_call>
-{{"name": "nombre de la herramienta", "arguments": {{"argumento": "valor"}}}}
-</tool_call>
+(2) Acción: {action_format}
 (3) Observación: recibirás el resultado. Úsalo en el siguiente pensamiento.
 
 Reglas generales:
@@ -28,6 +25,17 @@ Reglas generales:
 Herramientas disponibles:
 {tools_description}
 """
+
+# How the model writes an action. Text mode: a <tool_call> block in the answer, read by our
+# parser (local models). Native mode: the server's function calling (the course's vLLM server
+# removes <tool_call> blocks from the text unless the request declares the tools).
+TEXT_ACTION_FORMAT = """llama exactamente a una herramienta, con este formato:
+<tool_call>
+{"name": "nombre de la herramienta", "arguments": {"argumento": "valor"}}
+</tool_call>"""
+NATIVE_ACTION_FORMAT = (
+    "llama exactamente a UNA herramienta usando la llamada a funciones (function calling)."
+)
 
 _WHAT_IS_A_MENTION = """Qué es una mención: un post que habla del fármaco, lo nombre o no.
 - Guárdalo SIN valorarlo: experiencias, preguntas, opiniones, bromas y noticias sobre el

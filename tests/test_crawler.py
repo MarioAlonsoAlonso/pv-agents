@@ -401,3 +401,42 @@ def test_remote_message_with_tool_calls_and_reasoning_fields():
         ("nombres_comerciales", {"farmaco": "sertralina"})
     ]
     assert RemoteChatModel.message_text({"content": "hola"}) == "hola"
+
+
+def test_native_tool_messages_have_ids_and_the_agent_sends_tools(monkeypatch):
+    history = [
+        {"role": "system", "content": "s"},
+        {"role": "user", "content": "task"},
+        {
+            "role": "assistant",
+            "content": 'Thought: x\n<tool_call>{"name": "leer_hilo", '
+            '"arguments": {"post_id": "a1"}}</tool_call>',
+        },
+        {"role": "tool", "content": "thread a1 …", "name": "leer_hilo"},
+    ]
+    out = RemoteChatModel.to_openai_messages(history, native_tools=True)
+    assert out[2]["content"] == "Thought: x"
+    call = out[2]["tool_calls"][0]
+    assert call["function"] == {"name": "leer_hilo", "arguments": '{"post_id": "a1"}'}
+    assert out[3] == {"role": "tool", "tool_call_id": call["id"], "content": "thread a1 …"}
+    assert RemoteChatModel.to_openai_messages(history)[3]["role"] == "user"  # text mode
+
+    sent = {}
+
+    class _FakeRemote(RemoteChatModel):
+        def generate(self, messages, max_new_tokens=512, enable_thinking=False, tools=None, **kw):
+            sent["tools"], sent["system"] = tools, messages[0]["content"]
+            return (
+                '<tool_call>{"name": "final_answer", "arguments": {"answer": "ok"}}</tool_call>',
+                5,
+            )
+
+    ctx = _ctx(FrozenSource(toy_posts()))
+    agent = CrawlerAgent(
+        registry=make_registry(ctx, "vigilancia"),
+        mode="vigilancia",
+        brains={"r": Brain(llm=_FakeRemote(model="m", base_url="http://x"))},
+    )
+    assert agent.run("t", max_steps=3, brain="r").stop_reason == "final_answer"
+    assert {t["function"]["name"] for t in sent["tools"]} >= {"buscar_bluesky", "final_answer"}
+    assert "function calling" in sent["system"] and "<tool_call>" not in sent["system"]

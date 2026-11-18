@@ -1,12 +1,17 @@
-"""Send the crawler's first step to the 27B and show the raw answer of the server.
+"""Check how the course's 27B server answers the crawler, before running the agent.
 
-    uv run python scripts/check_remote_llm.py            # without thinking
+    uv run python scripts/check_remote_llm.py
     uv run python scripts/check_remote_llm.py --thinking
 
-Prints, for one request with the real system prompt and task of ``crawler.demo vigilar``:
-the fields of the answer (``content``, ``reasoning``/``reasoning_content``, ``tool_calls``),
-``finish_reason``, the token usage, and the text the agent's parser gets from it. Use it when
-the agent gets empty answers: it shows where the server put what the model wrote.
+Three requests, each printed with the fields of the server's answer:
+
+1. The teachers' example ("Reply with the word READY."): is the server answering at all?
+2. The agent's first step in **text mode** (tool format written in the prompt, no ``tools``
+   in the request), with ``logprobs`` and ``skip_special_tokens=false``: the tokens the model
+   really generated, even if the server drops them from ``content``.
+3. The same step in **native mode** (``tools`` in the request): do the calls come back in
+   ``tool_calls``? This is what the agent uses with the 27B by default
+   (``ARCA_REMOTE_NATIVE_TOOLS=1``).
 """
 
 from __future__ import annotations
@@ -15,6 +20,27 @@ import argparse
 import json
 
 from dotenv import load_dotenv
+
+
+def show(title: str, llm, text: str) -> None:
+    from tool_use.parser import parse_tool_calls
+
+    choice = llm.last_response["choices"][0]
+    print(f"\n==================== {title}")
+    for key, value in choice["message"].items():
+        if value in (None, "", []):
+            continue
+        shown = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        print(f"  {key}: {shown[:1200]}")
+    usage = llm.last_response.get("usage")
+    print(f"  finish_reason: {choice.get('finish_reason')} · usage: {usage}")
+    logprobs = (choice.get("logprobs") or {}).get("content") or []
+    if logprobs:
+        generated = "".join(t.get("token", "") for t in logprobs)
+        print(f"  tokens generados: {generated[:1500]!r}")
+    calls = [c.name for c in parse_tool_calls(text).tool_calls]
+    print(f"  → lo que recibe el agente: {text[:600]!r}")
+    print(f"  → llamadas a herramientas detectadas: {calls}")
 
 
 def main() -> None:
@@ -31,42 +57,44 @@ def main() -> None:
     from crawler.store import MentionStore
     from crawler.text import utf8_stdout
     from crawler.tools import CrawlerContext, make_registry
-    from tool_use.parser import parse_tool_calls
 
     utf8_stdout()
+    llm = RemoteChatModel()
+    key_set = llm.api_key not in ("", "EMPTY")
+    print(f"servidor: {llm.base_url} · modelo: {llm.model_id} · thinking: {args.thinking}")
+    print(f"clave: {'puesta' if key_set else 'NO: falta ARCA_REMOTE_LLM_API_KEY en .env'}")
+
+    text, _ = llm.generate(
+        [{"role": "user", "content": "Reply with the word READY."}],
+        max_new_tokens=64,
+        enable_thinking=args.thinking,
+    )
+    show("1. Ejemplo de los profesores", llm, text)
 
     class _NoSource:  # the tools are only described, never run
         pass
 
     ctx = CrawlerContext(_NoSource(), MentionStore(), load_brands(), (args.farmaco,))
     agent = CrawlerAgent(registry=make_registry(ctx, "vigilancia"), mode="vigilancia")
-    messages = [
-        {"role": "system", "content": agent.system_prompt(40)},
-        {"role": "user", "content": prompts.VIGILANCIA_TASK.format(farmaco=args.farmaco)},
-    ]
-    llm = RemoteChatModel()
-    print(f"servidor: {llm.base_url} · modelo: {llm.model_id} · thinking: {args.thinking}")
-    print(
-        f"clave: {'puesta' if llm.api_key not in ('', 'EMPTY') else 'NO (ARCA_REMOTE_LLM_API_KEY)'}"
+    task = {"role": "user", "content": prompts.VIGILANCIA_TASK.format(farmaco=args.farmaco)}
+
+    agent._native_now = False
+    text, _ = llm.generate(
+        [{"role": "system", "content": agent.system_prompt(40)}, task],
+        max_new_tokens=1024,
+        enable_thinking=args.thinking,
+        extra_body={"logprobs": True, "skip_special_tokens": False},
     )
-    text, generated = llm.generate(messages, max_new_tokens=1024, enable_thinking=args.thinking)
+    show("2. Primer paso del agente, modo texto", llm, text)
 
-    choice = llm.last_response["choices"][0]
-    message = choice["message"]
-    print("\n== respuesta del servidor (campos del mensaje) ==")
-    for key, value in message.items():
-        if value in (None, "", []):
-            print(f"{key}: (vacío)")
-        else:
-            shown = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
-            print(f"{key}: {shown[:1500]}")
-    print(f"\nfinish_reason: {choice.get('finish_reason')}")
-    print(f"usage: {llm.last_response.get('usage')}")
-
-    parsed = parse_tool_calls(text)
-    print("\n== lo que recibe el agente ==")
-    print(text[:2000] or "(texto vacío)")
-    print(f"\nllamadas a herramientas detectadas: {[c.name for c in parsed.tool_calls]}")
+    agent._native_now = True
+    text, _ = llm.generate(
+        [{"role": "system", "content": agent.system_prompt(40)}, task],
+        max_new_tokens=1024,
+        enable_thinking=args.thinking,
+        tools=agent.registry.definitions(),
+    )
+    show("3. Primer paso del agente, modo nativo (el que usa el agente)", llm, text)
 
 
 if __name__ == "__main__":

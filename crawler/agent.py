@@ -51,16 +51,47 @@ class CrawlerAgent(ReActAgent):
     max_observation_chars: int = 8000
     token_budget: int = 24000  # the 27B has 65k tokens of context
     brains: dict[str, Brain] = field(default_factory=dict)
+    # Native tool calling with remote brains (ARCA_REMOTE_NATIVE_TOOLS=0 to turn it off): the
+    # course's server drops <tool_call> text when the request does not declare the tools.
+    native_tools: bool = field(
+        default_factory=lambda: os.environ.get("ARCA_REMOTE_NATIVE_TOOLS", "1") != "0"
+    )
+    _native_now: bool = False
 
     def brain_for(self, name: str) -> Brain:
         if name not in self.brains:
             self.brains[name] = make_brain(name)
         return self.brains[name]
 
+    def uses_native_tools(self, brain: Brain) -> bool:
+        from common.llm import RemoteChatModel
+
+        return self.native_tools and isinstance(brain.llm, RemoteChatModel)
+
+    def run(self, task: str, max_steps: int = 10, brain: str = "27b", **kwargs):
+        # The system prompt depends on how the brain writes actions; decide before the loop.
+        self._native_now = self.uses_native_tools(self.brain_for(brain))
+        return super().run(task, max_steps=max_steps, brain=brain, **kwargs)
+
     def system_prompt(self, max_steps: int) -> str:
+        if self._native_now:  # the definitions travel in the request: names are enough here
+            action, tools = prompts.NATIVE_ACTION_FORMAT, ", ".join(self.registry.tools)
+        else:
+            action, tools = prompts.TEXT_ACTION_FORMAT, self.registry.render_for_prompt()
         return prompts.SYSTEM_PROMPTS[self.mode].format(
-            max_steps=max_steps, tools_description=self.registry.render_for_prompt()
+            max_steps=max_steps, tools_description=tools, action_format=action
         )
+
+    def generate(self, messages: list[dict], brain: Brain) -> tuple[str, int]:
+        if not self.uses_native_tools(brain):
+            return super().generate(messages, brain)
+        raw, generated = brain.llm.generate(
+            messages,
+            max_new_tokens=2048 if brain.thinking else 768,
+            enable_thinking=brain.thinking,
+            tools=self.registry.definitions(),
+        )
+        return raw, brain.llm.last_prompt_tokens + generated
 
     def format_result(self, result) -> str:
         return result if isinstance(result, str) else super().format_result(result)

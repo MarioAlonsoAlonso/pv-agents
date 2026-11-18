@@ -207,19 +207,57 @@ class RemoteChatModel:
         return f"{self.model_id} (remoto)"
 
     @staticmethod
-    def to_openai_messages(messages: list[dict[str, Any]]) -> list[dict[str, str]]:
-        """Harness messages -> OpenAI chat messages (only ``role`` and ``content``)."""
-        out: list[dict[str, str]] = []
+    def to_openai_messages(
+        messages: list[dict[str, Any]], native_tools: bool = False
+    ) -> list[dict[str, Any]]:
+        """Harness messages -> OpenAI chat messages.
+
+        Text mode (default): tool results become user messages in ``<tool_response>`` tags,
+        and the model's ``<tool_call>`` blocks stay in the assistant text.
+
+        Native mode (``native_tools``, when the request declares ``tools``): the assistant's
+        ``<tool_call>`` blocks become structured ``tool_calls`` with ids, and each tool result
+        a ``role="tool"`` message answering that id, as the OpenAI schema and the server's chat
+        template expect.
+        """
+        import json
+
+        from tool_use.parser import parse_tool_calls
+
+        out: list[dict[str, Any]] = []
+        pending: list[str] = []
+        n_calls = 0
         for m in messages:
-            if m["role"] == "tool":
+            role, content = m["role"], m["content"]
+            if native_tools and role == "assistant":
+                parsed = parse_tool_calls(content)
+                calls = [c for c in parsed.tool_calls if c.error is None]
+                entry: dict[str, Any] = {"role": "assistant", "content": parsed.text or None}
+                if calls:
+                    entry["tool_calls"] = []
+                    for call in calls:
+                        n_calls += 1
+                        call_id = f"call_{n_calls}"
+                        pending.append(call_id)
+                        entry["tool_calls"].append(
+                            {
+                                "id": call_id,
+                                "type": "function",
+                                "function": {
+                                    "name": call.name,
+                                    "arguments": json.dumps(call.arguments, ensure_ascii=False),
+                                },
+                            }
+                        )
+                out.append(entry)
+            elif role == "tool" and native_tools and pending:
+                out.append({"role": "tool", "tool_call_id": pending.pop(0), "content": content})
+            elif role == "tool":
                 out.append(
-                    {
-                        "role": "user",
-                        "content": f"<tool_response>\n{m['content']}\n</tool_response>",
-                    }
+                    {"role": "user", "content": f"<tool_response>\n{content}\n</tool_response>"}
                 )
             else:
-                out.append({"role": m["role"], "content": m["content"]})
+                out.append({"role": role, "content": content})
         return out
 
     @staticmethod
@@ -278,19 +316,27 @@ class RemoteChatModel:
         enable_thinking: bool = False,
         tools: list[dict] | None = None,
         stop: list[str] | None = None,
+        extra_body: dict[str, Any] | None = None,
     ) -> tuple[str, int]:
-        """One completion. Returns ``(raw text, generated tokens)`` like ``ChatModel``."""
+        """One completion. Returns ``(raw text, generated tokens)`` like ``ChatModel``.
+
+        With ``tools`` (OpenAI function definitions) the request uses the server's native
+        tool calling: the calls come back in ``tool_calls`` and ``message_text`` turns them
+        into ``<tool_call>`` blocks, so the harness does not notice the difference.
+        """
         import time
 
         import httpx
 
         payload: dict[str, Any] = {
             "model": self.model_id,
-            "messages": self.to_openai_messages(messages),
+            "messages": self.to_openai_messages(messages, native_tools=tools is not None),
             "max_tokens": max_new_tokens,
             "temperature": temperature,
             "chat_template_kwargs": {"enable_thinking": enable_thinking},
         }
+        if tools is not None:
+            payload["tools"] = tools
         if temperature == 0:
             # No explicit temperature: the model card's recommended sampling for each mode
             # (huggingface.co/Qwen/Qwen3.8-27B-FP8); greedy decoding makes Qwen loop.
@@ -307,6 +353,7 @@ class RemoteChatModel:
             )
         if stop:
             payload["stop"] = stop
+        payload.update(extra_body or {})
         headers = {"Authorization": f"Bearer {self.api_key}"}
         last_error: Exception | None = None
         for attempt in range(self.retries + 1):
