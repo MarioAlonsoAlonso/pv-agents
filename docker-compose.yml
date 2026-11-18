@@ -12,7 +12,7 @@
 
 x-arca: &arca
   build: .
-  image: dgm-arca:latest
+  image: pv-agents:latest
   working_dir: /app
   volumes:
     # El código se monta en caliente: editas fuera, se ejecuta dentro.

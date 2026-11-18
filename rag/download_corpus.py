@@ -52,7 +52,7 @@ GUIDELINES = {
     "gvp_annex_i_definitions.pdf": "https://www.ema.europa.eu/system/files/documents/"
     "scientific-guideline/13-gvp-annex-i-definitions-rev-5-final-published_en_0_0.pdf",
 }
-HEADERS = {"User-Agent": "dgm-arca corpus builder (academic project)"}
+HEADERS = {"User-Agent": "pv-agents corpus builder (academic project)"}
 
 
 def dataset_drugs() -> list[str]:

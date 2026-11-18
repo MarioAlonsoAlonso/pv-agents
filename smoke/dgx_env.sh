@@ -8,7 +8,18 @@
 # uv ahí mismo si no está. Sin esto, uv y los modelos descargados pueden desaparecer con la
 # sesión y volveréis a descargar varios gigas cada vez.
 
-WORK_DIR="${ARCA_WORK_DIR:-$HOME/clusters/dgx}"
+# Carpeta del repositorio (la de este script, un nivel arriba), para leer su .env.
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Carpeta de trabajo: ARCA_WORK_DIR si se da; si no, ~/clusters/dgx si existe; si no, $HOME
+# (en algunas cuentas de la DGX el espacio persistente es directamente la carpeta personal).
+if [ -n "$ARCA_WORK_DIR" ]; then
+    WORK_DIR="$ARCA_WORK_DIR"
+elif [ -d "$HOME/clusters/dgx" ]; then
+    WORK_DIR="$HOME/clusters/dgx"
+else
+    WORK_DIR="$HOME"
+fi
 
 if [ ! -d "$WORK_DIR" ]; then
     echo "No encuentro $WORK_DIR. ¿Estás en la DGX? Si tu carpeta de trabajo es otra,"
@@ -32,8 +43,8 @@ if ! command -v uv >/dev/null 2>&1; then
     curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="$UV_INSTALL_DIR" UV_NO_MODIFY_PATH=1 sh
 fi
 
-if [ -f "$WORK_DIR/dgm-arca/.env" ]; then
-    set -a; . "$WORK_DIR/dgm-arca/.env"; set +a
+if [ -f "$REPO_DIR/.env" ]; then
+    set -a; . "$REPO_DIR/.env"; set +a
 fi
 
 echo "uv:        $(uv --version 2>/dev/null || echo 'no disponible')"

@@ -1,4 +1,11 @@
-# ARCA · Agente de farmacovigilancia
+# pv-agents · Sistema multiagente de farmacovigilancia
+
+> Proyecto final de Modelos Generativos Profundos (MGP). Parte del agente ARCA (repositorio
+> `dgm-arca`, práctica del cuatrimestre), cuyo contenido se conserva aquí tal cual, y añade los
+> agentes del sistema multiagente. Primero: el rastreador de menciones en Bluesky
+> ([`crawler/`](crawler/README.md)).
+
+## Punto de partida: ARCA · Agente de farmacovigilancia
 
 **Un agente que codifica notificaciones de reacciones adversas en MedDRA, consulta fichas técnicas
 y datos de FAERS, calcula señales de desproporcionalidad y prepara el ICSR, con un humano que

@@ -520,7 +520,7 @@ def create_icsr_report(
         raise ValueError("an ICSR needs a suspect drug")
 
     report = {
-        "schema": "simplified-E2B (dgm-arca)",
+        "schema": "simplified-E2B (pv-agents)",
         "created": datetime.now().isoformat(timespec="seconds"),
         "receipt_date": date.today().isoformat(),
         "reporter": {"qualification": reporter_type},

@@ -654,86 +654,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dgm-arca"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "rich" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-agent = [
-    { name = "gradio" },
-    { name = "requests" },
-    { name = "smolagents" },
-]
-crawler = [
-    { name = "atproto" },
-]
-rag = [
-    { name = "chromadb" },
-    { name = "langchain-text-splitters" },
-    { name = "pypdf" },
-    { name = "rank-bm25" },
-    { name = "sentence-transformers" },
-]
-train = [
-    { name = "accelerate" },
-    { name = "datasets" },
-    { name = "matplotlib" },
-    { name = "peft" },
-    { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "torch", version = "2.14.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
-    { name = "transformers" },
-    { name = "trl" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "accelerate", marker = "extra == 'train'", specifier = ">=1.5" },
-    { name = "atproto", marker = "extra == 'crawler'", specifier = ">=0.0.75" },
-    { name = "chromadb", marker = "extra == 'rag'", specifier = ">=1.0" },
-    { name = "datasets", marker = "extra == 'train'", specifier = ">=3.0" },
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "gradio", marker = "extra == 'agent'", specifier = ">=5.49" },
-    { name = "httpx", specifier = ">=0.28" },
-    { name = "langchain-text-splitters", marker = "extra == 'rag'", specifier = ">=0.3" },
-    { name = "matplotlib", marker = "extra == 'train'", specifier = ">=3.9" },
-    { name = "peft", marker = "extra == 'train'", specifier = ">=0.18" },
-    { name = "pydantic", specifier = ">=2.11" },
-    { name = "pypdf", marker = "extra == 'rag'", specifier = ">=5.0" },
-    { name = "python-dotenv", specifier = ">=1.1" },
-    { name = "rank-bm25", marker = "extra == 'rag'", specifier = ">=0.2.2" },
-    { name = "requests", marker = "extra == 'agent'", specifier = ">=2.32" },
-    { name = "rich", specifier = ">=13.9" },
-    { name = "sentence-transformers", marker = "extra == 'rag'", specifier = ">=5.0" },
-    { name = "smolagents", marker = "extra == 'agent'", specifier = ">=1.26" },
-    { name = "torch", marker = "(sys_platform == 'linux' and extra == 'train') or (sys_platform == 'win32' and extra == 'train')", specifier = ">=2.8,<2.15", index = "https://download.pytorch.org/whl/cu128" },
-    { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'train'", specifier = ">=2.8,<2.15" },
-    { name = "transformers", marker = "extra == 'train'", specifier = ">=5.0,<6" },
-    { name = "trl", marker = "extra == 'train'", specifier = ">=1.13,<2" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
-]
-provides-extras = ["train", "rag", "agent", "crawler"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.3" },
-    { name = "ruff", specifier = ">=0.11" },
-]
-
-[[package]]
 name = "dill"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2182,6 +2102,86 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/04/78/0acd37ca84ce3ddffaa92ef0f571e073faa6d8ff1f0559ab1272188ea2be/psutil-7.2.2-cp36-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:b58fabe35e80b264a4e3bb23e6b96f9e45a3df7fb7eed419ac0e5947c61e47cc", size = 148266, upload-time = "2026-01-28T18:15:31.597Z" },
     { url = "https://files.pythonhosted.org/packages/b4/90/e2159492b5426be0c1fef7acba807a03511f97c5f86b3caeda6ad92351a7/psutil-7.2.2-cp37-abi3-win_amd64.whl", hash = "sha256:eb7e81434c8d223ec4a219b5fc1c47d0417b12be7ea866e24fb5ad6e84b3d988", size = 137737, upload-time = "2026-01-28T18:15:33.849Z" },
     { url = "https://files.pythonhosted.org/packages/8c/c7/7bb2e321574b10df20cbde462a94e2b71d05f9bbda251ef27d104668306a/psutil-7.2.2-cp37-abi3-win_arm64.whl", hash = "sha256:8c233660f575a5a89e6d4cb65d9f938126312bca76d8fe087b947b3a1aaac9ee", size = 134617, upload-time = "2026-01-28T18:15:36.514Z" },
+]
+
+[[package]]
+name = "pv-agents"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "rich" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+agent = [
+    { name = "gradio" },
+    { name = "requests" },
+    { name = "smolagents" },
+]
+crawler = [
+    { name = "atproto" },
+]
+rag = [
+    { name = "chromadb" },
+    { name = "langchain-text-splitters" },
+    { name = "pypdf" },
+    { name = "rank-bm25" },
+    { name = "sentence-transformers" },
+]
+train = [
+    { name = "accelerate" },
+    { name = "datasets" },
+    { name = "matplotlib" },
+    { name = "peft" },
+    { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "torch", version = "2.14.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
+    { name = "transformers" },
+    { name = "trl" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "accelerate", marker = "extra == 'train'", specifier = ">=1.5" },
+    { name = "atproto", marker = "extra == 'crawler'", specifier = ">=0.0.75" },
+    { name = "chromadb", marker = "extra == 'rag'", specifier = ">=1.0" },
+    { name = "datasets", marker = "extra == 'train'", specifier = ">=3.0" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "gradio", marker = "extra == 'agent'", specifier = ">=5.49" },
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "langchain-text-splitters", marker = "extra == 'rag'", specifier = ">=0.3" },
+    { name = "matplotlib", marker = "extra == 'train'", specifier = ">=3.9" },
+    { name = "peft", marker = "extra == 'train'", specifier = ">=0.18" },
+    { name = "pydantic", specifier = ">=2.11" },
+    { name = "pypdf", marker = "extra == 'rag'", specifier = ">=5.0" },
+    { name = "python-dotenv", specifier = ">=1.1" },
+    { name = "rank-bm25", marker = "extra == 'rag'", specifier = ">=0.2.2" },
+    { name = "requests", marker = "extra == 'agent'", specifier = ">=2.32" },
+    { name = "rich", specifier = ">=13.9" },
+    { name = "sentence-transformers", marker = "extra == 'rag'", specifier = ">=5.0" },
+    { name = "smolagents", marker = "extra == 'agent'", specifier = ">=1.26" },
+    { name = "torch", marker = "(sys_platform == 'linux' and extra == 'train') or (sys_platform == 'win32' and extra == 'train')", specifier = ">=2.8,<2.15", index = "https://download.pytorch.org/whl/cu128" },
+    { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'train'", specifier = ">=2.8,<2.15" },
+    { name = "transformers", marker = "extra == 'train'", specifier = ">=5.0,<6" },
+    { name = "trl", marker = "extra == 'train'", specifier = ">=1.13,<2" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
+]
+provides-extras = ["train", "rag", "agent", "crawler"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "ruff", specifier = ">=0.11" },
 ]
 
 [[package]]

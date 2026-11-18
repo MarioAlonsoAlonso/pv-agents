@@ -87,7 +87,7 @@ def root():
 def health():
     """Which phases are ready. The grader calls this first."""
     return HealthResponse(
-        project="dgm-arca",
+        project="pv-agents",
         team=env("ARCA_TEAM"),
         domain=env("ARCA_DOMAIN"),
         phases=backends.status(),

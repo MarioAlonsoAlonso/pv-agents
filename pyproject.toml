@@ -1,5 +1,5 @@
 [project]
-name = "dgm-arca"
+name = "pv-agents"
 version = "0.1.0"
 description = "ARCA: Agente con Razonamiento, Conocimiento y Acción. Práctica final de Modelos Generativos Profundos (MIA, ICAI)."
 readme = "README.md"
