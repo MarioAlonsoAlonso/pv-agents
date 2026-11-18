@@ -375,3 +375,29 @@ def test_errors_list_missed_and_extra_posts(source):
     assert out["perdidos"] == []
     fija = errors([run_system("fija", source, "sertralina", BRANDS, "2025-01-01")], GOLD, source)
     assert fija["perdidos"][0]["post_id"] == "a2" and fija["perdidos"][0]["responde_a"]
+
+
+def test_remote_message_with_tool_calls_and_reasoning_fields():
+    """vLLM with tool/reasoning parsers moves the calls and the reasoning out of content."""
+    from tool_use.parser import parse_tool_calls
+
+    message = {
+        "content": None,
+        "reasoning": "busco primero las marcas",
+        "tool_calls": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "nombres_comerciales",
+                    "arguments": '{"farmaco": "sertralina"}',
+                },
+            }
+        ],
+    }
+    text = RemoteChatModel.message_text(message)
+    parsed = parse_tool_calls(text)
+    assert parsed.thinking == "busco primero las marcas"
+    assert [(c.name, c.arguments) for c in parsed.tool_calls] == [
+        ("nombres_comerciales", {"farmaco": "sertralina"})
+    ]
+    assert RemoteChatModel.message_text({"content": "hola"}) == "hola"

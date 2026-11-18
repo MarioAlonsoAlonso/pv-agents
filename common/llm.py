@@ -195,6 +195,7 @@ class RemoteChatModel:
         self.api_key = api_key or os.environ.get("ARCA_REMOTE_LLM_API_KEY", "EMPTY")
         self.timeout, self.retries, self.transport = timeout, retries, transport
         self.last_prompt_tokens = 0
+        self.last_response: dict | None = None
         self.tokenizer = None
         if RemoteChatModel._semaphore is None:
             RemoteChatModel._semaphore = threading.Semaphore(
@@ -220,6 +221,38 @@ class RemoteChatModel:
             else:
                 out.append({"role": m["role"], "content": m["content"]})
         return out
+
+    @staticmethod
+    def message_text(message: dict[str, Any]) -> str:
+        """The completion as the harness expects it: ``<think>…</think>`` + text +
+        ``<tool_call>…</tool_call>`` blocks.
+
+        A vLLM server started with a reasoning parser returns the reasoning apart
+        (``reasoning_content`` or ``reasoning``), and one started with a tool-call parser
+        moves the calls Qwen writes into ``tool_calls`` and leaves ``content`` empty. Both are
+        put back into the text so the same parser reads local and remote models.
+        """
+        import json
+
+        content = message.get("content") or ""
+        if isinstance(content, list):  # content parts
+            content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
+        reasoning = message.get("reasoning_content") or message.get("reasoning")
+        calls = []
+        for call in message.get("tool_calls") or []:
+            function = call.get("function") or {}
+            arguments = function.get("arguments") or {}
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except json.JSONDecodeError:
+                    pass
+            body = json.dumps(
+                {"name": function.get("name"), "arguments": arguments}, ensure_ascii=False
+            )
+            calls.append(f"<tool_call>\n{body}\n</tool_call>")
+        text = "\n".join(part for part in (content.strip(), *calls) if part)
+        return f"<think>\n{reasoning}\n</think>\n\n{text}" if reasoning else text
 
     def count_tokens(self, text: str) -> int:
         """Approximate count for the memory budget: the Qwen3 tokenizer if it is available
@@ -302,10 +335,8 @@ class RemoteChatModel:
                 time.sleep(2**attempt)
         else:  # pragma: no cover - the loop always breaks or raises
             raise RuntimeError(f"remote LLM unavailable: {last_error}")
-        message = data["choices"][0]["message"]
-        content = message.get("content") or ""
-        reasoning = message.get("reasoning_content") or message.get("reasoning")
-        text = f"<think>\n{reasoning}\n</think>\n\n{content}" if reasoning else content
+        self.last_response = data  # raw answer, for debugging (scripts/check_remote_llm.py)
+        text = self.message_text(data["choices"][0]["message"])
         usage = data.get("usage") or {}
         self.last_prompt_tokens = int(usage.get("prompt_tokens", 0))
         return text, int(usage.get("completion_tokens", 0))
