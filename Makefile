@@ -116,8 +116,8 @@ crawler-lote: ## Rastreador: hilos a anotar (lote.csv) y muestra para la doble a
 crawler-prenotar: ## Rastreador: pre-anotación del lote con el 27B (DGX)
 	$(UV) run python -m crawler.annotate prenotar --brain $(CRAWLER_BRAIN)
 
-crawler-gold: ## Rastreador: lote anotado → data/bluesky/anotacion/gold.jsonl
-	$(UV) run python -m crawler.annotate consolidar data/bluesky/anotacion/lote.csv
+crawler-gold: ## Rastreador: lote anotado → <datos>/anotacion/gold.jsonl
+	$(UV) run python -m crawler.annotate consolidar $(or $(ARCA_CRAWLER_DATA),data/bluesky)/anotacion/lote.csv
 
 crawler-eval: ## Rastreador: fija, fija+hilos, híbrido y agente sobre la muestra (DGX)
 	$(UV) run python -m crawler.evaluate --systems fija fija_hilos

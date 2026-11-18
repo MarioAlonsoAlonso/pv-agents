@@ -100,6 +100,19 @@ El servidor del 27B escucha en `127.0.0.1:8000` y solo es accesible desde una se
 DGX; es compartido (5 peticiones simultáneas en total, ~50 tokens/s), así que la evaluación
 del agente puede tardar. `ARCA_REMOTE_LLM_CONCURRENCY` (2 por defecto) limita cuántas lanzamos.
 
+Probar el agente a mano y leer su traza (se guarda en `data/bluesky/demo/`):
+
+```bash
+uv run --extra crawler python -m crawler.demo vigilar sertralina --dias 7          # agente solo, en vivo
+uv run --extra crawler python -m crawler.demo hilos lorazepam --dias 14             # híbrido, en vivo
+uv run --extra crawler python -m crawler.demo investigar sertralina "¿caídas en ancianos?"
+uv run python -m crawler.demo vigilar sertralina --muestra data/bluesky/sample.jsonl  # sobre la muestra
+```
+
+Tras `crawler.evaluate`, en `data/bluesky/eval/` quedan, por sistema, las menciones, las
+**trazas** del agente y `*_errores.json`: las menciones anotadas que se perdió (`perdidos`) y
+lo que envió sin que hablara del fármaco (`sobrantes`), con el texto, para el análisis de fallos.
+
 Modo dirigido, desde Python:
 
 ```python

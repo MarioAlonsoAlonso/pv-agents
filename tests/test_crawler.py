@@ -360,3 +360,14 @@ def test_parse_pubmed_xml():
         "año": "2024",
         "resumen": "Older adults fell.",
     }
+
+
+def test_errors_list_missed_and_extra_posts(source):
+    from crawler.evaluate import errors
+
+    result = run_system("fija_hilos", source, "sertralina", BRANDS, "2025-01-01")
+    out = errors([result], GOLD, source)
+    assert [e["post_id"] for e in out["sobrantes"]] == ["a3"]  # a3 is in the thread, not about it
+    assert out["perdidos"] == []
+    fija = errors([run_system("fija", source, "sertralina", BRANDS, "2025-01-01")], GOLD, source)
+    assert fija["perdidos"][0]["post_id"] == "a2" and fija["perdidos"][0]["responde_a"]

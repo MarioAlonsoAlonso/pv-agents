@@ -36,6 +36,7 @@ class SystemResult:
     seconds: float = 0.0
     new_terms: list[dict] = field(default_factory=list)
     stop_reasons: list[str] = field(default_factory=list)
+    traces: list[dict] = field(default_factory=list)  # agent runs (AgentResponse as dicts)
 
 
 def search_terms(drug: str, brands: dict[str, list[str]], extra: list[str] = ()) -> list[tuple]:
@@ -105,6 +106,7 @@ def run_system(
         result.tokens, result.steps = s["tokens"], s["steps"]
         result.searches, result.threads_read = s["searches"], s["threads_read"]
         result.new_terms, result.stop_reasons = s["new_terms"], [s["stop_reason"]]
+        result.traces.append(run.response.model_dump())
     else:
         hits, n_searches = fixed_search(source, store, drug, brands, since, until)
         result.searches = n_searches
@@ -129,6 +131,7 @@ def run_system(
                 result.threads_read += s["threads_read"]
                 result.new_terms += s["new_terms"]
                 result.stop_reasons.append(s["stop_reason"])
+                result.traces.append(run.response.model_dump())
         elif system != "fija":
             raise ValueError(f"unknown system {system!r}; use one of {SYSTEMS}")
     result.seconds = time.perf_counter() - started

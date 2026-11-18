@@ -86,6 +86,33 @@ def score(results: list[SystemResult], gold: dict[str, dict]) -> dict:
     }
 
 
+def errors(results: list[SystemResult], gold: dict[str, dict], source) -> dict:
+    """What each system got wrong, with the text, for failure analysis: annotated mentions
+    it missed (``perdidos``) and annotated posts it sent that are not about the drug
+    (``sobrantes``). Contains post texts: it goes to ``data/``, never to ``reports/``."""
+
+    def row(pid: str, extra: dict) -> dict:
+        post = source.get(pid)
+        parent = source.get(post.parent_id) if post and post.parent_id else None
+        return {
+            "post_id": pid,
+            "hilo": post.thread_id if post else None,
+            "texto": post.text if post else None,
+            "responde_a": parent.text if parent else None,
+            **extra,
+        }
+
+    out = {"perdidos": [], "sobrantes": []}
+    for r in results:
+        collected = r.store.post_ids(r.drug)
+        for pid, g in gold.items():
+            if g["farmaco"] == r.drug and pid not in collected:
+                out["perdidos"].append(row(pid, {"farmaco": r.drug, "tipo": g["tipo_mencion"]}))
+            elif pid in collected and g["farmaco"] != r.drug:
+                out["sobrantes"].append(row(pid, {"farmaco_buscado": r.drug, "gold": g["farmaco"]}))
+    return out
+
+
 def fmt(x) -> str:
     return "-" if x is None else f"{x:.2f}"
 
@@ -144,10 +171,19 @@ def main(argv: list[str] | None = None) -> None:
             )
             results.append(r)
             print(f"  {system} · {drug}: {len(r.store)} menciones, {r.tokens} tokens")
-            r.store.save(
-                DATA_DIR / "eval" / f"{system}_{args.brain}.jsonl", append=drug != args.farmacos[0]
-            )
         key = system if system in ("fija", "fija_hilos") else f"{system}·{args.brain}"
+        name = key.replace("·", "_")
+        out_dir = DATA_DIR / "eval"
+        for i, r in enumerate(results):
+            r.store.save(out_dir / f"{name}_menciones.jsonl", append=i > 0)
+        (out_dir / f"{name}_errores.json").write_text(
+            json.dumps(errors(results, gold, source), ensure_ascii=False, indent=1), "utf-8"
+        )
+        traces = [t for r in results for t in r.traces]
+        if traces:
+            with open(out_dir / f"{name}_trazas.jsonl", "w", encoding="utf-8") as f:
+                for t in traces:
+                    f.write(json.dumps(t, ensure_ascii=False) + "\n")
         report["sistemas"][key] = score(results, gold)
         if system == "hibrido":
             report["sistemas"][key]["coste_solo_hilos_anotados"] = annotated_threads is not None
@@ -168,6 +204,7 @@ def main(argv: list[str] | None = None) -> None:
             f"{s['enviados_al_triaje']:>7} {s['tokens']:>8}"
         )
     print(f"→ {args.out}")
+    print(f"→ menciones, errores y trazas de cada sistema en {DATA_DIR / 'eval'}")
 
 
 if __name__ == "__main__":
