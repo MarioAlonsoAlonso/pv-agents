@@ -172,7 +172,8 @@ rlm/        fase 1: dataset MedDRA, verificador, destilación, SFT, GRPO, evalua
 tool_use/   fase 2: registro de herramientas, parser, bucle de tool use, banco de 30 casos
 rag/        fase 3: descarga del corpus, troceado, embeddings, retrievers, generación con citas
 agent/      fase 4: bucle ReAct, agente de código, memoria, banco de 20 tareas, visor de trazas
-common/     el modelo de chat compartido por las fases 2, 3 y 4
+crawler/    proyecto final: rastreador de menciones en Bluesky (crawler/README.md)
+common/     el modelo de chat compartido (local) y el cliente del 27B de la DGX (remoto)
 api/        FastAPI: /health, /reasoning, /tools, /rag, /agent (contratos en api/schemas.py)
 docs/guia/  guía del proyecto: una por fase, API e infraestructura, glosario
 reports/    resultados de todas las evaluaciones (JSON y PNG)

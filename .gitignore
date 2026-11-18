@@ -21,6 +21,10 @@ wandb/
 .cache/
 hf_cache/
 
+# Rastreador: posts de Bluesky (datos de salud de personas; el repositorio es público).
+# Solo la raíz: crawler/data/marcas.json (datos públicos de CIMA) sí se versiona.
+/data/
+
 # Resultados y gráficas grandes
 reports/*.png
 reports/*.csv

@@ -146,6 +146,8 @@ class ReActAgent:
     token_budget: int = 6000
     brains: dict[str, Brain] = field(default_factory=dict)
     sessions: dict[str, ConversationMemory] = field(default_factory=dict)
+    # Subclasses with other tools (crawler/agent.py) need longer observations, e.g. a thread.
+    max_observation_chars: int = MAX_OBSERVATION_CHARS
 
     @classmethod
     def from_env(cls) -> ReActAgent:
@@ -350,11 +352,11 @@ class ReActAgent:
                 "confirmation. It has been queued for review; tell the user it is pending."
             )
         record = self.execute(name, arguments)
-        text = (
-            json.dumps(record.result, ensure_ascii=False, default=str)
-            if record.ok
-            else f"error: {record.error}"
-        )
-        if len(text) > MAX_OBSERVATION_CHARS:
-            text = text[:MAX_OBSERVATION_CHARS] + f"… [truncated, {len(text)} chars]"
+        text = self.format_result(record.result) if record.ok else f"error: {record.error}"
+        if len(text) > self.max_observation_chars:
+            text = text[: self.max_observation_chars] + f"… [truncated, {len(text)} chars]"
         return text
+
+    def format_result(self, result) -> str:
+        """How a tool result becomes observation text (JSON; subclasses may keep plain text)."""
+        return json.dumps(result, ensure_ascii=False, default=str)

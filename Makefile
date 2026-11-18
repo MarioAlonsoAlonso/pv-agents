@@ -6,8 +6,8 @@ UV ?= uv
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Instala todo en .venv con uv (fase 1 + RAG + agente + dev)
-	$(UV) sync --extra train --extra rag --extra agent
+setup: ## Instala todo en .venv con uv (fase 1 + RAG + agente + rastreador + dev)
+	$(UV) sync --extra train --extra rag --extra agent --extra crawler
 
 setup-min: ## Instala solo lo necesario para la API y los tests
 	$(UV) sync
@@ -102,6 +102,30 @@ agent-eval: ## Fase 4: los tres cerebros ReAct y el agente de código sobre las 
 		$(UV) run python -u -m agent.evaluate --brains $$b --out reports/phase4_eval_1.7b.json; \
 	done
 
+# Rastreador de Bluesky (proyecto final). Detalle en crawler/README.md
+CRAWLER_BRAIN ?= 27b
+crawler-marcas: ## Rastreador: marcas comerciales de cada fármaco desde CIMA
+	$(UV) run python -m crawler.cima --refresh
+
+crawler-muestra: ## Rastreador: muestra congelada de Bluesky (reanudable; sin GPU)
+	$(UV) run --extra crawler python -m crawler.collect
+
+crawler-lote: ## Rastreador: hilos a anotar (lote.csv) y muestra para la doble anotación ciega
+	$(UV) run python -m crawler.annotate seleccionar
+
+crawler-prenotar: ## Rastreador: pre-anotación del lote con el 27B (DGX)
+	$(UV) run python -m crawler.annotate prenotar --brain $(CRAWLER_BRAIN)
+
+crawler-gold: ## Rastreador: lote anotado → data/bluesky/anotacion/gold.jsonl
+	$(UV) run python -m crawler.annotate consolidar data/bluesky/anotacion/lote.csv
+
+crawler-eval: ## Rastreador: fija, fija+hilos, híbrido y agente sobre la muestra (DGX)
+	$(UV) run python -m crawler.evaluate --systems fija fija_hilos
+	$(UV) run python -m crawler.evaluate --systems hibrido agente --brain $(CRAWLER_BRAIN)
+
+crawler-vigilar: ## Rastreador: una ejecución del vigilante periódico (añade --bucle para repetir)
+	$(UV) run --extra crawler python -m crawler.monitor --brain $(CRAWLER_BRAIN)
+
 api: ## Levanta la API en local con recarga automática
 	$(UV) run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
 
@@ -126,4 +150,4 @@ docker-api: ## API dentro del contenedor
 shell: ## Shell interactiva con GPU dentro del contenedor
 	docker compose run --rm train
 
-.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rag-corpus rag-gold rag-eval rag-eval-gen rag-test api enunciado build docker-check-gpu docker-smoke docker-api shell
+.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar api enunciado build docker-check-gpu docker-smoke docker-api shell
