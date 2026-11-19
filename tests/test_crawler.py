@@ -495,3 +495,15 @@ def test_hybrid_sends_back_the_threads_the_agent_did_not_read(source):
         crawler_agent.run = original
     assert len(runs) == 2
     assert "[c1]" in calls[1] and "[a1]" not in calls[1]  # only the unread thread goes back
+
+
+def test_a_long_save_list_is_saved_whole():
+    many = [_p(f"q{i:03d}", f"sertralina {i}", "2025-02-01") for i in range(40)]
+    ctx = CrawlerContext(
+        source=FrozenSource(many), store=MentionStore(), brands=BRANDS, drugs=("sertralina",)
+    )
+    ctx.shown.update({p.id: p for p in many})
+    reg = make_registry(ctx, "vigilancia")
+    ids = "; ".join(f"q{i:03d} nombre" for i in range(40))
+    result = reg.call("guardar_menciones", {"farmaco": "sertralina", "menciones": ids}).result
+    assert result.startswith("40 saved of 40") and len(ctx.store) == 40  # nothing cut silently

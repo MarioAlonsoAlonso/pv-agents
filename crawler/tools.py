@@ -31,7 +31,7 @@ from crawler.text import fold
 from tool_use.registry import ToolRegistry, tool
 
 POSTS_PER_PART = 25
-MAX_SAVE_BATCH = 30  # posts per guardar_menciones call
+
 SEARCH_PAGE = 20  # posts per search page: 20 snippets fit in one observation
 SNIPPET_CHARS = 280
 
@@ -232,7 +232,7 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
         drug = ctx.drug_name(farmaco)
         if drug is None:
             raise RuntimeError(f"'{farmaco}' is not a drug of this task: {list(ctx.drugs)}")
-        items = parse_mentions(menciones)[:MAX_SAVE_BATCH]
+        items = parse_mentions(menciones)  # all of them: no silent cut (2026-11-19, v3)
         if not items:
             raise RuntimeError(
                 "no post ids found in 'menciones'. Write 'post_id type' pairs separated by ';', "

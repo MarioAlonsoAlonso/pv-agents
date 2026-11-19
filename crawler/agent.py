@@ -87,7 +87,9 @@ class CrawlerAgent(ReActAgent):
             return super().generate(messages, brain)
         raw, generated = brain.llm.generate(
             messages,
-            max_new_tokens=2048 if brain.thinking else 768,
+            # Room for a long list of ids plus the reasoning: with 768 the answer was cut
+            # before the tool call and the run ended without saving (2026-11-19, v3).
+            max_new_tokens=4096 if brain.thinking else 2048,
             enable_thinking=brain.thinking,
             tools=self.registry.definitions(),
         )

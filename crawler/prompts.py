@@ -61,8 +61,9 @@ Cómo trabajar:
    coloquiales o abreviadas; si descubres una nueva en los posts, búscala y propónla con
    `proponer_termino`.
 3. Guarda con `guardar_menciones`, en UNA sola llamada por página de resultados o por hilo,
-   todos los posts que hablen del fármaco. No los guardes de uno en uno: cada llamada gasta un
-   paso.
+   todos los posts que hablen del fármaco. Guarda EN CUANTO termines de mirar cada página o
+   cada hilo, antes de buscar o leer lo siguiente: no acumules posts para guardarlos al final.
+   No los guardes de uno en uno: cada llamada gasta un paso.
 4. Abre con `leer_hilo` los hilos con respuestas: ahí están las menciones indirectas. No
    abras hilos que por el fragmento no traten del fármaco.
 5. Termina cuando las búsquedas dejen de traer posts nuevos o se agote el presupuesto. En
@@ -82,9 +83,10 @@ lo que esa búsqueda no puede ver.
     + """
 Cómo trabajar:
 1. Lee cada hilo de la tarea con `leer_hilo` (si es largo, también sus otras partes).
-2. Guarda con `guardar_menciones`, en una sola llamada por hilo, las respuestas que hablan
-   del fármaco sin nombrarlo (indirecta, jerga) o nombrándolo mal (errata). Los posts que ya
-   lo nombran correctamente están guardados: no hace falta repetirlos.
+2. Guarda con `guardar_menciones`, en una sola llamada por hilo y EN CUANTO termines de
+   leerlo (antes de abrir el siguiente), las respuestas que hablan del fármaco sin nombrarlo
+   (indirecta, jerga) o nombrándolo mal (errata). Los posts que ya lo nombran correctamente
+   están guardados: no hace falta repetirlos.
 3. Si ves una forma nueva de nombrar el fármaco (abreviatura, errata, marca extranjera),
    propónla con `proponer_termino`.
 4. Cuando hayas leído todos los hilos, llama a `final_answer` con un resumen.
