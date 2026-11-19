@@ -171,6 +171,7 @@ def revisar_hilos(
     new_reply_ids: list[str] | None = None,
     batch: int = 6,
     max_steps_per_thread: int = 4,
+    retries: int = 2,
 ) -> list[CrawlerRun]:
     """The hybrid's second half: read the threads where the drug is named and save the
     replies that talk about it without naming it. Threads go in batches so the context does
@@ -199,7 +200,29 @@ def revisar_hilos(
         )
         max_steps = max_steps_per_thread * len(chunk) + 4
         runs.append(run(ctx, "hilos", task, brain, max_steps))
+        # Guarantee in code, not in the prompt: in the 2026-11-19 evaluation the model
+        # sometimes answered "I read the threads" after reading 1 or 2 of the 6. Threads it
+        # did not open go back to it, in a run of their own (at most ``retries`` times).
+        unread = [p for p in chunk if _thread_of(source, p) not in ctx.threads_read]
+        if unread and retries > 0:
+            runs += revisar_hilos(
+                source,
+                store,
+                brands,
+                drug,
+                unread,
+                brain,
+                new_reply_ids,
+                batch,
+                max_steps_per_thread,
+                retries - 1,
+            )
     return runs
+
+
+def _thread_of(source: Source, post_id: str) -> str:
+    post = source.get(post_id)
+    return post.thread_id if post else post_id
 
 
 def investigar(

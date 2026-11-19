@@ -143,7 +143,7 @@ def test_save_only_posts_the_model_has_seen(source):
     reg = make_registry(ctx, "vigilancia")
 
     def save(*items, farmaco="sertralina"):
-        menciones = [{"post_id": i, "tipo_mencion": t, "motivo": "x"} for i, t in items]
+        menciones = "; ".join(f"{i} {t}" for i, t in items)
         return reg.call("guardar_menciones", {"farmaco": farmaco, "menciones": menciones})
 
     assert "unknown post id" in save(("a2", "indirecta")).result  # never shown
@@ -158,7 +158,7 @@ def test_save_only_posts_the_model_has_seen(source):
     assert mention.texto == "A mí también me dejó KO las primeras semanas"  # copied, not written
     assert mention.contexto.responde_a is None and mention.contexto.inicio_hilo.startswith("Llevo")
     assert save(("a2", "indirecta"), farmaco="Besitran").ok  # a brand -> its active ingredient
-    assert not save(farmaco="sertralina").ok  # an empty list is invalid
+    assert not save(farmaco="sertralina").ok  # no ids: error, the model must retry
 
 
 def test_budgets_are_enforced_by_the_tools(source):
@@ -219,10 +219,7 @@ def test_agent_loop_reads_a_thread_and_saves_the_indirect_reply(source):
             _call(
                 "guardar_menciones",
                 farmaco="sertralina",
-                menciones=[
-                    {"post_id": "a2", "tipo_mencion": "indirecta", "motivo": "responde a a1"},
-                    {"post_id": "zzz", "tipo_mencion": "nombre", "motivo": "invented id"},
-                ],
+                menciones="a2 indirecta; zzz nombre",
             ),
             _call("final_answer", answer="1 mención"),
         ]
@@ -462,3 +459,39 @@ def test_search_pages_of_20_with_antes_de_and_monthly_windows():
         ("2025-01-31T00:00:00Z", "2025-03-01T00:00:00Z"),
     ]
     assert windows(None, None, 30) == [(None, None)]
+
+
+def test_parse_mentions_accepts_loose_formats():
+    from crawler.tools import parse_mentions
+
+    text = "pa9c9fb2de600 indirecta;" + chr(10) + "[p06cfb394a073]: Nombre, p8cdc89205d12"
+    assert parse_mentions(text) == [
+        ("pa9c9fb2de600", "indirecta"),
+        ("p06cfb394a073", "nombre"),
+        ("p8cdc89205d12", None),
+    ]
+
+
+def test_hybrid_sends_back_the_threads_the_agent_did_not_read(source):
+    from crawler import agent as crawler_agent
+
+    calls = []
+
+    def fake_run(ctx, mode, task, brain, max_steps):
+        calls.append(task)
+        if len(calls) == 1:  # first run: reads only the thread of a1, "forgets" c1
+            ctx.threads_read.add("a1")
+        else:
+            ctx.threads_read.add("c1")
+        return crawler_agent.CrawlerRun(response=None, context=ctx)
+
+    original = crawler_agent.run
+    crawler_agent.run = fake_run
+    try:
+        runs = crawler_agent.revisar_hilos(
+            source, MentionStore(), BRANDS, "sertralina", ["a1", "c1"]
+        )
+    finally:
+        crawler_agent.run = original
+    assert len(runs) == 2
+    assert "[c1]" in calls[1] and "[a1]" not in calls[1]  # only the unread thread goes back

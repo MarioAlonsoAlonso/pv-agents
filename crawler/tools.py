@@ -2,7 +2,7 @@
 
 * ``buscar_bluesky`` / ``leer_hilo``: read the source. Every post shown gets an id; the
   model never sees handles, links or AT-URIs.
-* ``guardar_menciones(farmaco, [{post_id, tipo, motivo}, …])``: one call saves
+* ``guardar_menciones(farmaco, "id tipo; id tipo")``: one call saves
   every post the model has just seen; it gives ids, the text is copied from the
   source. It can only save a post it has actually been shown (``ctx.shown``), so it cannot
   invent a mention, and the same (post, drug) is never saved twice.
@@ -18,10 +18,11 @@ the harness runs each tool in a worker thread, so a context variable would not r
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
-from typing import Annotated, Literal
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from agent.react_agent import final_answer
 from crawler.sources import Post, Source, SourceError, to_iso
@@ -35,16 +36,25 @@ SEARCH_PAGE = 20  # posts per search page: 20 snippets fit in one observation
 SNIPPET_CHARS = 280
 
 
-class MentionToSave(BaseModel):
-    """One post to save, inside a guardar_menciones call."""
+_TYPES = ("nombre", "marca", "errata", "indirecta", "jerga")
+_LABELS = {"post_id", "post", "id", "tipo", "tipo_mencion", "type"}
 
-    post_id: str = Field(description="Id of a post you have been shown.")
-    tipo_mencion: Literal["nombre", "marca", "errata", "indirecta", "jerga"] = Field(
-        description="How the post refers to the drug: nombre (active ingredient), marca "
-        "(brand), errata (misspelt or shortened), indirecta (does not name it; you know it "
-        "from the thread), jerga (describes it without naming it)."
-    )
-    motivo: str = Field("", description="A few words: why this post.")
+
+def parse_mentions(text: str) -> list[tuple[str, str | None]]:
+    """ "p1a2b3c4d5e6 nombre; pa9c9fb2de600 indirecta" -> [(id, type), ...] (type None if
+    missing). Pieces are separated by ';', ',' or new lines; in each piece the first word that
+    is not a type or a label ("post_id:") is the id. A plain string, not a list of objects:
+    the course's server sometimes dropped a nested list from native tool calls (2026-11-19)."""
+    seen, out = set(), []
+    for piece in re.split(r"[;,\n]+", text or ""):
+        words = re.findall(r"[\w-]+", piece)
+        ids = [w for w in words if w.lower() not in _TYPES and w.lower() not in _LABELS]
+        if not ids or ids[0] in seen:
+            continue
+        kind = next((w.lower() for w in words if w.lower() in _TYPES), None)
+        seen.add(ids[0])
+        out.append((ids[0], kind))
+    return out
 
 
 @dataclass
@@ -205,41 +215,45 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
     def guardar_menciones(
         farmaco: Annotated[str, Field(description="Active ingredient the posts talk about.")],
         menciones: Annotated[
-            list[MentionToSave],
+            str,
             Field(
-                min_length=1,
-                max_length=MAX_SAVE_BATCH,
-                description="The posts to save, all at once: every post of the page or thread "
-                "that talks about the drug.",
+                description="The posts to save, all at once, as 'post_id type' pairs separated "
+                "by ';'. Type is one of nombre (active ingredient), marca (brand), errata "
+                "(misspelt or shortened), indirecta (does not name it; you know it from the "
+                "thread), jerga (describes it without naming it). Example: "
+                "'p1a2b3c4d5e6f nombre; pa9c9fb2de600 indirecta'."
             ),
         ],
     ) -> str:
         """Save the posts that talk about the drug, so that triage reads them. Save ALL the
         relevant posts you have just seen in ONE call. Do not judge them: jokes, questions
         and opinions about the drug are saved too. The text is copied from each post; you
-        only give its id."""
+        only give its id and how it refers to the drug."""
         drug = ctx.drug_name(farmaco)
         if drug is None:
             raise RuntimeError(f"'{farmaco}' is not a drug of this task: {list(ctx.drugs)}")
+        items = parse_mentions(menciones)[:MAX_SAVE_BATCH]
+        if not items:
+            raise RuntimeError(
+                "no post ids found in 'menciones'. Write 'post_id type' pairs separated by ';', "
+                "e.g. 'p1a2b3c4d5e6f nombre; pa9c9fb2de600 indirecta'."
+            )
         lines, saved = [], 0
-        # The registry validates and then passes plain dicts (model_dump): rebuild the items.
-        for item in (MentionToSave.model_validate(m) for m in menciones):
-            post = ctx.shown.get(item.post_id)
+        for post_id, kind in items:
+            post = ctx.shown.get(post_id)
             if post is None:
                 lines.append(
-                    f"[{item.post_id}] error: unknown post id; copy it exactly as it appeared "
-                    "in buscar_bluesky or leer_hilo"
+                    f"[{post_id}] error: unknown post id; copy it exactly as it appeared in "
+                    "buscar_bluesky or leer_hilo"
                 )
-                continue
-            mention = build_mention(
-                ctx.source, post, drug, item.tipo_mencion, "agente", item.motivo
-            )
-            if ctx.store.add(mention):
+            elif kind is None:
+                lines.append(f"[{post_id}] error: missing type (nombre, marca, errata, ...)")
+            elif ctx.store.add(build_mention(ctx.source, post, drug, kind, "agente")):
                 saved += 1
-                lines.append(f"[{item.post_id}] saved")
+                lines.append(f"[{post_id}] saved")
             else:
-                lines.append(f"[{item.post_id}] already saved")
-        return f"{saved} saved of {len(menciones)}:\n" + "\n".join(lines)
+                lines.append(f"[{post_id}] already saved")
+        return f"{saved} saved of {len(items)}:" + chr(10) + chr(10).join(lines)
 
     @tool
     def proponer_termino(
