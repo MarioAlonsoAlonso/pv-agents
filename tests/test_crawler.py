@@ -141,17 +141,24 @@ def _ctx(source, **kw):
 def test_save_only_posts_the_model_has_seen(source):
     ctx = _ctx(source)
     reg = make_registry(ctx, "vigilancia")
-    args = {"post_id": "a2", "farmaco": "sertralina", "tipo_mencion": "indirecta", "motivo": "x"}
-    assert not reg.call("guardar_mencion", args).ok  # never shown
+
+    def save(*items, farmaco="sertralina"):
+        menciones = [{"post_id": i, "tipo_mencion": t, "motivo": "x"} for i, t in items]
+        return reg.call("guardar_menciones", {"farmaco": farmaco, "menciones": menciones})
+
+    assert "unknown post id" in save(("a2", "indirecta")).result  # never shown
     assert reg.call("leer_hilo", {"post_id": "a1"}).ok
-    first = reg.call("guardar_mencion", args)
-    assert first.ok and "saved" in first.result
-    assert "already" in reg.call("guardar_mencion", args).result
-    mention = next(iter(ctx.store.mentions.values()))
+    batch = save(("a1", "nombre"), ("a2", "indirecta"), ("zzz", "nombre"))
+    assert batch.ok and batch.result.startswith("2 saved of 3")  # one call, several posts
+    assert "[zzz] error: unknown post id" in batch.result  # the invented id is rejected
+    assert "already saved" in save(("a2", "indirecta")).result
+    mention = ctx.store.mentions[
+        next(m for m in ctx.store.mentions if ctx.store.mentions[m].post_id == "a2")
+    ]
     assert mention.texto == "A mí también me dejó KO las primeras semanas"  # copied, not written
     assert mention.contexto.responde_a is None and mention.contexto.inicio_hilo.startswith("Llevo")
-    by_brand = reg.call("guardar_mencion", {**args, "farmaco": "Besitran"})
-    assert by_brand.ok  # a brand is resolved to its active ingredient (already saved)
+    assert save(("a2", "indirecta"), farmaco="Besitran").ok  # a brand -> its active ingredient
+    assert not save(farmaco="sertralina").ok  # an empty list is invalid
 
 
 def test_budgets_are_enforced_by_the_tools(source):
@@ -166,7 +173,7 @@ def test_budgets_are_enforced_by_the_tools(source):
 
 def test_hilos_mode_has_no_search(source):
     names = set(make_registry(_ctx(source), "hilos").tools)
-    assert "buscar_bluesky" not in names and {"leer_hilo", "guardar_mencion"} <= names
+    assert "buscar_bluesky" not in names and {"leer_hilo", "guardar_menciones"} <= names
     assert "buscar_pubmed" in make_registry(_ctx(source), "dirigido").tools
 
 
@@ -210,18 +217,12 @@ def test_agent_loop_reads_a_thread_and_saves_the_indirect_reply(source):
             _call("buscar_bluesky", consulta="sertralina"),
             _call("leer_hilo", post_id="a1"),
             _call(
-                "guardar_mencion",
-                post_id="a2",
+                "guardar_menciones",
                 farmaco="sertralina",
-                tipo_mencion="indirecta",
-                motivo="responde a un post sobre sertralina",
-            ),
-            _call(
-                "guardar_mencion",
-                post_id="zzz",
-                farmaco="sertralina",
-                tipo_mencion="nombre",
-                motivo="invented id",
+                menciones=[
+                    {"post_id": "a2", "tipo_mencion": "indirecta", "motivo": "responde a a1"},
+                    {"post_id": "zzz", "tipo_mencion": "nombre", "motivo": "invented id"},
+                ],
             ),
             _call("final_answer", answer="1 mención"),
         ]
@@ -234,7 +235,7 @@ def test_agent_loop_reads_a_thread_and_saves_the_indirect_reply(source):
     response = agent.run("Busca sertralina", max_steps=10, brain="fake")
     assert response.stop_reason == "final_answer"
     assert ctx.store.post_ids() == {"a2"}  # the invented id was rejected
-    assert "unknown post id" in response.steps[3].observation
+    assert "unknown post id" in response.steps[2].observation  # same call, one bad id
     assert response.steps[1].observation.startswith("thread a1")  # plain text, not JSON
 
 

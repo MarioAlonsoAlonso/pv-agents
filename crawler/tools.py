@@ -2,7 +2,8 @@
 
 * ``buscar_bluesky`` / ``leer_hilo``: read the source. Every post shown gets an id; the
   model never sees handles, links or AT-URIs.
-* ``guardar_mencion(post_id, …)``: the model gives an id, the text is copied from the
+* ``guardar_menciones(farmaco, [{post_id, tipo, motivo}, …])``: one call saves
+  every post the model has just seen; it gives ids, the text is copied from the
   source. It can only save a post it has actually been shown (``ctx.shown``), so it cannot
   invent a mention, and the same (post, drug) is never saved twice.
 * ``proponer_termino``: a new way people name the drug ("la sertra"), for the next searches.
@@ -20,7 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from agent.react_agent import final_answer
 from crawler.sources import Post, Source, SourceError, to_iso
@@ -29,8 +30,21 @@ from crawler.text import fold
 from tool_use.registry import ToolRegistry, tool
 
 POSTS_PER_PART = 25
+MAX_SAVE_BATCH = 30  # posts per guardar_menciones call
 SEARCH_PAGE = 20  # posts per search page: 20 snippets fit in one observation
 SNIPPET_CHARS = 280
+
+
+class MentionToSave(BaseModel):
+    """One post to save, inside a guardar_menciones call."""
+
+    post_id: str = Field(description="Id of a post you have been shown.")
+    tipo_mencion: Literal["nombre", "marca", "errata", "indirecta", "jerga"] = Field(
+        description="How the post refers to the drug: nombre (active ingredient), marca "
+        "(brand), errata (misspelt or shortened), indirecta (does not name it; you know it "
+        "from the thread), jerga (describes it without naming it)."
+    )
+    motivo: str = Field("", description="A few words: why this post.")
 
 
 @dataclass
@@ -188,35 +202,44 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
         return "\n".join(lines)
 
     @tool
-    def guardar_mencion(
-        post_id: Annotated[str, Field(description="Id of a post you have been shown.")],
-        farmaco: Annotated[str, Field(description="Active ingredient the post talks about.")],
-        tipo_mencion: Annotated[
-            Literal["nombre", "marca", "errata", "indirecta", "jerga"],
+    def guardar_menciones(
+        farmaco: Annotated[str, Field(description="Active ingredient the posts talk about.")],
+        menciones: Annotated[
+            list[MentionToSave],
             Field(
-                description="How the post refers to the drug: nombre (active ingredient), "
-                "marca (brand), errata (misspelt or shortened), indirecta (does not name it; "
-                "you know it from the thread), jerga (describes it without naming it)."
+                min_length=1,
+                max_length=MAX_SAVE_BATCH,
+                description="The posts to save, all at once: every post of the page or thread "
+                "that talks about the drug.",
             ),
         ],
-        motivo: Annotated[str, Field(description="One short sentence: why this post.")],
     ) -> str:
-        """Save a post that talks about the drug, so that triage reads it. Do not judge it:
-        jokes, questions and opinions about the drug are saved too. The text is copied from
-        the post; you only give its id."""
-        post = ctx.shown.get(post_id)
-        if post is None:
-            raise RuntimeError(
-                f"unknown post id '{post_id}': copy an id exactly as it appeared in "
-                "buscar_bluesky or leer_hilo."
-            )
+        """Save the posts that talk about the drug, so that triage reads them. Save ALL the
+        relevant posts you have just seen in ONE call. Do not judge them: jokes, questions
+        and opinions about the drug are saved too. The text is copied from each post; you
+        only give its id."""
         drug = ctx.drug_name(farmaco)
         if drug is None:
             raise RuntimeError(f"'{farmaco}' is not a drug of this task: {list(ctx.drugs)}")
-        mention = build_mention(ctx.source, post, drug, tipo_mencion, "agente", motivo)
-        if not ctx.store.add(mention):
-            return f"already saved ({mention.id})."
-        return f"saved as {mention.id}."
+        lines, saved = [], 0
+        # The registry validates and then passes plain dicts (model_dump): rebuild the items.
+        for item in (MentionToSave.model_validate(m) for m in menciones):
+            post = ctx.shown.get(item.post_id)
+            if post is None:
+                lines.append(
+                    f"[{item.post_id}] error: unknown post id; copy it exactly as it appeared "
+                    "in buscar_bluesky or leer_hilo"
+                )
+                continue
+            mention = build_mention(
+                ctx.source, post, drug, item.tipo_mencion, "agente", item.motivo
+            )
+            if ctx.store.add(mention):
+                saved += 1
+                lines.append(f"[{item.post_id}] saved")
+            else:
+                lines.append(f"[{item.post_id}] already saved")
+        return f"{saved} saved of {len(menciones)}:\n" + "\n".join(lines)
 
     @tool
     def proponer_termino(
@@ -237,10 +260,10 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
 
     registry = ToolRegistry().register(final_answer)
     if mode == "hilos":
-        registry.register(leer_hilo, guardar_mencion, proponer_termino)
+        registry.register(leer_hilo, guardar_menciones, proponer_termino)
     else:
         registry.register(
-            nombres_comerciales, buscar_bluesky, leer_hilo, guardar_mencion, proponer_termino
+            nombres_comerciales, buscar_bluesky, leer_hilo, guardar_menciones, proponer_termino
         )
     if mode == "dirigido":
 

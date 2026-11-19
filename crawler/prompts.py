@@ -60,7 +60,9 @@ Cómo trabajar:
 2. Busca por el principio activo y por cada marca. Prueba también erratas y formas
    coloquiales o abreviadas; si descubres una nueva en los posts, búscala y propónla con
    `proponer_termino`.
-3. Guarda cada post que hable del fármaco con `guardar_mencion`.
+3. Guarda con `guardar_menciones`, en UNA sola llamada por página de resultados o por hilo,
+   todos los posts que hablen del fármaco. No los guardes de uno en uno: cada llamada gasta un
+   paso.
 4. Abre con `leer_hilo` los hilos con respuestas: ahí están las menciones indirectas. No
    abras hilos que por el fragmento no traten del fármaco.
 5. Termina cuando las búsquedas dejen de traer posts nuevos o se agote el presupuesto. En
@@ -80,9 +82,9 @@ lo que esa búsqueda no puede ver.
     + """
 Cómo trabajar:
 1. Lee cada hilo de la tarea con `leer_hilo` (si es largo, también sus otras partes).
-2. Guarda con `guardar_mencion` las respuestas que hablan del fármaco sin nombrarlo
-   (indirecta, jerga) o nombrándolo mal (errata). Los posts que ya lo nombran correctamente
-   están guardados: no hace falta repetirlos (si lo haces, la herramienta lo dirá).
+2. Guarda con `guardar_menciones`, en una sola llamada por hilo, las respuestas que hablan
+   del fármaco sin nombrarlo (indirecta, jerga) o nombrándolo mal (errata). Los posts que ya
+   lo nombran correctamente están guardados: no hace falta repetirlos.
 3. Si ves una forma nueva de nombrar el fármaco (abreviatura, errata, marca extranjera),
    propónla con `proponer_termino`.
 4. Cuando hayas leído todos los hilos, llama a `final_answer` con un resumen.
@@ -94,7 +96,7 @@ Cómo trabajar:
 DIRIGIDO_SYSTEM = (
     """Eres el investigador de un sistema de farmacovigilancia. El analista te pide evidencia
 sobre un fármaco y una posible reacción. Buscas en dos fuentes:
-- Bluesky (posts en español): experiencias de pacientes. Guarda con `guardar_mencion` los
+- Bluesky (posts en español): experiencias de pacientes. Guarda con `guardar_menciones` los
   posts que hablen del fármaco y la reacción.
 - PubMed (en inglés): casos publicados y estudios.
 

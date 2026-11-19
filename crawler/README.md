@@ -65,7 +65,7 @@ no se le pide al modelo:
 | `nombres_comerciales` | Marcas de CIMA | Dato oficial, no memoria del modelo |
 | `buscar_bluesky` | Búsqueda por palabras, 100 resultados | Presupuesto de búsquedas; solo el periodo de la tarea |
 | `leer_hilo` | La conversación entera, por partes | Presupuesto de hilos; marca los posts fuera del periodo |
-| `guardar_mencion` | Guarda un post para el triaje | El modelo da **un id**, el texto se copia de la fuente: solo puede guardar posts que ha visto, sin duplicados |
+| `guardar_menciones` | Guarda de una vez todos los posts relevantes que acaba de ver | El modelo da **ids**, el texto se copia de la fuente: solo puede guardar posts que ha visto, sin duplicados; un id inventado se rechaza sin perder los demás |
 | `proponer_termino` | Una forma nueva de nombrar el fármaco | Se añade a las búsquedas del vigilante |
 | `buscar_pubmed` | Literatura (solo modo dirigido) | — |
 
