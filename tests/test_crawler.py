@@ -440,3 +440,24 @@ def test_native_tool_messages_have_ids_and_the_agent_sends_tools(monkeypatch):
     assert agent.run("t", max_steps=3, brain="r").stop_reason == "final_answer"
     assert {t["function"]["name"] for t in sent["tools"]} >= {"buscar_bluesky", "final_answer"}
     assert "function calling" in sent["system"] and "<tool_call>" not in sent["system"]
+
+
+def test_search_pages_of_20_with_antes_de_and_monthly_windows():
+    from crawler.systems import windows
+
+    many = [_p(f"s{i:03d}", f"sertralina día {i}", f"2025-01-{1 + i % 28:02d}") for i in range(45)]
+    ctx = CrawlerContext(
+        source=FrozenSource(many), store=MentionStore(), brands=BRANDS, drugs=("sertralina",)
+    )
+    reg = make_registry(ctx, "vigilancia")
+    first = reg.call("buscar_bluesky", {"consulta": "sertralina"}).result
+    assert first.startswith("20 posts") and "antes_de=" in first
+    before = first.rsplit("antes_de='", 1)[1].split("'")[0]
+    second = reg.call("buscar_bluesky", {"consulta": "sertralina", "antes_de": before}).result
+    assert not set(first.split()) & {w for w in second.split() if w.startswith("[s")}
+    assert len(ctx.shown) == 40
+    assert windows("2025-01-01", "2025-03-01", 30) == [
+        ("2025-01-01T00:00:00Z", "2025-01-31T00:00:00Z"),
+        ("2025-01-31T00:00:00Z", "2025-03-01T00:00:00Z"),
+    ]
+    assert windows(None, None, 30) == [(None, None)]

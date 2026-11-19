@@ -29,6 +29,7 @@ from crawler.text import fold
 from tool_use.registry import ToolRegistry, tool
 
 POSTS_PER_PART = 25
+SEARCH_PAGE = 20  # posts per search page: 20 snippets fit in one observation
 SNIPPET_CHARS = 280
 
 
@@ -112,24 +113,42 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
                 "matter). Short queries work best: one or two words."
             ),
         ],
+        antes_de: Annotated[
+            str | None,
+            Field(
+                description="Only posts published before this moment, to see older results: "
+                "pass the value the previous page tells you. Leave empty for the newest."
+            ),
+        ] = None,
     ) -> str:
-        """Search recent Bluesky posts in Spanish, newest first (at most 100). Returns one
-        line per post: [id] date · replies · snippet. Use leer_hilo to read a conversation."""
+        """Search Bluesky posts in Spanish, newest first, one page of at most 20. Returns one
+        line per post: [id] date · replies · snippet. If there are older posts, the last line
+        says how to get the next page. Use leer_hilo to read a conversation."""
         if len(ctx.searches) >= ctx.max_searches:
             raise RuntimeError(
                 f"search budget exhausted ({ctx.max_searches}). Save what you found and call "
                 "final_answer."
             )
-        ctx.searches.append(consulta)
-        posts = ctx.source.search(consulta, ctx.since, ctx.until, limit=100)
+        ctx.searches.append(consulta if antes_de is None else f"{consulta} <{antes_de}")
+        until = to_iso(ctx.until)
+        if antes_de:
+            before = to_iso(antes_de)
+            until = before if until is None else min(until, before)
+        posts = ctx.source.search(consulta, ctx.since, until, limit=SEARCH_PAGE + 1)
         if not posts:
-            return f"0 posts for '{consulta}'."
+            return f"0 posts for '{consulta}'" + (" before that date." if antes_de else ".")
+        more, posts = len(posts) > SEARCH_PAGE, posts[:SEARCH_PAGE]
         lines = [f"{len(posts)} posts for '{consulta}':"]
         for p in posts:
             ctx.shown[p.id] = p
             kind = "reply" if p.is_reply else "post"
             meta = f"{p.created_at[:10]} · {kind} · {p.reply_count} replies"
             lines.append(f"[{p.id}] {meta} · {_snippet(p.text)}")
+        if more:
+            lines.append(
+                f"… there are older posts: buscar_bluesky(consulta='{consulta}', "
+                f"antes_de='{posts[-1].created_at}')"
+            )
         return "\n".join(lines)
 
     @tool

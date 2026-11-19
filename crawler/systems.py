@@ -71,6 +71,24 @@ def fixed_search(
     return list(hits.values()), len(terms)
 
 
+def windows(since: str | None, until: str | None, days: int | None) -> list[tuple]:
+    """[since, until) cut into consecutive windows of ``days`` (one window if open-ended)."""
+    from datetime import datetime, timedelta
+
+    from crawler.sources import to_iso
+
+    if not since or not until or not days:
+        return [(since, until)]
+    start = datetime.fromisoformat(to_iso(since).replace("Z", "+00:00"))
+    end = datetime.fromisoformat(to_iso(until).replace("Z", "+00:00"))
+    out = []
+    while start < end:
+        stop = min(start + timedelta(days=days), end)
+        out.append((to_iso(start), to_iso(stop)))
+        start = stop
+    return out
+
+
 def threads_of(posts) -> list[str]:
     """One post id per conversation that has more than the post itself."""
     seen, ids = set(), []
@@ -90,6 +108,7 @@ def run_system(
     until: str | None = None,
     brain: str = "27b",
     only_threads: set[str] | None = None,
+    window_days: int | None = 30,
 ) -> SystemResult:
     """Run one system for one drug. ``only_threads`` (hybrid): the agent reads only those
     threads. Evaluation passes the annotated ones: the others cannot change recall or
@@ -101,12 +120,18 @@ def run_system(
     if system == "agente":
         from crawler.agent import vigilar
 
-        run = vigilar(source, store, brands, drug, since, until, brain=brain)
-        s = run.summary
-        result.tokens, result.steps = s["tokens"], s["steps"]
-        result.searches, result.threads_read = s["searches"], s["threads_read"]
-        result.new_terms, result.stop_reasons = s["new_terms"], [s["stop_reason"]]
-        result.traces.append(run.response.model_dump())
+        # One run per window of ``window_days``, as the periodic monitor would do: an agent
+        # facing two years in one context would only ever see the newest posts.
+        for start, end in windows(since, until, window_days):
+            run = vigilar(source, store, brands, drug, start, end, brain=brain)
+            s = run.summary
+            result.tokens += s["tokens"]
+            result.steps += s["steps"]
+            result.searches += s["searches"]
+            result.threads_read += s["threads_read"]
+            result.new_terms += s["new_terms"]
+            result.stop_reasons.append(s["stop_reason"])
+            result.traces.append({"desde": start, "hasta": end, **run.response.model_dump()})
     else:
         hits, n_searches = fixed_search(source, store, drug, brands, since, until)
         result.searches = n_searches

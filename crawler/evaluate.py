@@ -134,6 +134,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--brain", default="27b")
     parser.add_argument("--out", type=Path, default=Path("reports/crawler_eval.json"))
     parser.add_argument(
+        "--ventana-dias",
+        type=int,
+        default=30,
+        help="agente: one run per window of this many days (0 = the whole period at once)",
+    )
+    parser.add_argument(
         "--todos-los-hilos",
         action="store_true",
         help="hybrid: read every thread, not only the annotated ones (full cost, hours)",
@@ -167,7 +173,15 @@ def main(argv: list[str] | None = None) -> None:
         results = []
         for drug in args.farmacos:
             r = run_system(
-                system, source, drug, brands, since, until, args.brain, annotated_threads
+                system,
+                source,
+                drug,
+                brands,
+                since,
+                until,
+                args.brain,
+                annotated_threads,
+                args.ventana_dias or None,
             )
             results.append(r)
             print(f"  {system} · {drug}: {len(r.store)} menciones, {r.tokens} tokens")
