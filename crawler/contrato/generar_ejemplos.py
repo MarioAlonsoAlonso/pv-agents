@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from crawler.store import MentionContext, RawMention, write_schema
+from crawler.store import ConversationPost, MentionContext, RawMention, write_schema
 
 HERE = Path(__file__).parent
 
@@ -30,6 +30,9 @@ def mention(text, drug, kind, found_by, date, root=None, parent=None, motivo="")
         tipo_mencion=kind,
         texto=text,
         contexto=MentionContext(inicio_hilo=root, responde_a=parent),
+        conversacion=[
+            ConversationPost(post_id=fake_post_id(t), texto=t) for t in (root, parent) if t
+        ],
         idioma="es",
         fecha=date,
         encontrado_por=found_by,

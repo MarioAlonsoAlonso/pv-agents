@@ -26,7 +26,7 @@ from pydantic import Field
 
 from agent.react_agent import final_answer
 from crawler.sources import Post, Source, SourceError, to_iso
-from crawler.store import MentionContext, MentionStore, RawMention
+from crawler.store import ConversationPost, MentionContext, MentionStore, RawMention
 from crawler.text import fold
 from tool_use.registry import ToolRegistry, tool
 
@@ -90,9 +90,23 @@ def build_mention(
     found_by: str,
     reason: str = "",
 ) -> RawMention:
-    """A mention with the post's own text and its thread context."""
+    """A mention with the post's own text and its whole chain of earlier posts."""
+    if post.parent_id and source.get(post.parent_id) is None:
+        try:  # live search hit: its conversation was never downloaded
+            source.thread(post.id)
+        except SourceError:
+            pass
+    chain, complete, current = [], True, post
+    while current.parent_id and len(chain) < 200:
+        parent_post = source.get(current.parent_id)
+        if parent_post is None:
+            complete = False
+            break
+        chain.append(parent_post)
+        current = parent_post
+    chain.reverse()  # oldest first
     root = source.get(post.thread_id) if post.thread_id != post.id else None
-    parent = source.get(post.parent_id) if post.parent_id else None
+    parent = chain[-1] if chain else None
     return RawMention(
         id=RawMention.make_id(post.id, drug),
         post_id=post.id,
@@ -104,6 +118,8 @@ def build_mention(
             inicio_hilo=root.text if root else None,
             responde_a=parent.text if parent and parent is not root else None,
         ),
+        conversacion=[ConversationPost(post_id=p.id, texto=p.text) for p in chain],
+        conversacion_completa=complete,
         idioma=post.lang,
         fecha=post.created_at,
         encontrado_por=found_by,

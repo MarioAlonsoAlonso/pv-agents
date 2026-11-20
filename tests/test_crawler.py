@@ -535,3 +535,23 @@ def test_mentions_carry_the_post_language(source):
     reg.call("leer_hilo", {"post_id": "a1"})
     reg.call("guardar_menciones", {"farmaco": "sertralina", "menciones": "a1 nombre"})
     assert next(iter(ctx.store.mentions.values())).idioma == "es"
+
+
+def test_mentions_carry_the_whole_reply_chain():
+    from crawler.tools import build_mention
+
+    chain = [
+        _p("r0", "Empiezo hoy con sertralina", "2025-03-01"),
+        _p("r1", "Ánimo, al principio cuesta", "2025-03-01", "r0", "r0"),
+        _p("r2", "¿Qué te pasó a ti?", "2025-03-02", "r0", "r1"),
+        _p("r3", "Me mareaba muchísimo", "2025-03-02", "r0", "r2"),
+    ]
+    src = FrozenSource(chain)
+    m = build_mention(src, src.get("r3"), "sertralina", "indirecta", "agente")
+    assert [c.post_id for c in m.conversacion] == ["r0", "r1", "r2"]  # oldest first, all of them
+    assert m.conversacion_completa and m.contexto.responde_a == "¿Qué te pasó a ti?"
+    root = build_mention(src, src.get("r0"), "sertralina", "nombre", "busqueda_fija")
+    assert root.conversacion == [] and root.conversacion_completa
+    broken = FrozenSource([chain[0], chain[2], chain[3]])  # r1 deleted
+    m2 = build_mention(broken, broken.get("r3"), "sertralina", "indirecta", "agente")
+    assert [c.post_id for c in m2.conversacion] == ["r2"] and not m2.conversacion_completa

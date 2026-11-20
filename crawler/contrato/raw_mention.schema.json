@@ -1,5 +1,26 @@
 {
   "$defs": {
+    "ConversationPost": {
+      "description": "One earlier post of the conversation.",
+      "properties": {
+        "post_id": {
+          "description": "Pseudonymous id of the post.",
+          "title": "Post Id",
+          "type": "string"
+        },
+        "texto": {
+          "description": "Text of the post (anonymised).",
+          "title": "Texto",
+          "type": "string"
+        }
+      },
+      "required": [
+        "post_id",
+        "texto"
+      ],
+      "title": "ConversationPost",
+      "type": "object"
+    },
     "MentionContext": {
       "description": "The minimum of the conversation needed to understand the post.",
       "properties": {
@@ -37,7 +58,7 @@
   "description": "One post that talks about one watched drug, as the crawler hands it to triage.\n\nContract between the crawler and triage (``crawler/CONTRATO_TRIAJE.md``). Not judged: it\nmay or may not describe an adverse reaction; deciding that is triage's job.",
   "properties": {
     "version": {
-      "default": "1.0",
+      "default": "1.1",
       "description": "Version of this format.",
       "title": "Version",
       "type": "string"
@@ -88,6 +109,20 @@
     },
     "contexto": {
       "$ref": "#/$defs/MentionContext"
+    },
+    "conversacion": {
+      "description": "Every post from the first one of the conversation down to the one this post answers, oldest first (the post itself is not included: it is in texto). Empty if the post is the first one. Lets triage read deep reply chains whole (added in 1.1).",
+      "items": {
+        "$ref": "#/$defs/ConversationPost"
+      },
+      "title": "Conversacion",
+      "type": "array"
+    },
+    "conversacion_completa": {
+      "default": true,
+      "description": "False if a post of the chain was not available (deleted, blocked or outside the sample): then conversacion starts at the oldest available post.",
+      "title": "Conversacion Completa",
+      "type": "boolean"
     },
     "idioma": {
       "anyOf": [

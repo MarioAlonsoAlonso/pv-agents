@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 MentionType = Literal["nombre", "marca", "errata", "indirecta", "jerga"]
 
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"  # 1.1: conversacion, conversacion_completa
 
 
 class MentionContext(BaseModel):
@@ -36,6 +36,13 @@ class MentionContext(BaseModel):
         "mention is not a reply, or when the post it answers is the first post (then it is in "
         "inicio_hilo).",
     )
+
+
+class ConversationPost(BaseModel):
+    """One earlier post of the conversation."""
+
+    post_id: str = Field(description="Pseudonymous id of the post.")
+    texto: str = Field(description="Text of the post (anonymised).")
 
 
 class RawMention(BaseModel):
@@ -74,6 +81,17 @@ class RawMention(BaseModel):
         "and anonymised: @handles -> '@usuario', links -> '[enlace]', e-mails -> '[correo]'."
     )
     contexto: MentionContext = Field(default_factory=MentionContext)
+    conversacion: list[ConversationPost] = Field(
+        default_factory=list,
+        description="Every post from the first one of the conversation down to the one this "
+        "post answers, oldest first (the post itself is not included: it is in texto). Empty if "
+        "the post is the first one. Lets triage read deep reply chains whole (added in 1.1).",
+    )
+    conversacion_completa: bool = Field(
+        True,
+        description="False if a post of the chain was not available (deleted, blocked or outside "
+        "the sample): then conversacion starts at the oldest available post.",
+    )
     idioma: str | None = Field(
         None, description="Language declared by the author in Bluesky (ISO 639-1, e.g. 'es')."
     )
