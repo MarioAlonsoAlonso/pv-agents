@@ -87,5 +87,10 @@ ficheros van en `data/triaje/`, fuera de git.
 6. **Hoja de soluciones**:
    `uv run python -m evaluacion_triaje.lote consolidar data/triaje/lote_triaje_final.csv`
    → `gold_triaje.jsonl`, con la que se corrige el agente de triaje.
+7. **Desarrollo y test** (opcional, recomendado):
+   `uv run python -m evaluacion_triaje.lote partir data/triaje/gold_triaje.jsonl --menciones data/hibrido_27b_menciones.jsonl`
+   → `gold_triaje_dev.jsonl` (40 % de las conversaciones, para mejorar el triaje mirando sus
+   fallos) y `gold_triaje_test.jsonl` (60 %, para medir una sola vez al final). Las menciones de una
+   misma conversación quedan siempre en el mismo lado.
 
 Los datos (`data/`) no se suben al repositorio: son textos reales sobre la salud de personas.

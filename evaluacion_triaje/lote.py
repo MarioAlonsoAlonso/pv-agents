@@ -348,6 +348,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("b", type=Path)
     ap.add_argument("revision", type=Path)
     ap.add_argument("--out", type=Path, default=FOLDER / "lote_triaje_final.csv")
+    pa = sub.add_parser("partir", help="gold -> development and test files, by conversation")
+    pa.add_argument("gold", type=Path)
+    pa.add_argument("--menciones", type=Path, required=True)
+    pa.add_argument("--test", type=float, default=0.6, help="share of conversations for test")
+    pa.add_argument("--seed", type=int, default=0)
     k = sub.add_parser("consolidar", help="validated sheet -> gold_triaje.jsonl")
     k.add_argument("lote", type=Path)
     k.add_argument("--out", type=Path, default=FOLDER / "gold_triaje.jsonl")
@@ -391,6 +396,23 @@ def main(argv: list[str] | None = None) -> None:
             writer.writeheader()
             writer.writerows(final)
         print(f"{len(final)} menciones en la hoja final → {args.out}")
+    elif args.cmd == "partir":
+        import random
+
+        thread = {m.id: m.hilo_id for m in read_mentions(args.menciones)}
+        with open(args.gold, encoding="utf-8") as f:
+            gold = [json.loads(line) for line in f if line.strip()]
+        threads = sorted({thread[g["id"]] for g in gold})
+        random.Random(args.seed).shuffle(threads)
+        test = set(threads[: round(len(threads) * args.test)])
+        for name, keep in (("dev", False), ("test", True)):
+            part = [g for g in gold if (thread[g["id"]] in test) == keep]
+            out = args.gold.with_name(f"{args.gold.stem}_{name}.jsonl")
+            with open(out, "w", encoding="utf-8") as f:
+                for g in part:
+                    f.write(json.dumps(g, ensure_ascii=False) + "\n")
+            n_ae = sum(g["es_efecto_adverso"] == "si" for g in part)
+            print(f"{name}: {len(part)} menciones, {n_ae} efectos adversos → {out}")
     elif args.cmd == "consolidar":
         rows = read_sheet(args.lote)
         gold, errors = [], []
