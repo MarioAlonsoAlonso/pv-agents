@@ -2,7 +2,8 @@
 
 Hoja de soluciones para evaluar el **agente de triaje**: para cada mención que entrega el
 rastreador (contrato en [`crawler/CONTRATO_TRIAJE.md`](../crawler/CONTRATO_TRIAJE.md)), qué
-debería contestar un buen triaje. Se anota **lo que dice el post**, leído con su conversación
+debería contestar un buen triaje. Cómo usar la hoja para construir y evaluar el agente:
+[`GUIA_TRIAJE.md`](GUIA_TRIAJE.md). Se anota **lo que dice el post**, leído con su conversación
 (`conversacion` + `texto`), sin suponer nada que no esté escrito.
 
 En la hoja (`lote_triaje.csv`, separador `;`) cada fila es una mención. Las columnas `texto` y

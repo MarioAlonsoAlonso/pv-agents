@@ -1,6 +1,7 @@
 # Contrato rastreador → triaje
 
-Qué recibe el triaje del rastreador, para poder desarrollarlo en paralelo. Versión del formato:
+Qué recibe el triaje del rastreador, para poder desarrollarlo en paralelo. Cómo construir y
+evaluar el triaje con el examen preparado: [`evaluacion_triaje/GUIA_TRIAJE.md`](../evaluacion_triaje/GUIA_TRIAJE.md). Versión del formato:
 **1.1** (campo `version`).
 
 ## En una frase
