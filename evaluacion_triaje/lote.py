@@ -399,20 +399,29 @@ def main(argv: list[str] | None = None) -> None:
     elif args.cmd == "partir":
         import random
 
-        thread = {m.id: m.hilo_id for m in read_mentions(args.menciones)}
+        mentions = read_mentions(args.menciones)
+        thread = {m.id: m.hilo_id for m in mentions}
         with open(args.gold, encoding="utf-8") as f:
             gold = [json.loads(line) for line in f if line.strip()]
         threads = sorted({thread[g["id"]] for g in gold})
         random.Random(args.seed).shuffle(threads)
         test = set(threads[: round(len(threads) * args.test)])
+        in_gold = {g["id"] for g in gold}
         for name, keep in (("dev", False), ("test", True)):
+            # The answers (gold) and the questions (the mentions themselves), split the same
+            # way: during practice the triage should not even run on the test mentions.
             part = [g for g in gold if (thread[g["id"]] in test) == keep]
             out = args.gold.with_name(f"{args.gold.stem}_{name}.jsonl")
             with open(out, "w", encoding="utf-8") as f:
                 for g in part:
                     f.write(json.dumps(g, ensure_ascii=False) + "\n")
+            questions = [m for m in mentions if m.id in in_gold and (m.hilo_id in test) == keep]
+            q_out = args.menciones.with_name(f"{args.menciones.stem}_{name}.jsonl")
+            with open(q_out, "w", encoding="utf-8") as f:
+                for m in questions:
+                    f.write(m.model_dump_json() + "\n")
             n_ae = sum(g["es_efecto_adverso"] == "si" for g in part)
-            print(f"{name}: {len(part)} menciones, {n_ae} efectos adversos → {out}")
+            print(f"{name}: {len(part)} menciones, {n_ae} efectos adversos → {out} y {q_out}")
     elif args.cmd == "consolidar":
         rows = read_sheet(args.lote)
         gold, errors = [], []
