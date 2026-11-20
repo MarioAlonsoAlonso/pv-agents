@@ -9,6 +9,17 @@ describe una reacción adversa es trabajo del triaje.
 pregunta abierta ("¿hay más casos de caídas en ancianos con sertralina?") busca en Bluesky y
 PubMed y devuelve un resumen con referencias.
 
+**Sistema elegido: el híbrido** (búsqueda fija + agente que lee las conversaciones). En la
+evaluación sobre sertralina encuentra el 97 % de las menciones (17 de 19 indirectas) frente al 70 %
+de la búsqueda fija, con la mitad de coste que el agente solo. Es el que usa el vigilante
+(`crawler.monitor`). Los otros tres sistemas siguen implementados para comparar.
+
+| Documento | Para quién |
+|---|---|
+| [`RESULTADOS.md`](RESULTADOS.md) | Cifras, las cuatro versiones y sus fallos, límites (informe) |
+| [`CONTRATO_TRIAJE.md`](CONTRATO_TRIAJE.md) | Qué recibe el triaje: formato, ejemplos, qué puede dar por hecho |
+| [`ANOTACION.md`](ANOTACION.md) | Cómo se anotó la hoja de soluciones |
+
 ## Por qué hay un agente aquí (y por qué no en todo)
 
 Una búsqueda fija por principio activo y marcas encuentra casi todos los posts que **nombran**

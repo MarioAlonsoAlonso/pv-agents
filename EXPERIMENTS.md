@@ -637,3 +637,43 @@ desarrollo y el mismo troceado; solo cambia el generador a Qwen3-4B (`ARCA_LLM_M
 **Qué concluimos.** Confirmado: con la misma recuperación, el generador de 4B arregla casi todo
 lo que fallaba. La API usa 1,7B por defecto porque comparte GPU con las demás fases; con
 `ARCA_LLM_MODEL=Qwen/Qwen3-4B` el RAG da estas cifras.
+
+### 2026-11-17/20 · Proyecto final · Rastreador de menciones en Bluesky: ¿aporta un agente?
+
+**Qué queríamos saber.** Si un agente (Qwen3.8-27B del servidor del curso) encuentra mejor que
+una búsqueda por palabras clave los posts que hablan de un fármaco, incluidos los que no lo
+nombran ("a mí también me pasó", respondiendo a alguien que toma sertralina), y a qué coste.
+
+**Qué hicimos.**
+- Muestra congelada de Bluesky en español (18 548 posts, enero 2025 – noviembre 2026), construida
+  también con términos generales para que la evaluación no fuera circular.
+- Hoja de soluciones de 576 posts (61 conversaciones enteras, por estratos), anotada por Claude y
+  contrastada con el 27B (κ 0,72–0,77; el 27B inventaba fármacos y contagiaba el tema del hilo a
+  todas las respuestas). Se descartaron 9 dudosos: 567 posts, 66 menciones de sertralina.
+- Cuatro sistemas: búsqueda fija, fija + hilos completos, híbrido (fija + agente que lee los
+  hilos) y agente solo. Cuatro versiones del agente, cada una corrigiendo los fallos de la anterior
+  vistos en las trazas.
+
+**Qué pasó.** Versión final (v4):
+
+| Sistema | *Recall* | Indirectas | Precisión | Al triaje | Tokens |
+|---|---|---|---|---|---|
+| Búsqueda fija | 70 % | 0/19 | 98 % | 423 | 0 |
+| Fija + hilos | 100 % | 19/19 | 20 % | 2 712 | 0 |
+| Híbrido | 97 % | 17/19 | 89 % | 708 | 2,26 M |
+| Agente solo | 91 % | 13/19 | 98 % | 526 | 4,14 M |
+
+Por el camino, el agente solo pasó por 70 %, 23 %, 65 % y 91 % de *recall* con el mismo modelo:
+guardar un post por paso agotaba los 40 pasos por mes; una lista de objetos como argumento se
+perdía en la traducción de la llamada del servidor del curso y disparaba la detección de bucles;
+un tope de 30 posts por llamada descartaba el resto sin avisar; y respuestas cortadas a 768 tokens
+dejaban meses sin guardar. En el híbrido, el modelo dijo a veces "he leído los hilos" tras abrir
+1 o 2 de 6; ahora el código comprueba qué hilos se leyeron y reenvía los demás.
+
+**Qué concluimos.** El agente aporta donde hace falta criterio (leer conversaciones), no para
+sustituir una búsqueda que el código hace gratis y sin errores: el híbrido sube el *recall* del
+70 % al 97 % con la mitad de coste que el agente solo, y es el sistema elegido para el vigilante.
+Las garantías en el código (texto copiado de la fuente, solo posts vistos, hilos comprobados)
+pesaron más que el prompt o el modelo. Pendiente: validar la versión final en un lote nuevo u
+otro fármaco, porque las cuatro versiones se ajustaron mirando los mismos 567 posts. Detalle en
+[`crawler/RESULTADOS.md`](crawler/RESULTADOS.md).

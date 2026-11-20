@@ -507,3 +507,31 @@ def test_a_long_save_list_is_saved_whole():
     ids = "; ".join(f"q{i:03d} nombre" for i in range(40))
     result = reg.call("guardar_menciones", {"farmaco": "sertralina", "menciones": ids}).result
     assert result.startswith("40 saved of 40") and len(ctx.store) == 40  # nothing cut silently
+
+
+def test_contract_files_are_in_sync_with_the_model():
+    """crawler/contrato/ is what the triage teammate builds on: it must match RawMention."""
+    from pathlib import Path
+
+    from crawler.store import RawMention, read_mentions
+
+    folder = Path("crawler/contrato")
+    schema = json.loads((folder / "raw_mention.schema.json").read_text("utf-8"))
+    assert schema == json.loads(json.dumps(RawMention.model_json_schema())), (
+        "regenerate with: uv run python crawler/contrato/generar_ejemplos.py"
+    )
+    examples = read_mentions(folder / "ejemplo_menciones.jsonl")
+    assert len(examples) == 7 and {m.encontrado_por for m in examples} == {
+        "agente",
+        "busqueda_fija",
+    }
+    replies = [m for m in examples if m.contexto.responde_a]
+    assert replies and all(m.contexto.inicio_hilo for m in replies)
+
+
+def test_mentions_carry_the_post_language(source):
+    ctx = _ctx(source)
+    reg = make_registry(ctx, "vigilancia")
+    reg.call("leer_hilo", {"post_id": "a1"})
+    reg.call("guardar_menciones", {"farmaco": "sertralina", "menciones": "a1 nombre"})
+    assert next(iter(ctx.store.mentions.values())).idioma == "es"

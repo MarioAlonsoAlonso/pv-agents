@@ -104,6 +104,7 @@ def build_mention(
             inicio_hilo=root.text if root else None,
             responde_a=parent.text if parent and parent is not root else None,
         ),
+        idioma=post.lang,
         fecha=post.created_at,
         encontrado_por=found_by,
         motivo=reason,

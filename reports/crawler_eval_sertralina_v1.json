@@ -1,0 +1,240 @@
+{
+  "sistemas": {
+    "fija": {
+      "recall": 0.696969696969697,
+      "precision": 0.9787234042553191,
+      "recall_por_tipo": {
+        "nombre": {
+          "encontrados": 46,
+          "total": 46,
+          "recall": 1.0
+        },
+        "marca": {
+          "encontrados": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "errata": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        },
+        "indirecta": {
+          "encontrados": 0,
+          "total": 19,
+          "recall": 0.0
+        },
+        "jerga": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        }
+      },
+      "enviados_al_triaje": 423,
+      "tokens": 0,
+      "pasos": 0,
+      "busquedas": 4,
+      "hilos_leidos": 0,
+      "segundos": 0.9,
+      "terminos_nuevos": [],
+      "motivos_parada": [],
+      "por_farmaco": {
+        "sertralina": {
+          "positivos": 66,
+          "recall": 0.696969696969697,
+          "precision": 0.9787234042553191,
+          "enviados_al_triaje": 423
+        }
+      }
+    },
+    "fija_hilos": {
+      "recall": 1.0,
+      "precision": 0.20245398773006135,
+      "recall_por_tipo": {
+        "nombre": {
+          "encontrados": 46,
+          "total": 46,
+          "recall": 1.0
+        },
+        "marca": {
+          "encontrados": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "errata": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        },
+        "indirecta": {
+          "encontrados": 19,
+          "total": 19,
+          "recall": 1.0
+        },
+        "jerga": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        }
+      },
+      "enviados_al_triaje": 2712,
+      "tokens": 0,
+      "pasos": 0,
+      "busquedas": 4,
+      "hilos_leidos": 235,
+      "segundos": 1.0,
+      "terminos_nuevos": [],
+      "motivos_parada": [],
+      "por_farmaco": {
+        "sertralina": {
+          "positivos": 66,
+          "recall": 1.0,
+          "precision": 0.20245398773006135,
+          "enviados_al_triaje": 2712
+        }
+      }
+    },
+    "hibrido·27b": {
+      "recall": 0.9242424242424242,
+      "precision": 0.9838709677419355,
+      "recall_por_tipo": {
+        "nombre": {
+          "encontrados": 46,
+          "total": 46,
+          "recall": 1.0
+        },
+        "marca": {
+          "encontrados": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "errata": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        },
+        "indirecta": {
+          "encontrados": 15,
+          "total": 19,
+          "recall": 0.7894736842105263
+        },
+        "jerga": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        }
+      },
+      "enviados_al_triaje": 441,
+      "tokens": 369441,
+      "pasos": 66,
+      "busquedas": 4,
+      "hilos_leidos": 32,
+      "segundos": 114.4,
+      "terminos_nuevos": [
+        "Tialin",
+        "prams",
+        "sertra"
+      ],
+      "motivos_parada": [
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer"
+      ],
+      "por_farmaco": {
+        "sertralina": {
+          "positivos": 66,
+          "recall": 0.9242424242424242,
+          "precision": 0.9838709677419355,
+          "enviados_al_triaje": 441
+        }
+      },
+      "coste_solo_hilos_anotados": true
+    },
+    "agente·27b": {
+      "recall": 0.696969696969697,
+      "precision": 0.9787234042553191,
+      "recall_por_tipo": {
+        "nombre": {
+          "encontrados": 43,
+          "total": 46,
+          "recall": 0.9347826086956522
+        },
+        "marca": {
+          "encontrados": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "errata": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        },
+        "indirecta": {
+          "encontrados": 3,
+          "total": 19,
+          "recall": 0.15789473684210525
+        },
+        "jerga": {
+          "encontrados": 0,
+          "total": 0,
+          "recall": null
+        }
+      },
+      "enviados_al_triaje": 457,
+      "tokens": 5350974,
+      "pasos": 772,
+      "busquedas": 161,
+      "hilos_leidos": 94,
+      "segundos": 1034.5,
+      "terminos_nuevos": [
+        "Aramix",
+        "certralina",
+        "sertra"
+      ],
+      "motivos_parada": [
+        "final_answer",
+        "max_steps",
+        "final_answer",
+        "max_steps",
+        "max_steps",
+        "final_answer",
+        "final_answer",
+        "max_steps",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "final_answer",
+        "max_steps",
+        "max_steps",
+        "max_steps",
+        "max_steps",
+        "max_steps",
+        "max_steps",
+        "max_steps"
+      ],
+      "por_farmaco": {
+        "sertralina": {
+          "positivos": 66,
+          "recall": 0.696969696969697,
+          "precision": 0.9787234042553191,
+          "enviados_al_triaje": 457
+        }
+      }
+    }
+  },
+  "muestra": {
+    "posts": 18548,
+    "anotados": 567,
+    "desde": "2025-01-01",
+    "hasta": "2026-11-18T18:37:50Z"
+  },
+  "actualizado": "2026-11-19T16:55:10+00:00",
+  "version_rastreador": "v1"
+}

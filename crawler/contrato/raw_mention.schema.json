@@ -1,0 +1,143 @@
+{
+  "$defs": {
+    "MentionContext": {
+      "description": "The minimum of the conversation needed to understand the post.",
+      "properties": {
+        "inicio_hilo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Text of the first post of the conversation (anonymised). None when the mention is itself the first post, or the first post was not available.",
+          "title": "Inicio Hilo"
+        },
+        "responde_a": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Text of the post this one directly answers (anonymised). None when the mention is not a reply, or when the post it answers is the first post (then it is in inicio_hilo).",
+          "title": "Responde A"
+        }
+      },
+      "title": "MentionContext",
+      "type": "object"
+    }
+  },
+  "description": "One post that talks about one watched drug, as the crawler hands it to triage.\n\nContract between the crawler and triage (``crawler/CONTRATO_TRIAJE.md``). Not judged: it\nmay or may not describe an adverse reaction; deciding that is triage's job.",
+  "properties": {
+    "version": {
+      "default": "1.0",
+      "description": "Version of this format.",
+      "title": "Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "Stable id of the mention, 'M-' + 10 hex chars, hash of (post_id, farmaco). The same post and drug always give the same id: use it to drop duplicates.",
+      "title": "Id",
+      "type": "string"
+    },
+    "fuente": {
+      "const": "bluesky",
+      "default": "bluesky",
+      "description": "Social network the post comes from.",
+      "title": "Fuente",
+      "type": "string"
+    },
+    "post_id": {
+      "description": "Pseudonymous stable id of the post ('p' + 12 hex chars). It is a hash: it does not identify the author and cannot be turned back into a link.",
+      "title": "Post Id",
+      "type": "string"
+    },
+    "hilo_id": {
+      "description": "post_id of the first post of the conversation. Mentions with the same hilo_id belong to the same conversation (they may describe the same case).",
+      "title": "Hilo Id",
+      "type": "string"
+    },
+    "farmaco": {
+      "description": "Watched active ingredient the post talks about, lower case, as in crawler/config.py WATCHLIST (e.g. 'sertralina'). A post about two drugs gives two mentions.",
+      "title": "Farmaco",
+      "type": "string"
+    },
+    "tipo_mencion": {
+      "description": "How the post refers to the drug: nombre (active ingredient), marca (brand), errata (misspelt or shortened), indirecta (does not name it; known from the conversation), jerga (describes it without naming it).",
+      "enum": [
+        "nombre",
+        "marca",
+        "errata",
+        "indirecta",
+        "jerga"
+      ],
+      "title": "Tipo Mencion",
+      "type": "string"
+    },
+    "texto": {
+      "description": "Full text of the post, copied from the source (never written by a model) and anonymised: @handles -> '@usuario', links -> '[enlace]', e-mails -> '[correo]'.",
+      "title": "Texto",
+      "type": "string"
+    },
+    "contexto": {
+      "$ref": "#/$defs/MentionContext"
+    },
+    "idioma": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Language declared by the author in Bluesky (ISO 639-1, e.g. 'es').",
+      "title": "Idioma"
+    },
+    "fecha": {
+      "description": "When the post was published, ISO 8601 in UTC.",
+      "title": "Fecha",
+      "type": "string"
+    },
+    "encontrado_por": {
+      "description": "busqueda_fija: the post contains the name, a brand or a known misspelling (almost always right). agente: the crawler agent read the conversation and decided it talks about the drug (indirect mentions; about 1 in 4 is not really about it).",
+      "enum": [
+        "busqueda_fija",
+        "agente"
+      ],
+      "title": "Encontrado Por",
+      "type": "string"
+    },
+    "motivo": {
+      "default": "",
+      "description": "Why it was saved (e.g. \"contiene 'sertralina'\"); may be empty.",
+      "title": "Motivo",
+      "type": "string"
+    },
+    "guardado": {
+      "description": "When the crawler saved it, ISO 8601 in UTC.",
+      "title": "Guardado",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "post_id",
+    "hilo_id",
+    "farmaco",
+    "tipo_mencion",
+    "texto",
+    "fecha",
+    "encontrado_por"
+  ],
+  "title": "RawMention",
+  "type": "object"
+}

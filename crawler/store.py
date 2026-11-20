@@ -19,24 +19,77 @@ from pydantic import BaseModel, Field
 MentionType = Literal["nombre", "marca", "errata", "indirecta", "jerga"]
 
 
+SCHEMA_VERSION = "1.0"
+
+
 class MentionContext(BaseModel):
-    inicio_hilo: str | None = Field(None, description="Text of the first post of the thread.")
-    responde_a: str | None = Field(None, description="Text of the post this one answers.")
+    """The minimum of the conversation needed to understand the post."""
+
+    inicio_hilo: str | None = Field(
+        None,
+        description="Text of the first post of the conversation (anonymised). None when the "
+        "mention is itself the first post, or the first post was not available.",
+    )
+    responde_a: str | None = Field(
+        None,
+        description="Text of the post this one directly answers (anonymised). None when the "
+        "mention is not a reply, or when the post it answers is the first post (then it is in "
+        "inicio_hilo).",
+    )
 
 
 class RawMention(BaseModel):
-    id: str
-    fuente: Literal["bluesky"] = "bluesky"
-    post_id: str
-    hilo_id: str
-    farmaco: str
-    tipo_mencion: MentionType
-    texto: str
-    contexto: MentionContext = MentionContext()
-    fecha: str
-    encontrado_por: Literal["busqueda_fija", "agente"]
-    motivo: str = ""
-    guardado: str = Field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
+    """One post that talks about one watched drug, as the crawler hands it to triage.
+
+    Contract between the crawler and triage (``crawler/CONTRATO_TRIAJE.md``). Not judged: it
+    may or may not describe an adverse reaction; deciding that is triage's job.
+    """
+
+    version: str = Field(SCHEMA_VERSION, description="Version of this format.")
+    id: str = Field(
+        description="Stable id of the mention, 'M-' + 10 hex chars, hash of (post_id, farmaco). "
+        "The same post and drug always give the same id: use it to drop duplicates."
+    )
+    fuente: Literal["bluesky"] = Field("bluesky", description="Social network the post comes from.")
+    post_id: str = Field(
+        description="Pseudonymous stable id of the post ('p' + 12 hex chars). It is a hash: it "
+        "does not identify the author and cannot be turned back into a link."
+    )
+    hilo_id: str = Field(
+        description="post_id of the first post of the conversation. Mentions with the same "
+        "hilo_id belong to the same conversation (they may describe the same case)."
+    )
+    farmaco: str = Field(
+        description="Watched active ingredient the post talks about, lower case, as in "
+        "crawler/config.py WATCHLIST (e.g. 'sertralina'). A post about two drugs gives two "
+        "mentions."
+    )
+    tipo_mencion: MentionType = Field(
+        description="How the post refers to the drug: nombre (active ingredient), marca (brand), "
+        "errata (misspelt or shortened), indirecta (does not name it; known from the "
+        "conversation), jerga (describes it without naming it)."
+    )
+    texto: str = Field(
+        description="Full text of the post, copied from the source (never written by a model) "
+        "and anonymised: @handles -> '@usuario', links -> '[enlace]', e-mails -> '[correo]'."
+    )
+    contexto: MentionContext = Field(default_factory=MentionContext)
+    idioma: str | None = Field(
+        None, description="Language declared by the author in Bluesky (ISO 639-1, e.g. 'es')."
+    )
+    fecha: str = Field(description="When the post was published, ISO 8601 in UTC.")
+    encontrado_por: Literal["busqueda_fija", "agente"] = Field(
+        description="busqueda_fija: the post contains the name, a brand or a known misspelling "
+        "(almost always right). agente: the crawler agent read the conversation and decided it "
+        "talks about the drug (indirect mentions; about 1 in 4 is not really about it)."
+    )
+    motivo: str = Field(
+        "", description="Why it was saved (e.g. \"contiene 'sertralina'\"); may be empty."
+    )
+    guardado: str = Field(
+        default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"),
+        description="When the crawler saved it, ISO 8601 in UTC.",
+    )
 
     @staticmethod
     def make_id(post_id: str, drug: str) -> str:
@@ -77,3 +130,16 @@ class MentionStore:
                 return {json.loads(line)["id"] for line in f if line.strip()}
         except FileNotFoundError:
             return set()
+
+
+def read_mentions(path: str | Path) -> list[RawMention]:
+    """Read a mentions file (one JSON object per line), validating every line against the
+    contract. Lines written by an older version without the new optional fields still load."""
+    with open(path, encoding="utf-8") as f:
+        return [RawMention.model_validate_json(line) for line in f if line.strip()]
+
+
+def write_schema(path: str | Path) -> None:
+    """Write the JSON Schema of RawMention (for teammates who do not use Python)."""
+    schema = RawMention.model_json_schema()
+    Path(path).write_text(json.dumps(schema, ensure_ascii=False, indent=2) + "\n", "utf-8")
