@@ -11,12 +11,26 @@ acertar lo más posible, **practicando con una parte y examinándose una sola ve
 
 ## 2. Qué recibes (por un canal privado, nunca por GitHub)
 
-| Cuándo | Fichero | Qué es |
-|---|---|---|
-| Al empezar | `hibrido_27b_menciones_dev.jsonl` | 287 **preguntas de práctica** (menciones, formato del [contrato](../crawler/CONTRATO_TRIAJE.md)) |
-| Al empezar | `gold_triaje_dev.jsonl` | Sus 287 **respuestas** (72 efectos adversos) |
-| **Al final** | `hibrido_27b_menciones_test.jsonl` | 438 **preguntas del examen** |
-| **Al final** | `gold_triaje_test.jsonl` | Sus 438 **respuestas** (89 efectos adversos) |
+Cuatro ficheros. Ponlos **exactamente aquí**, dentro de tu copia del repositorio (crea las
+carpetas si no existen):
+
+```
+pv-agents/
+└── data/
+    ├── hibrido_27b_menciones_dev.jsonl     práctica: 287 preguntas
+    ├── hibrido_27b_menciones_test.jsonl    EXAMEN: 438 preguntas      ← no abrir hasta el final
+    └── triaje/
+        ├── gold_triaje_dev.jsonl           práctica: 287 respuestas (72 efectos adversos)
+        └── gold_triaje_test.jsonl          EXAMEN: 438 respuestas     ← no abrir hasta el final
+```
+
+`data/` está en `.gitignore`: lo que hay dentro **nunca se sube a GitHub** (son posts de personas
+reales). Comprueba con `git status` que no aparecen. Las preguntas tienen el formato del
+[contrato](../crawler/CONTRATO_TRIAJE.md); las respuestas, los campos de la
+[guía de anotación](ANOTACION_TRIAJE.md).
+
+Los dos ficheros `_test` **no los abras, no los leas desde código y no los uses** hasta el
+apartado 5. Tu código de práctica debería leer solo los `_dev`.
 
 Ya están en el repositorio: el [contrato](../crawler/CONTRATO_TRIAJE.md) (qué es cada campo de una
 mención), la [guía de anotación](ANOTACION_TRIAJE.md) (qué significa cada respuesta, léela
@@ -120,6 +134,6 @@ números y `errors` lista los fallos con su texto, para el rastreador.
 
 ## 9. Git
 
-Trabaja en tu rama (`triaje`); antes de empezar cada día, trae lo nuevo de `main`
-(`git checkout main && git pull && git checkout triaje && git merge main`); para entregar, `git
-push` de tu rama y un *pull request* en GitHub. **Nada de `data/` en git**: está en `.gitignore`.
+Trabaja en tu rama, `triaje`, y en tu carpeta, `triage/`. Cómo descargar el proyecto la primera
+vez, la rutina de cada día y cómo entregar con un *pull request*:
+[`COLABORAR.md`](../COLABORAR.md). **Nada de `data/` ni `.env` en git.**

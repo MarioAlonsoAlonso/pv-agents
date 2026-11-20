@@ -4,6 +4,9 @@
 > `dgm-arca`, práctica del cuatrimestre), cuyo contenido se conserva aquí tal cual, y añade los
 > agentes del sistema multiagente. Primero: el rastreador de menciones en Bluesky
 > ([`crawler/`](crawler/README.md)).
+>
+> **Equipo:** cómo trabajar con ramas, *pull requests* y datos privados en
+> [`COLABORAR.md`](COLABORAR.md).
 
 ## Punto de partida: ARCA · Agente de farmacovigilancia
 
