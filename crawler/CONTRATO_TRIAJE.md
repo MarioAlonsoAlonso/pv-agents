@@ -39,8 +39,10 @@ en cada ejecución. Para procesar solo las nuevas, guardad los `id` ya vistos.
 | `idioma` | texto o `null` | no | Idioma declarado por el autor (`"es"`, a veces `"ca"`, `"pt"`…) |
 | `fecha` | texto | sí | Cuándo se publicó el post, ISO 8601 en UTC (`2026-03-02T10:15:00Z`) |
 | `encontrado_por` | texto | sí | `busqueda_fija`: el post contiene el nombre, una marca o una errata conocida (casi siempre acierta). `agente`: el agente leyó la conversación y decidió que habla del fármaco (menciones indirectas; en la evaluación **1 de cada 4 no hablaba realmente de él**) |
-| `motivo` | texto | sí | Por qué se guardó (`contiene 'sertralina'`); puede estar vacío |
+| `motivo` | texto | sí | Por qué se guardó. En las de `busqueda_fija` lo escribe el código (`contiene 'Besitran'`); **en las del `agente` está vacío**: para entender por qué una respuesta habla del fármaco, usad `contexto` (texto real), no una explicación del modelo |
 | `guardado` | texto | sí | Cuándo lo guardó el rastreador, ISO 8601 en UTC |
+
+**¿Y el "híbrido"?** Es el sistema que usa el vigilante, no un valor de `encontrado_por`: cada mención la encuentra una de sus dos partes, la búsqueda fija (el código) o el agente que lee las conversaciones, y por eso con el híbrido aparecen los dos valores. Distinguirlas importa porque su fiabilidad es muy distinta: en la evaluación acertaron 46 de 47 y 18 de 25.
 
 ## Un ejemplo: una pregunta y dos respuestas
 
