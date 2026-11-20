@@ -244,6 +244,77 @@ def agreement(rows_a: list[dict], rows_b: list[dict]) -> dict:
     return result
 
 
+# --------------------------------------------------------------------------- human review
+
+REVIEW_COLUMNS = [
+    "n", "id", "conversacion", "texto",
+    "a_efecto_adverso", "a_detalle", "a_grave",
+    "b_efecto_adverso", "b_detalle", "b_grave",
+    "razon_a", "decision", "notas_revision",
+]  # fmt: skip
+
+
+def _detail(lab: dict) -> str:
+    if lab["es_efecto_adverso"] == "si":
+        return lab["reacciones"]
+    return lab["motivo_no"]
+
+
+def review_rows(rows_a: list[dict], rows_b: list[dict]) -> list[dict]:
+    """Only the disagreements that change the answer: adverse event yes/no, and seriousness
+    when both say yes. The motive of a "no" is left out: its categories overlap (kappa 0.47)
+    and it does not change what triage must do."""
+    by_id_b = {r["id"]: r for r in rows_b if (r.get("es_efecto_adverso") or "").strip()}
+    out = []
+    for ra in rows_a:
+        rb = by_id_b.get(ra["id"])
+        if rb is None:
+            continue
+        a, b = normalise(ra), normalise(rb)
+        differs = a["es_efecto_adverso"] != b["es_efecto_adverso"] or (
+            a["es_efecto_adverso"] == "si" and a["grave"] != b["grave"]
+        )
+        if differs:
+            out.append(
+                {
+                    "n": ra["n"],
+                    "id": ra["id"],
+                    "conversacion": ra["conversacion"],
+                    "texto": ra["texto"],
+                    "a_efecto_adverso": a["es_efecto_adverso"],
+                    "a_detalle": _detail(a),
+                    "a_grave": f"{a['grave']} {a['criterio_gravedad']}".strip(),
+                    "b_efecto_adverso": b["es_efecto_adverso"],
+                    "b_detalle": _detail(b),
+                    "b_grave": f"{b['grave']} {b['criterio_gravedad']}".strip(),
+                    "razon_a": (ra.get("notas") or "").replace("prenotado claude", "").strip("; "),
+                    "decision": "",
+                    "notas_revision": "",
+                }
+            )
+    return out
+
+
+def apply_review(rows_a: list[dict], rows_b: list[dict], review: list[dict]) -> list[dict]:
+    """The final sheet: A, except where the reviewer chose ``b`` (take B's answer for that
+    mention) or ``descartar`` (drop the mention: no clear answer). ``a`` or empty keeps A."""
+    by_id_b = {r["id"]: r for r in rows_b}
+    decisions = {r["id"]: (r.get("decision") or "").strip().lower() for r in review}
+    unknown = {d for d in decisions.values() if d not in {"", "a", "b", "descartar"}}
+    if unknown:
+        raise ValueError(f"decision must be a, b or descartar (got {sorted(unknown)})")
+    final = []
+    for ra in rows_a:
+        d = decisions.get(ra["id"], "")
+        if d == "descartar":
+            continue
+        row = dict(by_id_b[ra["id"]]) if d == "b" else dict(ra)
+        if d:
+            row["notas"] = f"revisado: {d}; " + (row.get("notas") or "")
+        final.append(row)
+    return final
+
+
 # --------------------------------------------------------------------------- CLI
 
 
@@ -268,6 +339,15 @@ def main(argv: list[str] | None = None) -> None:
     a = sub.add_parser("acuerdo", help="agreement between two filled sheets")
     a.add_argument("a", type=Path)
     a.add_argument("b", type=Path)
+    r = sub.add_parser("revisar", help="sheet with only the disagreements, for a person")
+    r.add_argument("a", type=Path)
+    r.add_argument("b", type=Path)
+    r.add_argument("--out", type=Path, default=FOLDER / "revision.csv")
+    ap = sub.add_parser("aplicar", help="apply the reviewer's decisions -> final sheet")
+    ap.add_argument("a", type=Path)
+    ap.add_argument("b", type=Path)
+    ap.add_argument("revision", type=Path)
+    ap.add_argument("--out", type=Path, default=FOLDER / "lote_triaje_final.csv")
     k = sub.add_parser("consolidar", help="validated sheet -> gold_triaje.jsonl")
     k.add_argument("lote", type=Path)
     k.add_argument("--out", type=Path, default=FOLDER / "gold_triaje.jsonl")
@@ -294,6 +374,23 @@ def main(argv: list[str] | None = None) -> None:
         out = args.a.with_name(f"desacuerdos_{args.a.stem}_{args.b.stem}.json")
         out.write_text(json.dumps(r["desacuerdos"], ensure_ascii=False, indent=1), "utf-8")
         print(f"{len(r['desacuerdos'])} desacuerdos en las decisiones → {out}")
+    elif args.cmd == "revisar":
+        rows = review_rows(read_sheet(args.a), read_sheet(args.b))
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        with open(args.out, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, REVIEW_COLUMNS, delimiter=";")
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"{len(rows)} desacuerdos para revisar → {args.out}")
+        print("Rellenad la columna 'decision' con a (primera hoja), b (segunda) o descartar.")
+    elif args.cmd == "aplicar":
+        final = apply_review(read_sheet(args.a), read_sheet(args.b), read_sheet(args.revision))
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        with open(args.out, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, READ_COLUMNS + LABELS, delimiter=";", extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(final)
+        print(f"{len(final)} menciones en la hoja final → {args.out}")
     elif args.cmd == "consolidar":
         rows = read_sheet(args.lote)
         gold, errors = [], []

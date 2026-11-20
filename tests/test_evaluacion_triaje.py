@@ -54,3 +54,28 @@ def test_agreement_counts_decisions_and_disagreements():
     assert r["efecto_adverso"]["si_a"] == 1 and r["efecto_adverso"]["si_b"] == 2
     assert [d["id"] for d in r["desacuerdos"]] == ["M-2"]
     assert r["sexo"]["acuerdo"] == 1.0
+
+
+def test_review_keeps_only_decisive_disagreements_and_applies_choices():
+    from evaluacion_triaje.lote import apply_review, review_rows
+
+    base = {"conversacion": "", "texto": "t", "notas": "prenotado claude; motivo"}
+    a = [
+        {"n": "0", "id": "M-1", **base, **YES},
+        {"n": "1", "id": "M-2", **base, **NO},
+        {"n": "2", "id": "M-3", **base, **NO},
+    ]
+    b = [
+        {"n": "0", "id": "M-1", **base, **YES},
+        {"n": "1", "id": "M-2", **base, **YES},
+        {"n": "2", "id": "M-3", **base, **NO, "motivo_no": "sin_reaccion"},
+    ]
+    rows = review_rows(a, b)
+    assert [r["id"] for r in rows] == ["M-2"]  # the motive-only disagreement (M-3) is skipped
+    assert rows[0]["razon_a"] == "motivo"
+    final = apply_review(a, b, [{"id": "M-2", "decision": "b"}])
+    assert final[1]["es_efecto_adverso"] == "sí" and final[1]["notas"].startswith("revisado: b")
+    assert [r["id"] for r in apply_review(a, b, [{"id": "M-2", "decision": "descartar"}])] == [
+        "M-1",
+        "M-3",
+    ]

@@ -75,10 +75,16 @@ ficheros van en `data/triaje/`, fuera de git.
    `uv run python -m evaluacion_triaje.lote prenotar --menciones data/hibrido_27b_menciones.jsonl`
    → `lote_triaje_prenotado_27b.csv`.
 4. **Se comparan**:
-   `uv run python -m evaluacion_triaje.lote acuerdo data/triaje/lote_triaje_claude.csv data/triaje/lote_triaje_prenotado_27b.csv`.
-   Da la kappa de cada decisión y un JSON con los desacuerdos; una persona del equipo revisa solo
-   esos y corrige la hoja de Claude → `lote_triaje_final.csv`.
-5. **Hoja de soluciones**:
+   `uv run python -m evaluacion_triaje.lote acuerdo data/triaje/lote_triaje_claude.csv data/triaje/lote_triaje_prenotado_27b.csv`
+   (kappa de cada decisión).
+5. **Revisión humana, solo de lo que cambia la respuesta** (efecto adverso sí/no y gravedad; el
+   motivo del "no" se deja, porque sus categorías se solapan):
+   `uv run python -m evaluacion_triaje.lote revisar data/triaje/lote_triaje_claude.csv data/triaje/lote_triaje_prenotado_27b.csv`
+   → `revision.csv`. Una persona del equipo rellena `decision` en cada fila: `a` (Claude), `b`
+   (27B) o `descartar` (sin respuesta clara). La columna `razon_a` explica la decisión de Claude.
+   Después: `uv run python -m evaluacion_triaje.lote aplicar data/triaje/lote_triaje_claude.csv data/triaje/lote_triaje_prenotado_27b.csv data/triaje/revision.csv`
+   → `lote_triaje_final.csv`.
+6. **Hoja de soluciones**:
    `uv run python -m evaluacion_triaje.lote consolidar data/triaje/lote_triaje_final.csv`
    → `gold_triaje.jsonl`, con la que se corrige el agente de triaje.
 
