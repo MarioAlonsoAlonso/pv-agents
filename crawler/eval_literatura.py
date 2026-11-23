@@ -233,7 +233,7 @@ def main(argv: list[str] | None = None) -> None:
         args.salida = args.salida.with_name(args.salida.stem + "_parcial.json")
     report = {
         "fecha": datetime.now(UTC).isoformat(timespec="seconds"),
-        "bench": args.bench.as_posix(),
+        "bench": args.bench.name,
         "sistemas": {},
     }
     if "fija" in args.sistemas:

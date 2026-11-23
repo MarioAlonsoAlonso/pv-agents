@@ -236,7 +236,7 @@ def main(argv: list[str] | None = None) -> None:
         report = json.loads(args.salida.read_text("utf-8"))
     report |= {
         "fecha": datetime.now(UTC).isoformat(timespec="seconds"),
-        "bench": args.bench.as_posix(),
+        "bench": args.bench.name,
         "gold_construido": gold["construido"],
     }
     if "fija" in args.sistemas:

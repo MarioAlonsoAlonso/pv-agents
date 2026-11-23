@@ -1,7 +1,4 @@
 {
- "fecha": "2026-11-23T15:57:33+00:00",
- "bench": "crawler/bench/casos_test.jsonl",
- "gold_construido": "2026-11-23T15:57:32+00:00",
  "sistemas": {
   "fija": {
    "resumen": {
@@ -93,5 +90,8 @@
     }
    ]
   }
- }
+ },
+ "fecha": "2026-11-23T15:59:25+00:00",
+ "bench": "casos_test.jsonl",
+ "gold_construido": "2026-11-23T15:57:32+00:00"
 }
