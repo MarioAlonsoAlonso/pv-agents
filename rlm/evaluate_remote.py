@@ -82,10 +82,24 @@ def solve(llm, problem: dict, thinking: bool, verifier: MedDRAVerifier) -> dict:
     }
 
 
-def mcnemar(rows_a: list[dict], rows_b: list[dict]) -> dict:
+def lenient_correct(row: dict, verifier: MedDRAVerifier) -> bool:
+    """Correct, reading a short answer written without the <answer> tags.
+
+    Without reasoning the 27B usually writes the terms alone ("Diarrhoea; Drug ineffective"),
+    and the strict verifier counts that as no answer (2026-11-23: 97 of its 124 errors on the
+    test). A completion cut while reasoning, or a long text, stays wrong."""
+    if row["predicted"] is not None:
+        return row["is_correct"]
+    content = row["raw"].split("</think>")[-1].strip()
+    if content and len(content) <= 300 and "\n" not in content:
+        return verifier.verify(f"<answer>{content}</answer>", row["expected"]).is_correct
+    return False
+
+
+def mcnemar(rows_a: list[dict], rows_b: list[dict], key: str = "is_correct") -> dict:
     """Paired comparison by question: how many only A gets right, only B, and the exact p."""
-    b_by_q = {r["question"]: r["is_correct"] for r in rows_b}
-    pairs = [(r["is_correct"], b_by_q[r["question"]]) for r in rows_a if r["question"] in b_by_q]
+    b_by_q = {r["question"]: r[key] for r in rows_b}
+    pairs = [(r[key], b_by_q[r["question"]]) for r in rows_a if r["question"] in b_by_q]
     only_a = sum(a and not b for a, b in pairs)
     only_b = sum(b and not a for a, b in pairs)
     n = only_a + only_b
@@ -144,6 +158,9 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--n", type=int, help="only the first N problems of each set")
     parser.add_argument("--hilos", type=int, default=2)
     parser.add_argument("--out", type=Path, default=Path("reports/phase1_eval_27b.json"))
+    parser.add_argument(
+        "--solo-puntuar", action="store_true", help="only score the saved rows (no model)"
+    )
     args = parser.parse_args(argv)
 
     report = json.loads(args.out.read_text("utf-8")) if args.out.exists() else {}
@@ -172,7 +189,10 @@ def main(argv: list[str] | None = None) -> None:
                 save()
 
             print(f"\n=== 27B · {key}: {len(problems)} problemas ({len(done)} ya hechos)")
-            rows = run(problems, MODES[mode], factory, done, save_entry, args.hilos)
+            if args.solo_puntuar:
+                rows = [done[p["question"]] for p in problems if p["question"] in done]
+            else:
+                rows = run(problems, MODES[mode], factory, done, save_entry, args.hilos)
             entry["rows"] = rows
             entry["summary"] = summarize(rows)
             entry["pass@1"] = entry["summary"]["pass@1"]
@@ -181,11 +201,25 @@ def main(argv: list[str] | None = None) -> None:
             entry["pass@1_1.7b_mismos"] = sum(r["is_correct"] for r in small_rows) / max(
                 len(small_rows), 1
             )
+            # The same lenient reading for both models (the 1.7B almost always uses the tags).
+            verifier = MedDRAVerifier()
+            for r in rows + small_rows:
+                r["correcto_tolerante"] = lenient_correct(r, verifier)
+            n = max(len(rows), 1)
+            entry["pass@1_tolerante"] = sum(r["correcto_tolerante"] for r in rows) / n
+            entry["pass@1_tolerante_1.7b_mismos"] = sum(
+                r["correcto_tolerante"] for r in small_rows
+            ) / max(len(small_rows), 1)
+            entry["sin_respuesta_aun_tolerante"] = sum(
+                r["predicted"] is None and not r["correcto_tolerante"] for r in rows
+            )
+            entry["frente_a_1.7b_tolerante"] = mcnemar(rows, small_rows, "correcto_tolerante")
             save()
             s = entry["summary"]
             print(
-                f"  27B {mode}: pass@1 {s['pass@1']:.3f} · 1.7B (SFT+GRPO) "
-                f"{entry['pass@1_1.7b_mismos']:.3f} · {entry['frente_a_1.7b']}"
+                f"  27B {mode}: estricto {s['pass@1']:.3f} · tolerante "
+                f"{entry['pass@1_tolerante']:.3f} | 1.7B (SFT+GRPO) "
+                f"{entry['pass@1_1.7b_mismos']:.3f} | tolerante: {entry['frente_a_1.7b_tolerante']}"
             )
             print(f"  por familia: { {f: round(v, 2) for f, v in s['pass@1_by_family'].items()} }")
             print(f"  errores: {s['error_types']}")
