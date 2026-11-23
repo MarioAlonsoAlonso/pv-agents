@@ -1,0 +1,97 @@
+{
+ "fecha": "2026-11-23T15:57:32+00:00",
+ "bench": "C:/Users/mario/ICAI5.1/Generativo/Proyecto Final/dgm-arca/crawler/bench/casos.jsonl",
+ "gold_construido": "2026-11-23T15:57:32+00:00",
+ "sistemas": {
+  "fija": {
+   "resumen": {
+    "preguntas": 5,
+    "recall": {
+     "k": 49,
+     "n": 58,
+     "valor": 0.845,
+     "ic95": [
+      0.731,
+      0.916
+     ]
+    },
+    "precision": {
+     "k": 49,
+     "n": 97,
+     "valor": 0.505,
+     "ic95": [
+      0.407,
+      0.603
+     ]
+    },
+    "sin_juzgar": 0,
+    "controles": {
+     "control_pelo_sertralina": 0
+    },
+    "por_pregunta": {
+     "calor_sertralina": "13/19 encontrados, 22 de más, 0 sin juzgar",
+     "insomnio_sertralina": "20/22 encontrados, 25 de más, 0 sin juzgar",
+     "bruxismo_sertralina": "5/5 encontrados, 0 de más, 0 sin juzgar",
+     "piernas_inquietas_sertralina": "5/5 encontrados, 0 de más, 0 sin juzgar",
+     "mareo_sertralina": "6/7 encontrados, 1 de más, 0 sin juzgar"
+    }
+   },
+   "preguntas": [
+    {
+     "id": "calor_sertralina",
+     "control": false,
+     "positivos": 19,
+     "encontrados": 35,
+     "aciertos": 13,
+     "juzgados": 35,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "insomnio_sertralina",
+     "control": false,
+     "positivos": 22,
+     "encontrados": 45,
+     "aciertos": 20,
+     "juzgados": 45,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "bruxismo_sertralina",
+     "control": false,
+     "positivos": 5,
+     "encontrados": 5,
+     "aciertos": 5,
+     "juzgados": 5,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "piernas_inquietas_sertralina",
+     "control": false,
+     "positivos": 5,
+     "encontrados": 5,
+     "aciertos": 5,
+     "juzgados": 5,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "mareo_sertralina",
+     "control": false,
+     "positivos": 7,
+     "encontrados": 7,
+     "aciertos": 6,
+     "juzgados": 7,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "control_pelo_sertralina",
+     "control": true,
+     "positivos": 0,
+     "encontrados": 0,
+     "aciertos": 0,
+     "juzgados": 0,
+     "sin_juzgar": 0
+    }
+   ]
+  }
+ }
+}

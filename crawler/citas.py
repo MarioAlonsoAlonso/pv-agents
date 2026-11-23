@@ -1,10 +1,10 @@
-"""Are the references in the directed-mode answer backed by what the tools returned?
+"""Are the references in a sub-agent's answer backed by what its tools returned?
 
 The analyst only gets the crawler's summary, so a PMID or a post id the model made up would
 reach the report looking like evidence. ``check_citations`` compares the references in the
 final answer with what the tools actually showed in this run: PubMed articles returned by
 ``buscar_pubmed`` and Bluesky posts shown by ``buscar_bluesky``/``leer_hilo``. Used by
-``buscar_evidencia`` (the analyst sees the unbacked ones) and by ``crawler.eval_dirigido``.
+``buscar_literatura`` (the analyst sees the unbacked ones) and by ``crawler.eval_literatura``.
 """
 
 from __future__ import annotations

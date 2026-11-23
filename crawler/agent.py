@@ -9,9 +9,10 @@ loop detection and memory come from ``agent.react_agent.ReActAgent``. What chang
   (``common.llm.RemoteChatModel``), ``27b-thinking`` the same with reasoning on, and ``base``
   the local Qwen3-1.7B, to measure whether rastrear needs a big model.
 
-Three entry points, one per mode: ``vigilar`` (the agent alone), ``revisar_hilos`` (the
-hybrid: the fixed search already saved the explicit mentions), and ``investigar`` (directed
-search for the analyst, also exposed as the tool ``buscar_evidencia``).
+Entry points, one per mode: ``vigilar`` (the agent alone), ``revisar_hilos`` (the hybrid: the
+fixed search already saved the explicit mentions), and two for the analyst, also exposed as
+its tools: ``investigar_literatura`` (PubMed, tool ``buscar_literatura``) and
+``buscar_casos`` (more patients on Bluesky, tool ``buscar_mas_casos``).
 """
 
 from __future__ import annotations
@@ -227,61 +228,96 @@ def _thread_of(source: Source, post_id: str) -> str:
     return post.thread_id if post else post_id
 
 
-def investigar(
-    question: str,
+def investigar_literatura(
+    question: str, drug: str, brain: str = "27b", max_steps: int = 15
+) -> CrawlerRun:
+    """``literatura`` mode: what PubMed says about ``drug`` and the reaction in ``question``."""
+    from crawler.sources import FrozenSource
+
+    # PubMed only: no Bluesky source, no mentions. (Until 2026-11-23 one tool searched both:
+    # the agent spent its steps on Bluesky, where lab reactions never appear, and searched
+    # PubMed once per question; see crawler/README.md.)
+    ctx = CrawlerContext(
+        source=FrozenSource([]), store=MentionStore(), brands={}, drugs=(drug,), max_searches=0
+    )
+    task = prompts.LITERATURA_TASK.format(farmaco=drug, pregunta=question)
+    return run(ctx, "literatura", task, brain, max_steps)
+
+
+def buscar_casos(
     drug: str,
+    reaction: str,
     source: Source,
     brands: dict[str, list[str]],
     brain: str = "27b",
     max_steps: int = 25,
+    max_searches: int = 10,
+    max_threads: int = 6,
 ) -> CrawlerRun:
-    """Directed mode: evidence about ``drug`` for the analyst, from Bluesky and PubMed."""
+    """``casos`` mode: posts where someone tells ``reaction`` with ``drug`` (saved in the
+    run's store, as mentions)."""
     ctx = CrawlerContext(
         source=source,
         store=MentionStore(),
         brands=brands,
         drugs=(drug,),
-        # Bluesky only (PubMed has no budget). It was 10: on the first 14 questions
-        # (2026-11-23) the agent spent them all with nothing found and searched PubMed once.
-        max_searches=5,
-        max_threads=8,
+        max_searches=max_searches,
+        max_threads=max_threads,
     )
-    task = prompts.DIRIGIDO_TASK.format(farmaco=drug, pregunta=question)
-    return run(ctx, "dirigido", task, brain, max_steps)
+    task = prompts.CASOS_TASK.format(farmaco=drug, reaccion=reaction)
+    return run(ctx, "casos", task, brain, max_steps)
+
+
+def _brain() -> str:
+    return os.environ.get("ARCA_CRAWLER_BRAIN", "27b")
 
 
 @tool
-def buscar_evidencia(
+def buscar_literatura(
     farmaco: Annotated[str, Field(description="Active ingredient, e.g. 'sertralina'.")],
     pregunta: Annotated[
         str,
-        Field(description="What you need to know, e.g. 'caídas en ancianos con sertralina'."),
+        Field(description="What you need to know, e.g. '¿hay casos de hiponatremia en ancianos?'."),
     ],
 ) -> dict:
-    """Ask the crawler sub-agent to look for evidence in social media (Bluesky, Spanish
-    patients' posts) and in the literature (PubMed). Returns its summary with post ids and
-    PMIDs. Slow (a full agent run): use it only when the technical sheet and FAERS are not
-    enough. References listed in 'referencias_sin_respaldo' were not returned by any search:
-    do not cite them."""
-    from crawler.cima import load_brands
+    """Ask a sub-agent what the medical literature (PubMed) says about a drug and a reaction:
+    whether it is described, the kind of evidence (case reports, studies), who is at risk and
+    the mechanism. Returns a summary with PMIDs and the articles it saw. Use it when the
+    technical sheet does not list the reaction, or to judge plausibility. PMIDs listed in
+    'referencias_sin_respaldo' were not returned by any search: do not cite them."""
     from crawler.citas import check_citations
-    from crawler.sources import LiveSource
 
-    result = investigar(
-        pregunta,
-        farmaco,
-        LiveSource(),
-        load_brands(),
-        brain=os.environ.get("ARCA_CRAWLER_BRAIN", "27b"),
-    )
+    result = investigar_literatura(pregunta, farmaco, brain=_brain())
     ctx, answer = result.context, result.response.final_answer or ""
-    check = check_citations(answer, ctx.articles, ctx.shown)
+    check = check_citations(answer, ctx.articles, ())
     articles = {a["pmid"]: a for a in ctx.articles}  # several searches can return the same one
     return {
         "resumen": answer,
-        "posts": [{"id": m.post_id, "texto": m.texto} for m in ctx.store.mentions.values()],
         "articulos": [
             {"pmid": a["pmid"], "titulo": a["titulo"], "año": a["año"]} for a in articles.values()
         ],
-        "referencias_sin_respaldo": check["pmids_sin_respaldo"] + check["posts_sin_respaldo"],
+        "referencias_sin_respaldo": check["pmids_sin_respaldo"],
+    }
+
+
+@tool
+def buscar_mas_casos(
+    farmaco: Annotated[str, Field(description="Active ingredient, e.g. 'sertralina'.")],
+    reaccion: Annotated[str, Field(description="The reaction, in Spanish, e.g. 'bruxismo'.")],
+) -> dict:
+    """Ask a sub-agent to look for more people telling this reaction with this drug on
+    Bluesky (Spanish posts, any date). Returns the posts it saved (real text, anonymised) and a
+    summary. Use it when a signal comes from social media and the reaction is something
+    patients notice and tell (not lab values). Slow: a full agent run."""
+    from crawler.cima import load_brands
+    from crawler.sources import LiveSource
+
+    result = buscar_casos(farmaco, reaccion, LiveSource(), load_brands(), brain=_brain())
+    ctx = result.context
+    return {
+        "resumen": result.response.final_answer or "",
+        "casos": [
+            {"post_id": m.post_id, "hilo_id": m.hilo_id, "fecha": m.fecha, "texto": m.texto}
+            for m in ctx.store.mentions.values()
+        ],
     }

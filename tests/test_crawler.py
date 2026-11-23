@@ -174,7 +174,10 @@ def test_budgets_are_enforced_by_the_tools(source):
 def test_hilos_mode_has_no_search(source):
     names = set(make_registry(_ctx(source), "hilos").tools)
     assert "buscar_bluesky" not in names and {"leer_hilo", "guardar_menciones"} <= names
-    assert "buscar_pubmed" in make_registry(_ctx(source), "dirigido").tools
+    literatura = set(make_registry(_ctx(source), "literatura").tools)
+    assert literatura == {"buscar_pubmed", "final_answer"}  # PubMed only
+    casos = set(make_registry(_ctx(source), "casos").tools)
+    assert "buscar_bluesky" in casos and not {"buscar_pubmed", "proponer_termino"} & casos
 
 
 # ---------------------------------------------------------------------------- systems + score
@@ -577,8 +580,8 @@ def test_citations_without_backing_are_flagged():
     assert check["posts_sin_respaldo"] == ["pdd2984e9aa82"]  # never shown
 
 
-def test_directed_scoring_relevance_reference_and_controls():
-    from crawler.eval_dirigido import TEST, load_bench, score_question, summarize
+def test_literature_scoring_relevance_reference_and_controls():
+    from crawler.eval_literatura import TEST, load_bench, score_question, summarize
 
     bench = load_bench()
     assert len(bench) == 14 and sum(q["control"] for q in bench) == 2
@@ -593,20 +596,20 @@ def test_directed_scoring_relevance_reference_and_controls():
     ]
     fixed = score_question(q, arts)
     assert (fixed["articulos"], fixed["relevantes"], fixed["clave_encontrados"]) == (2, 1, 1)
-    agent = score_question(q, arts, "Hay casos (PMID 8681276, PMID 12345678).", {})
+    agent = score_question(q, arts, "Hay casos (PMID 8681276, PMID 12345678).")
     assert agent["pmids_sin_respaldo"] == ["12345678"] and agent["citados_relevantes"] == 1
     control = next(q for q in bench if q["control"])
-    c = score_question(control, [], "No he encontrado artículos ni posts sobre esto.", {})
+    c = score_question(control, [], "No he encontrado artículos sobre esto.")
     assert c["admite_sin_evidencia"] and c["pmids_citados"] == 0
     s = summarize([agent, c])
     assert s["pmids_sin_respaldo"]["k"] == 1 and s["pmids_sin_respaldo"]["n"] == 2
     assert s["controles"][control["id"]]["admite_sin_evidencia"]
 
 
-def test_directed_run_searches_pubmed_and_reports_unbacked_pmids(monkeypatch, source, tmp_path):
+def test_literature_run_searches_pubmed_and_reports_unbacked_pmids(monkeypatch, tmp_path):
     import crawler.agent
     import crawler.pubmed
-    from crawler.eval_dirigido import load_bench, run_agent
+    from crawler.eval_literatura import load_bench, run_agent
 
     articles = [
         {
@@ -621,14 +624,58 @@ def test_directed_run_searches_pubmed_and_reports_unbacked_pmids(monkeypatch, so
     llm = _ScriptedLLM(
         [
             _call("buscar_pubmed", consulta="sertraline hyponatremia"),
-            _call("buscar_bluesky", consulta="sertralina"),
             _call("final_answer", answer="Casos publicados: PMID 8681276 y PMID 31415926."),
         ]
     )
     monkeypatch.setitem(crawler.agent._SHARED_BRAINS, "fake", Brain(llm=llm))
     q = next(q for q in load_bench() if q["id"] == "hiponatremia_sertralina")
-    row = run_agent(q, source, BRANDS, "fake", tmp_path)
-    assert row["coste"]["busquedas_pubmed"] == 1 and row["coste"]["busquedas_bluesky"] == 1
+    row = run_agent(q, "fake", tmp_path)
+    assert row["coste"]["busquedas_pubmed"] == 1
     assert row["pmids_sin_respaldo"] == ["31415926"] and row["clave_citados"] == 1
     saved = json.loads((tmp_path / "hiponatremia_sertralina.json").read_text("utf-8"))
     assert saved["respuesta"].startswith("Casos publicados")
+
+
+def test_cases_answer_key_and_agent_run(monkeypatch, source, tmp_path):
+    import crawler.agent
+    from crawler.eval_casos import TEST, build_gold, load_jsonl, run_agent, run_fixed, summarize
+
+    assert {q["id"] for q in load_jsonl(TEST)}.isdisjoint(
+        q["id"] for q in load_jsonl(TEST.with_name("casos.jsonl"))
+    )
+    q = {
+        "id": "sueno",
+        "farmaco": "sertralina",
+        "reaccion": "somnolencia",
+        "patron_gold": r"dormid|ko",
+        "palabras_fija": r"dormid|sueno",
+        "control": False,
+    }
+    mentions = [
+        {"id": "M1", "post_id": "a1", "farmaco": "sertralina", "texto": "me paso el día dormida"},
+        {"id": "M2", "post_id": "a2", "farmaco": "sertralina", "texto": "me dejó KO"},
+        {"id": "M3", "post_id": "b1", "farmaco": "sertralina", "texto": "el sueño de mi vida"},
+    ]
+    triage = [
+        {"id": "M1", "es_efecto_adverso": "si", "reacciones": "me paso el día dormida"},
+        {"id": "M2", "es_efecto_adverso": "si", "reacciones": "me dejó KO"},
+        {"id": "M3", "es_efecto_adverso": "no", "reacciones": ""},
+    ]
+    gold = build_gold([q], mentions, triage)
+    assert gold["positivos"]["sueno"] == ["a1", "a2"] and len(gold["cubiertos"]) == 3
+    fixed = run_fixed(q, mentions, gold)  # finds a1 and the joke b1, misses a2
+    assert (fixed["aciertos"], fixed["juzgados"]) == (1, 2)
+    llm = _ScriptedLLM(
+        [
+            _call("buscar_bluesky", consulta="sertralina"),
+            _call("leer_hilo", post_id="a1"),
+            _call("guardar_menciones", farmaco="sertralina", menciones="a1 nombre; a2 indirecta"),
+            _call("final_answer", answer="2 casos"),
+        ]
+    )
+    monkeypatch.setitem(crawler.agent._SHARED_BRAINS, "fake", Brain(llm=llm))
+    row = run_agent(q, source, BRANDS, "fake", gold, tmp_path)
+    assert (row["aciertos"], row["positivos"], row["juzgados"]) == (2, 2, 2)
+    s = summarize([fixed, row])
+    assert s["recall"]["k"] == 3 and s["precision"]["n"] == 4
+    assert json.loads((tmp_path / "sueno.json").read_text("utf-8"))["positivos_perdidos"] == []

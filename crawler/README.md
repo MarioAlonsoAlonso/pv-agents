@@ -5,9 +5,10 @@ también los que **no lo nombran** ("a mí también me dejó KO", respondiendo a
 sertralina), y se los pasa al triaje como `RawMention`. **No valora nada**: decidir si un post
 describe una reacción adversa es trabajo del triaje.
 
-**Su segundo papel:** sub-agente de investigación del analista (`buscar_evidencia`). Ante una
-pregunta abierta ("¿hay más casos de caídas en ancianos con sertralina?") busca en Bluesky y
-PubMed y devuelve un resumen con referencias.
+**Su segundo papel:** dos herramientas para el analista. `buscar_literatura` pregunta a PubMed
+qué se ha publicado sobre un fármaco y una reacción (si está descrita, en quién, el mecanismo) y
+devuelve un resumen con PMID; `buscar_mas_casos` busca en Bluesky más personas que cuenten esa
+reacción con ese fármaco.
 
 **Sistema elegido: el híbrido** (búsqueda fija + agente que lee las conversaciones). En la
 evaluación sobre sertralina encuentra el 97 % de las menciones (17 de 19 indirectas) frente al 70 %
@@ -43,17 +44,19 @@ crawler/
   cima.py       marcas comerciales desde la API de CIMA → crawler/data/marcas.json (versionado)
   text.py       anonimización (@usuarios, enlaces, correos), ids con hash, coincidencia sin tildes
   sources.py    LiveSource (Bluesky en vivo) y FrozenSource (muestra congelada): misma interfaz
-  pubmed.py     PubMed (E-utilities), para el modo dirigido
+  pubmed.py     PubMed (E-utilities), para buscar_literatura
   citas.py      comprueba que cada PMID y post citado lo devolvió una herramienta
   store.py      RawMention: el contrato con el triaje
   tools.py      herramientas del agente, con los controles dentro
-  prompts.py    un prompt por modo: vigilancia, hilos, dirigido
+  prompts.py    un prompt por modo: vigilancia, hilos, literatura, casos
   agent.py      el agente: el bucle ReAct de la fase 4 con otras herramientas y cerebros
   systems.py    los cuatro sistemas que se comparan: fija, fija_hilos, hibrido, agente
   collect.py    construye la muestra congelada
   annotate.py   lote para anotar, pre-anotación, kappa, gold
   evaluate.py   recall por tipo de mención, precisión y coste de cada sistema
-  eval_dirigido.py  evaluación del modo dirigido (preguntas en bench/dirigido.jsonl)
+  eval_literatura.py  evaluación de buscar_literatura (bench/literatura*.jsonl)
+  eval_casos.py      evaluación de buscar_mas_casos (bench/casos*.jsonl)
+  stats.py           proporciones con intervalo de Wilson
   monitor.py    vigilancia periódica
   ANOTACION.md  guía de anotación
 ```
@@ -80,10 +83,11 @@ no se le pide al modelo:
 | `leer_hilo` | La conversación entera, por partes | Presupuesto de hilos; marca los posts fuera del periodo |
 | `guardar_menciones` | Guarda de una vez todos los posts relevantes que acaba de ver | El modelo da **ids**, el texto se copia de la fuente: solo puede guardar posts que ha visto, sin duplicados; un id inventado se rechaza sin perder los demás |
 | `proponer_termino` | Una forma nueva de nombrar el fármaco | Se añade a las búsquedas del vigilante |
-| `buscar_pubmed` | Literatura (solo modo dirigido) | — |
+| `buscar_pubmed` | Literatura (solo modo `literatura`) | Las citas se comprueban (`citas.py`) |
 
 **Modos:** `vigilancia` (el agente solo), `hilos` (la mitad del híbrido: lee los hilos donde la
-búsqueda fija encontró el fármaco) y `dirigido` (preguntas del analista).
+búsqueda fija encontró el fármaco) y, para el analista, `literatura` (solo PubMed) y `casos`
+(solo Bluesky, sin `proponer_termino`).
 
 ### Privacidad
 
@@ -118,7 +122,8 @@ Probar el agente a mano y leer su traza (se guarda en `data/bluesky/demo/`):
 ```bash
 uv run --extra crawler python -m crawler.demo vigilar sertralina --dias 7          # agente solo, en vivo
 uv run --extra crawler python -m crawler.demo hilos lorazepam --dias 14             # híbrido, en vivo
-uv run --extra crawler python -m crawler.demo investigar sertralina "¿caídas en ancianos?"
+uv run --extra crawler python -m crawler.demo literatura sertralina "¿hiponatremia en ancianos?"
+uv run --extra crawler python -m crawler.demo casos sertralina bruxismo   # Bluesky en vivo
 uv run python -m crawler.demo vigilar sertralina --muestra data/bluesky/sample.jsonl  # sobre la muestra
 ```
 
@@ -126,72 +131,74 @@ Tras `crawler.evaluate`, en `data/bluesky/eval/` quedan, por sistema, las mencio
 **trazas** del agente y `*_errores.json`: las menciones anotadas que se perdió (`perdidos`) y
 lo que envió sin que hablara del fármaco (`sobrantes`), con el texto, para el análisis de fallos.
 
-Modo dirigido, desde Python:
+## Las herramientas del analista
 
-```python
-from crawler.agent import investigar
-from crawler.cima import load_brands
-from crawler.sources import LiveSource
+El analista valida señales (GVP módulo IX): si la reacción es conocida, si es plausible, en quién
+es más probable. La ficha técnica (RAG) dice si está en la ficha; FAERS, cuántas notificaciones
+hay. El rastreador aporta dos cosas más, cada una como herramienta aparte:
 
-run = investigar("¿Hay casos de caídas en ancianos?", "sertralina", LiveSource(), load_brands())
-print(run.response.final_answer)
-```
+| Herramienta (en `crawler/agent.py`) | Cuándo | Devuelve |
+|---|---|---|
+| `buscar_literatura(farmaco, pregunta)` | La reacción no está en la ficha, o para valorar plausibilidad y grupos de riesgo | `resumen` con PMID, `articulos`, `referencias_sin_respaldo` (PMID citados que ninguna búsqueda devolvió: no citarlos) |
+| `buscar_mas_casos(farmaco, reaccion)` | La señal viene de redes y la reacción es algo que el paciente nota y cuenta (no un análisis) | `resumen` y `casos`: los posts guardados, con su texto real |
 
-La herramienta `buscar_evidencia` (en `crawler/agent.py`) hace lo mismo y se puede registrar en
-el analista: `agent.registry.register(buscar_evidencia)`. Devuelve `resumen`, `posts`,
-`articulos` y `referencias_sin_respaldo`: los PMID o posts que el resumen cita pero que ninguna
-búsqueda devolvió (inventados); el analista no debe citarlos.
+Se registran en el analista con `registry.register(buscar_literatura, buscar_mas_casos)`.
+Desde Python: `investigar_literatura(pregunta, farmaco)` y `buscar_casos(farmaco, reaccion,
+fuente, marcas)`.
 
-### Evaluación del modo dirigido
+**Por qué dos y no una.** Hasta el 2026-11-23 era una sola (`buscar_evidencia`, Bluesky y PubMed
+a la vez). En 14 preguntas no inventó ninguna cita (0 de 81 PMID), pero gastaba los pasos en
+Bluesky (8,1 búsquedas por pregunta, casi todas vacías: nadie escribe "tengo el sodio bajo") y
+buscaba una vez en PubMed: encontró 6 de 36 artículos de referencia frente a 16 de una búsqueda
+fija. Son dos preguntas distintas, con fuentes y evaluaciones distintas. Lo que encuentren se
+guarda en el expediente de la señal, no en el RAG (PubMed se consulta en vivo; los posts son
+datos de salud y no van a ningún índice).
 
-[`bench/dirigido.jsonl`](bench/dirigido.jsonl): 12 preguntas del analista con respuesta en la
-literatura (hiponatremia con sertralina, síndrome serotoninérgico con tramadol, acidosis láctica
-con metformina…) y 2 controles sin ella (¿cambia la sertralina el color de los ojos?). Cada
-pregunta lleva los términos del fármaco y de la reacción en inglés y 3 PMID de referencia,
-buscados en PubMed por título y comprobados el 2026-11-23. Se comparan la búsqueda fija (una
-consulta en inglés, los 10 primeros artículos, sin modelo) y el agente.
+### Evaluación de `buscar_literatura`
 
-Como con el triaje, hay **práctica y examen**: `dirigido.jsonl` es el de desarrollo (se miran
-sus fallos y se cambia el agente); [`bench/dirigido_test.jsonl`](bench/dirigido_test.jsonl), 10
-preguntas y 2 controles distintos, se escribió **antes del primer cambio** y solo se ejecuta para
-dar la nota final.
-
-```bash
-uv run python -m crawler.eval_dirigido --sistemas fija                   # sin modelo, en cualquier sitio
-uv run --extra crawler python -m crawler.eval_dirigido --brain 27b       # DGX: fija + agente
-uv run --extra crawler python -m crawler.eval_dirigido --ids caidas_zolpidem --sistemas agente
-uv run --extra crawler python -m crawler.eval_dirigido --brain 27b --bench crawler/bench/dirigido_test.jsonl
-```
+[`bench/literatura.jsonl`](bench/literatura.jsonl) (desarrollo): 12 preguntas con respuesta en
+la literatura (hiponatremia con sertralina, síndrome serotoninérgico con tramadol…) y 2
+controles sin ella. [`bench/literatura_test.jsonl`](bench/literatura_test.jsonl) (examen): 10
+preguntas y 2 controles distintos, escritos antes del primer cambio; solo para la nota final.
+Cada pregunta lleva términos en inglés y 3 PMID de referencia comprobados el 2026-11-23.
 
 | Medida | Qué es |
 |---|---|
-| **Citas sin respaldo** | PMID y posts citados en la respuesta que ninguna herramienta devolvió. Lo más grave: llegarían al informe como evidencia |
-| Relevancia | Artículo con un término del fármaco y uno de la reacción en el título o el resumen. Aproximada, automática e igual para los dos sistemas |
-| Referencia encontrados | Cuántos de los 3 PMID de referencia aparecen. Hay muchos otros artículos válidos: sirve para comparar, no como nota absoluta |
-| Controles | Si la respuesta admite que no hay evidencia (heurística: leedlas) |
-| Coste | Tokens, pasos, segundos, búsquedas en PubMed y Bluesky |
+| **PMID sin respaldo** | Citados en la respuesta sin que ninguna búsqueda los devolviera. Lo más grave |
+| Relevancia | Título o resumen con un término del fármaco y uno de la reacción (aproximada) |
+| Referencia encontrados | De los 3 PMID por pregunta. Hay otros válidos: para comparar sistemas |
+| Controles | Si admite que no hay evidencia |
+| Coste | Tokens, pasos, segundos, búsquedas |
 
-Las cifras van a `reports/crawler_dirigido_eval[_dirigido_test].json` (sin texto); respuestas,
-trazas y posts, a `data/bluesky/dirigido/<banco>_<cerebro>/`.
+Sistema de comparación (`fija`): una búsqueda en PubMed con una consulta fija, los 10 primeros.
+En desarrollo, 77 % de artículos relevantes y 16 de 36 de referencia; en el examen, 62 % y 14 de
+30 (PubMed en vivo puede reordenar de un día a otro).
 
-**v1 (2026-11-23, desarrollo, 27B):**
+### Evaluación de `buscar_mas_casos`
 
-| | Búsqueda fija | Agente v1 |
-|---|---|---|
-| PMID citados sin respaldo | — | **0 de 81** [0-4 %]; posts: 0 de 31 |
-| Artículos relevantes | 77 % entregados [69-84] | 81 % entregados; **93 % de los citados** [85-97] |
-| De referencia encontrados | **16 de 36** (44 %) | 6 de 36 (17 %) |
-| Controles | — | los dos: "no hay evidencia"; los PMID que cita los presenta como otra cosa |
-| Coste por pregunta | 0 tokens | 63 000 tokens, 13,6 pasos, 26 s |
+Sobre la **muestra congelada de sertralina**, con la **hoja de soluciones del triaje** como
+respuestas: de las 725 menciones que el híbrido envió al triaje, los posts anotados como efecto
+adverso cuya reacción encaja con la pregunta (expresión regular revisada a mano,
+`eval_casos construir --ver`). [`bench/casos.jsonl`](bench/casos.jsonl) (desarrollo): calor,
+insomnio, bruxismo, piernas inquietas y mareo (58 casos) y un control (caída del pelo, 0).
+[`bench/casos_test.jsonl`](bench/casos_test.jsonl) (examen): problemas sexuales, temblores,
+estómago, embotamiento emocional y somnolencia (44 casos) y un control (sangrado, 0).
 
-No inventa nada y filtra bien, pero encuentra menos que una búsqueda simple: hace 8,1 búsquedas
-en Bluesky (casi todas vacías; en 8 de 14 preguntas agotó las 10) y 1,7 en PubMed, y en una
-(síndrome serotoninérgico con tramadol) se quedó en bucle en Bluesky sin llegar a PubMed.
-**Cambio v2:** PubMed primero y al menos dos búsquedas allí; Bluesky después, con 5 búsquedas
-como máximo y dejándolo si las primeras no traen nada.
+- **Recall**: casos encontrados / casos de la hoja. **Precisión**: de lo guardado que la hoja
+  cubre, cuántos son casos. Lo guardado fuera de las 725 se cuenta aparte (sin juzgar).
+- Sistema de comparación (`fija`, sin modelo): las menciones ya recogidas por el rastreador cuyo
+  texto contiene una palabra de la reacción. Desarrollo: **recall 84 % [73-92], precisión 50 %
+  [41-60]**; examen: 84 % [71-92] y 37 % [28-46]. Encuentra casi todo, pero la mitad o más son
+  bromas, preguntas u otras reacciones: el agente tiene que ganar en precisión sin perder recall.
 
-Búsqueda fija en el examen (`dirigido_test`, 2026-11-23): 62 % de artículos relevantes [52-72] y
-14 de 30 de referencia (47 %). Ojo: PubMed en vivo puede reordenar resultados de un día a otro.
+```bash
+uv run python -m crawler.eval_casos construir --ver      # donde está la hoja del triaje → data/casos/
+uv run python -m crawler.eval_casos evaluar --sistemas fija
+ARCA_CRAWLER_DATA=data/bluesky_sertralina uv run --extra crawler python -m crawler.eval_casos evaluar --sistemas agente
+```
+
+Cifras (sin texto) en `reports/crawler_casos_eval[_casos_test].json`; posts guardados, perdidos y
+trazas en `data/bluesky/casos/<banco>_<cerebro>/`.
 
 ## La evaluación
 
