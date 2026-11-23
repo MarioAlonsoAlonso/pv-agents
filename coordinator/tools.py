@@ -132,7 +132,13 @@ def make_registry(
             "texto": case.texto,
             "conversacion_anterior": case.conversacion or "(es el primer post)",
             "negadas": case.triaje.get("negadas", ""),
-            "meddra": store.meddra.get(case.id, "sin codificar: usa codificar_meddra"),
+            # Without the reasoning model (ablation), the codes it left in the cache must not
+            # leak through here: in the first sin_meddra run they did ("ya estaba codificado").
+            **(
+                {"meddra": store.meddra.get(case.id, "sin codificar: usa codificar_meddra")}
+                if variant != "sin_meddra"
+                else {}
+            ),
             "fuente": "Bluesky, post público anonimizado; notificante: consumidor",
         }
 

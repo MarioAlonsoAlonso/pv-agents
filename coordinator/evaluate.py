@@ -47,7 +47,9 @@ from coordinator.cases import FOLDER, CaseStore
 from tool_use.evaluate import numbers_in
 
 BENCH = Path(__file__).parent / "bench" / "tareas.jsonl"
-CHUNK_ID = re.compile(r"\b[A-Za-z0-9_.]{3,}-s?\d{4}\b")
+# Fragment ids of the knowledge base: the document's 10-hex hash and the chunk number
+# (rag/ingest.py), e.g. ee3f3fd9f0-0073. A looser pattern took dates ("abr-2025") for citations.
+CHUNK_ID = re.compile(r"\b[0-9a-f]{10}-s?\d{4}\b")
 CASE_ID = re.compile(r"M-[0-9a-f]{10}")
 # A written number: thousands in groups of exactly three ('21.054.159', '4 300') or a plain
 # number with decimals ('2,66'). With a looser pattern "IC95 5,49" was read as 95549.
@@ -271,8 +273,11 @@ def main(argv: list[str] | None = None) -> None:
 
     store = CaseStore.from_files()
     slots = placeholders(store)
-    tasks = [json.loads(line) for line in BENCH.read_text("utf-8").splitlines() if line.strip()]
-    tasks = [fill(t, slots) for t in tasks if not args.tareas or t["id"] in args.tareas]
+    bench = [json.loads(line) for line in BENCH.read_text("utf-8").splitlines() if line.strip()]
+    bench = [fill(t, slots) for t in bench]
+    # --tareas chooses what to run; the summary always scores every task already answered
+    # (running only the new tasks must not drop the others from the report).
+    tasks = [t for t in bench if not args.tareas or t["id"] in args.tareas]
     print(f"{len(store.of_drug(DRUG))} casos de {DRUG} · {len(tasks)} tareas · casos: {slots}")
     report = json.loads(args.report.read_text("utf-8")) if args.report.exists() else {}
     out_dir = FOLDER / "eval"
@@ -318,7 +323,7 @@ def main(argv: list[str] | None = None) -> None:
             )
         meddra_from_traces(store, done.values())
         rows = []
-        for task in tasks:
+        for task in bench:
             if task["id"] in done:
                 row = score_task(task, done[task["id"]], store)
                 row["segundos"] = done[task["id"]].get("segundos", 0)

@@ -329,3 +329,13 @@ def test_an_icsr_that_could_never_be_registered_is_not_queued(tmp_path):
     assert "human confirmation" in obs and len(pending) == 1
     obs = agent.observe("create_icsr_report", {**args, "reactions": ["Mania"]}, False, [])
     assert "not Preferred Terms" in obs
+
+
+def test_without_the_reasoning_model_the_cached_codes_do_not_leak(tmp_path):
+    ms, store = _store(tmp_path)
+    store.save_meddra(ms[0].id, ["Somnolence"])
+    seen = make_registry(store, "sin_meddra").call("ver_caso", {"caso_id": ms[0].id}).result
+    assert "meddra" not in seen
+    assert make_registry(store).call("ver_caso", {"caso_id": ms[0].id}).result["meddra"] == [
+        "Somnolence"
+    ]

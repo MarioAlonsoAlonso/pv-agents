@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
@@ -52,6 +53,10 @@ from tool_use.registry import ToolRegistry, tool
 from tool_use.tools import default_registry
 
 MAX_OBSERVATION_CHARS = 1500
+TRANSIENT_ERROR = re.compile(
+    r"^error: .*(\b5\d\d\b.*server error|timed out|timeout|rate limit|try again)",
+    re.IGNORECASE,
+)
 TOOL_TIMEOUTS = {"faers_reaction_counts": 60.0, "search_knowledge_base": 60.0, "code_meddra": 120.0}
 DEFAULT_TIMEOUT = 15.0
 
@@ -322,7 +327,13 @@ class ReActAgent:
                 )
 
             observation = self.observe(call.name, call.arguments, allow_actions, pending)
-            if seen_calls[key] == 2:
+            if TRANSIENT_ERROR.search(observation):
+                # A server error or a timeout is worth retrying with the same arguments: it does
+                # not count as a repetition (2026-11-23: openFDA answered 500 several times and
+                # the loop detector stopped a run that was retrying correctly). max_steps still
+                # bounds a persistent outage.
+                seen_calls[key] -= 1
+            elif seen_calls[key] == 2:
                 observation += (
                     "\nwarning: you already made this exact call; use the "
                     "result you have or change the arguments."

@@ -227,8 +227,10 @@ def _openfda_total(search: str | None, retries: int = 3) -> int:
                 "openFDA rejected the query: the drug must be an active ingredient and the "
                 "reaction a MedDRA Preferred Term in English (translate Spanish terms first)"
             )
-        if response.status_code == 429 and attempt < retries - 1:
-            time.sleep(2 * (attempt + 1))  # 240 requests/minute without an API key
+        if (response.status_code == 429 or response.status_code >= 500) and attempt < retries - 1:
+            # 429: 240 requests/minute without an API key. 5xx: openFDA under load (on
+            # 2026-11-23 it answered 500 several times in a row, and once half the counts).
+            time.sleep(2 * (attempt + 1))
             continue
         response.raise_for_status()
         return int(response.json()["meta"]["results"]["total"])
@@ -530,7 +532,7 @@ def create_icsr_report(
     problem = icsr_problem(reactions, patient_age, patient_sex, suspect_drug)
     if problem:
         raise ValueError(problem)
-    pts = [dictionary.to_pt(name) for name in reactions]
+    pts = [pt for name in reactions if (pt := dictionary.to_pt(name))]  # all valid: checked
 
     report = {
         "schema": "simplified-E2B (pv-agents)",

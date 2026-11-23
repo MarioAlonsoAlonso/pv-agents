@@ -171,3 +171,14 @@ def test_memory_summary_keeps_pinned_task():
 def test_unknown_brain_is_rejected():
     with pytest.raises(ValueError):
         ReActAgent(registry=ToolRegistry()).brain_for("magic")
+
+
+def test_transient_errors_are_retried_not_taken_for_a_loop():
+    from agent.react_agent import TRANSIENT_ERROR
+
+    assert TRANSIENT_ERROR.search(
+        "error: HTTPError: 500 Server Error: Internal Server Error for url"
+    )
+    assert TRANSIENT_ERROR.search("error: timed out after 60 s")
+    assert not TRANSIENT_ERROR.search("error: ValueError: FAERS has no reports of 'Foo'")
+    assert not TRANSIENT_ERROR.search('{"prr": 2.5, "note": "timed out earlier"}')
