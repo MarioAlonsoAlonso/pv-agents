@@ -165,6 +165,14 @@ def test_score_errors_and_compare():
     assert [x["id"] for x in e["perdidos"]] == ["M-2"]
     assert [x["id"] for x in e["falsas_alarmas"]] == ["M-3"]
     assert [x["id"] for x in e["motivo_no"]] == ["M-4"]
+    reviewed = {
+        **answers,
+        "M-2": {"id": "M-2", **YES, "paciente": "desconocido", "estado": "sin_respuesta"},
+    }
+    r2 = score(reviewed, gold, ms)
+    assert r2["deteccion"]["k"] == 2 and r2["deteccion_sin_revision"]["k"] == 1
+    assert r2["caso"]["paciente"]["n"] == 1  # the reviewed one has no case data
+    assert [x["id"] for x in errors(reviewed, gold, ms)["a_revision"]] == ["M-2"]
     c = compare(answers, {i: {"id": i, **g} for i, g in gold.items()}, gold)
     assert c["aciertos_b"] == 4 and c["solo_b_acierta"] == 2 and c["solo_a_acierta"] == 0
 

@@ -126,8 +126,17 @@ def score(answers: dict[str, dict], gold: dict[str, dict], mentions: dict[str, R
             for g in MOTIVES
         },
     }
+    # Sent to human review (no valid answer from the model): they count as "si" for detection
+    # (a person will see them), but they carry no case data, so they are left out of it.
+    review = {i for i in ids if answers.get(i, {}).get("estado") == "sin_respuesta"}
+    pos = [i for i in ids if gold[i]["es_efecto_adverso"] == "si"]
+    out["deteccion_sin_revision"] = share(
+        sum(pred[i]["es_efecto_adverso"] == "si" and i not in review for i in pos), len(pos)
+    )
     both_yes = [
-        i for i in ids if gold[i]["es_efecto_adverso"] == pred[i]["es_efecto_adverso"] == "si"
+        i
+        for i in ids
+        if gold[i]["es_efecto_adverso"] == pred[i]["es_efecto_adverso"] == "si" and i not in review
     ]
     out["caso"] = {
         f: {
@@ -169,11 +178,14 @@ def errors(answers: dict, gold: dict, mentions: dict[str, RawMention]) -> dict:
         "datos_del_caso": [],
         "motivo_no": [],
         "reacciones": [],  # free text: compared by hand, side by side
+        "a_revision": [],  # no valid answer from the model: the reason is in triaje.notas
     }
     gold = normalise_gold(gold)
     for i, g in sorted(gold.items()):
         p = _pred(answers, i)
-        if g["es_efecto_adverso"] == "si" and p["es_efecto_adverso"] != "si":
+        if answers.get(i, {}).get("estado") == "sin_respuesta":
+            out["a_revision"].append(row(i))
+        elif g["es_efecto_adverso"] == "si" and p["es_efecto_adverso"] != "si":
             out["perdidos"].append(row(i))
         elif g["es_efecto_adverso"] == "no" and p["es_efecto_adverso"] == "si":
             out["falsas_alarmas"].append(row(i))
@@ -230,6 +242,8 @@ def print_report(r: dict, cost: dict | None = None) -> None:
     print("  datos del caso (en los efectos adversos que ambos marcan):")
     for f, s in r["caso"].items():
         print(f"    {f:<10} {pct(s)}")
+    if r["a_revision_humana"]:
+        print(f"  detección sin contar las de revisión  {pct(r['deteccion_sin_revision'])}")
     if r["sin_respuesta"] or r["a_revision_humana"]:
         print(
             f"  sin respuesta: {r['sin_respuesta']} · a revisión humana: {r['a_revision_humana']}"
