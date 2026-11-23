@@ -33,7 +33,7 @@ OUT = HERE / "tareas_v2.jsonl"
 
 CITA = {"type": "cita_fragmento"}
 ABSTAIN = (
-    r"(?i)no (dispongo|tengo|consta|aparece|encuentro|puedo|est[aá]|hay|se (dispone|encuentra|"
+    r"(?i)no existe|no (dispongo|tengo|consta|aparece|encuentro|puedo|est[aá]|hay|se (dispone|encuentra|"
     r"recoge|incluye))|fuera de|no incluye|no cubre|únicamente|solo (tengo|dispongo|cubre)"
 )
 
@@ -348,7 +348,10 @@ EVIDENCIA = [
     ),
     (
         "Lo del calor con la sertralina que cuentan nuestros pacientes, ¿es algo nuevo o está descrito?",
-        ["casos", "rag", "literatura"],
+        # The sheet lists it, so PubMed is not needed (Mario's rule: literature only when the
+        # sheet does not list the reaction). Was ["casos", "rag", "literatura"] until the first
+        # development run (2026-11-23).
+        ["casos", "rag"],
         [
             {
                 "type": "herramientas_distintas",

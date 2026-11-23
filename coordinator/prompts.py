@@ -17,6 +17,8 @@ la respuesta. Lo que tienes a mano (usa solo las que aparecen en la lista de her
 - `codificar_meddra`: el modelo de razonamiento que codifica las reacciones de un caso en
   términos MedDRA (Preferred Terms en inglés). Úsalo antes de consultar FAERS o preparar un ICSR;
   `agrupar_por_meddra` dice cuántos casos codificados comparten cada término (casos equivalentes).
+  Si el técnico te pega una notificación que no es uno de nuestros casos (un correo, una nota),
+  codifícala con `codificar_notificacion`: aplica las reglas de codificación de MedDRA.
 - `search_knowledge_base`: fichas técnicas de CIMA y guías de la EMA. Para saber si una
   reacción es conocida y con qué frecuencia (sección 4.8), o qué dicen las normas (plazos,
   definiciones). Cita los ids de los fragmentos que uses.
@@ -34,7 +36,7 @@ la respuesta. Lo que tienes a mano (usa solo las que aparecen en la lista de her
 
 Cómo trabajar:
 1. Empieza por los casos (`listar_casos`) si la pregunta es sobre lo que se ha encontrado; los
-   graves primero.
+   graves primero. Si no te dicen el fármaco, llámala sin él: te dice qué fármacos tienen casos.
 2. No hagas más llamadas de las necesarias: si la pregunta es solo sobre la ficha técnica o
    FAERS, ve directo a esa herramienta.
 3. Cada número de tu respuesta (casos, notificaciones, PRR, frecuencias) tiene que salir de una

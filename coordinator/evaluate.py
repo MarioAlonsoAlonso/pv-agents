@@ -206,11 +206,15 @@ def unsupported_numbers(answer: str, task: str, response: dict) -> list[float]:
     whole = {int(x) for x in support if x == int(x) and x < 1e8}
     # Simple arithmetic on observed numbers is not an invention: "the other 157" (159 - 2).
     derived = {a + b for a in whole for b in whole} | {a - b for a in whole for b in whole}
+    # ...nor a percentage of two observed counts: "159 of 725, 21,9 %".
+    percents = [100 * a / b for a in whole for b in whole if 0 < a < b]
 
     def backed(n: float) -> bool:
         if n in support or abs(n) <= 10 or 1900 <= n <= 2100:  # small counts, years
             return True
         if n == int(n) and int(n) in derived:
+            return True
+        if n < 100 and any(abs(n - pc) <= 0.05 for pc in percents):
             return True
         return any(abs(n - s) <= 0.0051 * max(abs(s), 1) for s in support)  # rounding
 

@@ -26,6 +26,7 @@ from crawler.prompts import NATIVE_ACTION_FORMAT, TEXT_ACTION_FORMAT
 
 TIMEOUTS = {
     "codificar_meddra": 600.0,  # the first call loads Qwen3-1.7B + the adapter
+    "codificar_notificacion": 600.0,
     "search_knowledge_base": 300.0,  # the first call loads the embedder and the index
     "faers_reaction_counts": 90.0,
     "buscar_literatura": 1200.0,  # a whole crawler run (PubMed)

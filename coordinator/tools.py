@@ -4,6 +4,7 @@
 |---|---|
 | ``listar_casos``, ``ver_caso`` | The crawler + triage output (``coordinator/cases.py``) |
 | ``codificar_meddra`` | The phase-1 reasoning model (Qwen3-1.7B + LoRA, SFT + GRPO) |
+| ``codificar_notificacion`` | The same model, on a text the technician pastes (not a case) |
 | ``agrupar_por_meddra`` | Equivalent cases: how many cases share each Preferred Term |
 | ``search_knowledge_base`` | The phase-3 RAG over the CIMA technical sheets and EMA guidelines |
 | ``faers_reaction_counts``, ``disproportionality_prr`` | Phase-2 tools: FAERS and the signal |
@@ -102,8 +103,12 @@ def make_registry(
     @tool
     def listar_casos(
         farmaco: Annotated[
-            str, Field(description="Active ingredient in Spanish, e.g. 'sertralina'.")
-        ],
+            str | None,
+            Field(
+                description="Active ingredient in Spanish, e.g. 'sertralina'. Leave it empty "
+                "for the cases of every watched drug ('farmacos_con_casos' says which have cases)."
+            ),
+        ] = None,
         solo_graves: Annotated[bool, Field(description="Only the serious cases.")] = False,
         buscar: Annotated[
             str | None,
@@ -120,6 +125,10 @@ def make_registry(
             Literal["recuperado", "recuperandose", "no_recuperado", "desconocido"] | None,
             Field(description="Outcome."),
         ] = None,
+        paciente: Annotated[
+            Literal["autor", "familiar_o_conocido", "desconocido"] | None,
+            Field(description="Who had the reaction: the author of the post or a relative."),
+        ] = None,
         origen: Annotated[
             Literal["nombra_el_farmaco", "respuesta_en_conversacion"] | None,
             Field(
@@ -133,18 +142,19 @@ def make_registry(
     ) -> dict:
         """List the adverse event cases that the crawler found in social media and the triage
         confirmed, most urgent first (serious, then most complete, then newest), optionally
-        filtered: by words in the reactions, sex, outcome, origin or dates. Each case has its id
-        (M-…), date, seriousness, the reactions in the patient's own words, patient, sex, age
-        and outcome. 'coinciden' is how many cases match the filters (use it to count); only
+        filtered: by words in the reactions, sex, patient, outcome, origin or dates. Each case has
+        its id (M-…), date, seriousness, the reactions in the patient's own words, patient, sex,
+        age and outcome. 'coinciden' is how many cases match the filters (use it to count); only
         'mostrados' of them are listed. Do not say a reaction is absent from our cases without
         searching for it with 'buscar'."""
-        drug = farmaco.strip().lower()
+        drug = (farmaco or "").strip().lower() or None
         words = [w.strip() for w in (buscar or "").split(",") if w.strip()]
         origin = {"nombra_el_farmaco": "busqueda_fija", "respuesta_en_conversacion": "agente"}
         cases = store.filter(
             drug,
             buscar=words,
             sexo=sexo,
+            paciente=paciente,
             desenlace=desenlace,
             origen=origin.get(origen or ""),
             grave=True if solo_graves else None,
@@ -153,8 +163,13 @@ def make_registry(
         )
         all_cases = store.of_drug(drug)
         out = {
-            "farmaco": drug,
-            "menciones_triadas": store.reviewed.get(drug, 0),
+            "farmaco": drug or "todos",
+            # Always: which drugs have cases. Without it, a request that named no drug made the
+            # coordinator try drug names one by one until it ran out of steps (2026-11-23).
+            "farmacos_con_casos": dict(Counter(c.farmaco for c in store.cases.values())),
+            "menciones_triadas": sum(store.reviewed.values())
+            if drug is None
+            else store.reviewed.get(drug, 0),
             "efectos_adversos": len(all_cases),
             "graves": sum(c.grave for c in all_cases),
             "coinciden": len(cases),
@@ -228,6 +243,29 @@ def make_registry(
         }
 
     @tool
+    def codificar_notificacion(
+        texto: Annotated[
+            str,
+            Field(description="The notification as the technician received it, in Spanish."),
+        ],
+    ) -> dict:
+        """Code a notification that is not one of our cases (an e-mail, a phone note, a text the
+        technician pastes) into MedDRA Preferred Terms with the reasoning model trained for it.
+        It applies the coding rules: what is denied is not coded, a diagnosis absorbs its
+        typical symptoms, death is an outcome (code the cause if known), lack of effect is
+        coded, the indication and the history are not."""
+        pts, outside = parse_terms(coder(texto.strip()))
+        from rlm.meddra import MedDRADictionary
+
+        dictionary = MedDRADictionary.default()
+        return {
+            "terminos_meddra": pts + outside,
+            "soc": {pt: dictionary.soc(pt) for pt in pts},
+            "fuera_del_subconjunto": outside,
+            "nota": "Preferred Terms de MedDRA (inglés) propuestos por el modelo de razonamiento",
+        }
+
+    @tool
     def agrupar_por_meddra(
         farmaco: Annotated[str, Field(description="Active ingredient in Spanish.")],
     ) -> dict:
@@ -265,7 +303,7 @@ def make_registry(
         final_answer,
     )
     if variant != "sin_meddra":
-        registry.register(codificar_meddra, agrupar_por_meddra)
+        registry.register(codificar_meddra, codificar_notificacion, agrupar_por_meddra)
     if variant != "sin_rag":
         registry.register(search_knowledge_base)
     if variant not in ("sin_literatura", "sin_evidencia"):

@@ -423,3 +423,29 @@ def test_listar_casos_searches_filters_and_counts(tmp_path):
     assert out["coinciden"] == 0 and "sinónimos" in out["nota"]
     out = reg.call("listar_casos", {"farmaco": "sertralina", "desde": "2026-01-01"}).result
     assert out["coinciden"] == 2
+
+
+def test_listar_casos_without_drug_and_by_patient(tmp_path):
+    ms, store = _store(tmp_path)
+    reg = make_registry(store)
+    out = reg.call("listar_casos", {}).result
+    assert out["farmaco"] == "todos" and out["farmacos_con_casos"] == {"sertralina": 4}
+    out = reg.call("listar_casos", {"farmaco": "omeprazol"}).result
+    assert out["coinciden"] == 0 and out["farmacos_con_casos"] == {"sertralina": 4}
+    out = reg.call("listar_casos", {"paciente": "familiar_o_conocido"}).result
+    assert out["coinciden"] == 0
+
+
+def test_codificar_notificacion_uses_the_reasoning_model(tmp_path):
+    _, store = _store(tmp_path)
+    seen = []
+    reg = make_registry(store, coder=lambda text: seen.append(text) or "Hypoglycaemia")
+    out = reg.call("codificar_notificacion", {"texto": " temblor e hipoglucemia "}).result
+    assert out["terminos_meddra"] == ["Hypoglycaemia"] and seen == ["temblor e hipoglucemia"]
+    assert "codificar_notificacion" not in make_registry(store, "sin_meddra").tools
+
+
+def test_percentages_of_observed_counts_are_supported():
+    response = {"steps": [{"observation": '{"menciones": 725, "casos": 159}'}]}
+    assert unsupported_numbers("159 de 725, un 21,9 %", "t", response) == []
+    assert unsupported_numbers("un 37,5 % del total", "t", response)  # not a ratio of the two
