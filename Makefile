@@ -139,7 +139,7 @@ triage-dev: ## Triaje: desarrollo completo, 287 menciones (DGX, reanudable)
 	$(UV) run python -m triage.run --version $(TRIAGE_VERSION) --brain $(TRIAGE_BRAIN)
 
 triage-examen: ## Triaje: el examen, UNA vez y con la versión final (DGX)
-	$(UV) run python -m triage.run --version $(TRIAGE_VERSION) --brain $(TRIAGE_BRAIN) --examen
+	$(UV) run python -m triage.run --version v2 --brain 27b --por mencion --examen
 
 api: ## Levanta la API en local con recarga automática
 	$(UV) run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload

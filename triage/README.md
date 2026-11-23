@@ -112,7 +112,16 @@ paciente es el autor**, así que esos dos campos no se pueden afinar en desarrol
 | `palabras` | — | 36 % [26–48] | 57 % [42–70] | 88 % [77–94] | 0 |
 | `v0` | 27b | **82 % [72–89]** | 75 % [64–83] | 84 % [73–92] | 594 / mención |
 | `v1` | 27b | 75 % [64–84] | **86 % [75–92]** | **95 % [86–98]** | 1 176 / mención |
-| **`v2`** | 27b | **88 % [78–93]** | **88 % [78–93]** | 93 % [84–97] | 1 372 / mención |
+| `v2` | 27b | 88 % [78–93] | 88 % [78–93] | 93 % [84–97] | 1 372 / mención |
+| `v2` (repetición) | 27b | 89 % [80–94] | 86 % [77–92] | 93 % [84–97] | 1 399 / mención |
+| `v2` | 27b-thinking | 92 %\* | 61 %\* | 71 %\* | 2 632 / mención |
+| **`v2`, `--por mencion`** | **27b** | **90 % [81–95]** | **92 % [83–96]** | **98 % [91–100]** | 2 384 / mención |
+
+\* Con razonamiento, 53 respuestas se cortaron por el límite de tokens antes del JSON y fueron
+a revisión humana (cuentan como «sí»). En las 234 que contestó acierta lo mismo que sin
+razonamiento (221), con el doble de tokens y 10 veces más tiempo (65 min frente a 7).
+
+**Configuración elegida para el examen: `v2`, `--por mencion`, `27b` sin razonamiento.**
 
 v2 frente a v0 en el acierto sí/no: 269 frente a 254 de 287 (21 casos solo los acierta v2, 6
 solo v0), McNemar p = 0,006. v0 frente a v1: 254 frente a 260, p = 0,34 (no significativo). v1 es más estricta: la mitad de falsas alarmas, pero pierde más casos. En v1,

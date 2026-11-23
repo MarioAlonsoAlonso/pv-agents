@@ -740,3 +740,37 @@ pueden ser de la enfermedad o del fármaco, erratas, una toma equivocada y dos r
 hilo sobre otro antidepresivo. Seguir ajustando el prompt a estos 287 casos sería ajustarse al
 conjunto de desarrollo, así que el prompt se cierra en v2. Coste: 2,3 veces el de v0, por el
 prompt más largo (~400 000 tokens y 7 minutos para 287 menciones con 2 peticiones simultáneas).
+
+### 2026-11-23 · Proyecto final · Triaje: variabilidad, razonamiento y una petición por post
+
+**Qué queríamos saber.** Con el prompt cerrado en v2, tres cosas antes del examen: cuánto varía
+el resultado entre ejecuciones (el 27B muestrea con temperatura 0,7), si el razonamiento
+(`enable_thinking`) ayuda, y si leer cada post por separado en lugar de la conversación entera
+evita que el modelo contagie el tema del hilo a las respuestas.
+
+**Qué pasó.** (desarrollo, 287 menciones, 72 efectos adversos; acierto = decisión sí/no)
+
+| v2 | Detección | Precisión | Acierto | Precisión, menciones del agente | Tokens/mención | Tiempo |
+|---|---|---|---|---|---|---|
+| por conversación | 88 % | 88 % | 269 | 83 % | 1 372 | 7 min |
+| por conversación (repetición) | 89 % | 86 % | 269 | 77 % | 1 399 | 7 min |
+| por conversación + razonamiento | 92 %\* | 61 %\* | 238\* | 45 %\* | 2 632 | 65 min |
+| **por post** | **90 %** | **92 %** | **274** | **95 %** | 2 384 | 6 min |
+
+- **Variabilidad:** las dos ejecuciones iguales coinciden en 281 de 287 decisiones (3 y 3
+  discordantes, p = 1): el ruido de muestreo es de ±1 punto.
+- **Razonamiento:** \*53 respuestas se cortaron por el límite de tokens (el razonamiento lo
+  consume) y fueron a revisión humana como «sí». En las 234 que contestó acierta 221, exactamente
+  lo mismo que v2 sin razonamiento en esas mismas menciones. No aporta y cuesta el doble de tokens
+  y 10 veces más tiempo.
+- **Por post:** frente a v2 por conversación, 5 menciones solo las acierta por post y 0 al revés
+  (p = 0,06); frente a la repetición, 7 y 2 (p = 0,18). Sube sobre todo la precisión en las
+  respuestas indirectas que encontró el agente del rastreador (83 % → 95 %) y el descarte de sus
+  errores (93 % → 98 %): leídas junto al hilo, el modelo les atribuía el tema de la conversación.
+  Frente a v0 por conversación: 274 frente a 254, p = 0,0002.
+
+**Qué concluimos.** Configuración final: **v2, una petición por post, sin razonamiento.** Es la
+mejor en detección, precisión y acierto; su ventaja sobre la lectura por conversación no es
+significativa con 287 menciones, pero va en la misma dirección en las dos ejecuciones y supera
+el ruido medido. Su precio es 1,7 veces más tokens (el prompt se repite en cada petición), con
+el mismo tiempo. Es la que se mide, una sola vez, en el examen.
