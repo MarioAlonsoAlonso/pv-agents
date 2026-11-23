@@ -57,6 +57,9 @@ def main(argv: list[str] | None = None) -> None:
         "--hilos", type=int, default=2, help="simultaneous requests (server: 5 total)"
     )
     parser.add_argument("--de-nuevo", action="store_true", help="ignore a previous partial run")
+    parser.add_argument(
+        "--etiqueta", default="", help="suffix for the run name, e.g. rep2 to repeat a run"
+    )
     parser.add_argument("--report", type=Path, default=Path("reports/triage_eval.json"))
     args = parser.parse_args(argv)
 
@@ -78,8 +81,10 @@ def main(argv: list[str] | None = None) -> None:
         keep = list(dict.fromkeys(m.hilo_id for m in mentions))[: args.limite]
         mentions = [m for m in mentions if m.hilo_id in set(keep)]
     version = "palabras" if args.brain == "palabras" else args.version
-    name = f"{version}_{args.brain}_{args.por}_{split}" + (
-        f"_lim{args.limite}" if args.limite else ""
+    name = (
+        f"{version}_{args.brain}_{args.por}_{split}"
+        + (f"_lim{args.limite}" if args.limite else "")
+        + (f"_{args.etiqueta}" if args.etiqueta else "")
     )
     out = EVAL / f"{name}_respuestas.jsonl"
     cost_file = EVAL / f"{name}_coste.json"
