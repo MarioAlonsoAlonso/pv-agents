@@ -126,6 +126,21 @@ crawler-eval: ## Rastreador: fija, fija+hilos, híbrido y agente sobre la muestr
 crawler-vigilar: ## Rastreador: una ejecución del vigilante periódico (añade --bucle para repetir)
 	$(UV) run --extra crawler python -m crawler.monitor --brain $(CRAWLER_BRAIN)
 
+# Triaje (proyecto final): ¿es un efecto adverso? Detalle en triage/README.md
+TRIAGE_VERSION ?= v1
+TRIAGE_BRAIN ?= 27b
+triage-base: ## Triaje: línea base por palabras clave sobre desarrollo (sin modelo, ~1 s)
+	$(UV) run python -m triage.run --brain palabras
+
+triage-prueba: ## Triaje: prueba rápida con 5 conversaciones de desarrollo (DGX)
+	$(UV) run python -m triage.run --version $(TRIAGE_VERSION) --brain $(TRIAGE_BRAIN) --limite 5
+
+triage-dev: ## Triaje: desarrollo completo, 287 menciones (DGX, reanudable)
+	$(UV) run python -m triage.run --version $(TRIAGE_VERSION) --brain $(TRIAGE_BRAIN)
+
+triage-examen: ## Triaje: el examen, UNA vez y con la versión final (DGX)
+	$(UV) run python -m triage.run --version $(TRIAGE_VERSION) --brain $(TRIAGE_BRAIN) --examen
+
 api: ## Levanta la API en local con recarga automática
 	$(UV) run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
 
@@ -150,4 +165,4 @@ docker-api: ## API dentro del contenedor
 shell: ## Shell interactiva con GPU dentro del contenedor
 	docker compose run --rm train
 
-.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar api enunciado build docker-check-gpu docker-smoke docker-api shell
+.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar triage-base triage-prueba triage-dev triage-examen api enunciado build docker-check-gpu docker-smoke docker-api shell

@@ -1,0 +1,198 @@
+{
+ "palabras_palabras_conversacion_dev": {
+  "fecha": "2026-11-23T11:26:05+00:00",
+  "conjunto": "dev",
+  "cerebro": "palabras",
+  "prompt": "palabras",
+  "por": "conversacion",
+  "menciones": 287,
+  "efectos_adversos": 72,
+  "deteccion": {
+   "k": 26,
+   "n": 72,
+   "valor": 0.3611111111111111,
+   "ic95": [
+    0.26,
+    0.476
+   ]
+  },
+  "precision": {
+   "k": 26,
+   "n": 46,
+   "valor": 0.5652173913043478,
+   "ic95": [
+    0.422,
+    0.698
+   ]
+  },
+  "f1": 0.441,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "acierto_si_no": {
+   "k": 221,
+   "n": 287,
+   "valor": 0.7700348432055749,
+   "ic95": [
+    0.718,
+    0.815
+   ]
+  },
+  "kappa_si_no": 0.305,
+  "descarte_no_es_mencion": {
+   "k": 51,
+   "n": 58,
+   "valor": 0.8793103448275862,
+   "ic95": [
+    0.771,
+    0.94
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 68,
+    "n": 195,
+    "valor": 0.3487179487179487,
+    "ic95": [
+     0.285,
+     0.418
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 51
+    },
+    "pregunta_o_consejo": {
+     "sin_reaccion": 20
+    },
+    "broma_opinion_noticia": {
+     "sin_reaccion": 56
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 68
+    }
+   }
+  },
+  "caso": {
+   "paciente": {
+    "k": 26,
+    "n": 26,
+    "valor": 1.0,
+    "ic95": [
+     0.871,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 26
+    }
+   },
+   "edad": {
+    "k": 26,
+    "n": 26,
+    "valor": 1.0,
+    "ic95": [
+     0.871,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 26
+    }
+   },
+   "sexo": {
+    "k": 14,
+    "n": 26,
+    "valor": 0.5384615384615384,
+    "ic95": [
+     0.355,
+     0.712
+    ],
+    "valores_hoja": {
+     "hombre": 7,
+     "desconocido": 14,
+     "mujer": 5
+    }
+   },
+   "grave": {
+    "k": 26,
+    "n": 26,
+    "valor": 1.0,
+    "ic95": [
+     0.871,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 26
+    }
+   },
+   "desenlace": {
+    "k": 22,
+    "n": 26,
+    "valor": 0.8461538461538461,
+    "ic95": [
+     0.665,
+     0.939
+    ],
+    "valores_hoja": {
+     "desconocido": 22,
+     "recuperado": 3,
+     "recuperandose": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 176,
+    "efectos_adversos": 48,
+    "deteccion": {
+     "k": 18,
+     "n": 48,
+     "valor": 0.375,
+     "ic95": [
+      0.252,
+      0.516
+     ]
+    },
+    "precision": {
+     "k": 18,
+     "n": 30,
+     "valor": 0.6,
+     "ic95": [
+      0.423,
+      0.754
+     ]
+    },
+    "f1": 0.462
+   },
+   "agente": {
+    "menciones": 111,
+    "efectos_adversos": 24,
+    "deteccion": {
+     "k": 8,
+     "n": 24,
+     "valor": 0.3333333333333333,
+     "ic95": [
+      0.18,
+      0.533
+     ]
+    },
+    "precision": {
+     "k": 8,
+     "n": 16,
+     "valor": 0.5,
+     "ic95": [
+      0.28,
+      0.72
+     ]
+    },
+    "f1": 0.4
+   }
+  },
+  "coste": {
+   "calls": 0,
+   "repairs": 0,
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "seconds": 0.01689799999985553,
+   "no_answer": 0
+  }
+ }
+}
