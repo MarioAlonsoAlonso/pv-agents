@@ -241,7 +241,9 @@ def investigar(
         store=MentionStore(),
         brands=brands,
         drugs=(drug,),
-        max_searches=10,
+        # Bluesky only (PubMed has no budget). It was 10: on the first 14 questions
+        # (2026-11-23) the agent spent them all with nothing found and searched PubMed once.
+        max_searches=5,
         max_threads=8,
     )
     task = prompts.DIRIGIDO_TASK.format(farmaco=drug, pregunta=question)

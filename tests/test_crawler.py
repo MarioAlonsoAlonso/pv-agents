@@ -578,11 +578,13 @@ def test_citations_without_backing_are_flagged():
 
 
 def test_directed_scoring_relevance_reference_and_controls():
-    from crawler.eval_dirigido import load_bench, score_question, summarize
+    from crawler.eval_dirigido import TEST, load_bench, score_question, summarize
 
     bench = load_bench()
     assert len(bench) == 14 and sum(q["control"] for q in bench) == 2
     assert all(len(q["pmids_clave"]) == 3 for q in bench if not q["control"])
+    test = load_bench(TEST)  # the final exam shares no question with the practice one
+    assert len(test) == 12 and not {q["id"] for q in test} & {q["id"] for q in bench}
     q = next(q for q in bench if q["id"] == "hiponatremia_sertralina")
     arts = [
         {"pmid": "8681276", "titulo": "Sertraline-associated hyponatremia.", "resumen": ""},

@@ -3,11 +3,17 @@
     uv run python -m crawler.eval_dirigido --sistemas fija                  # no model, anywhere
     uv run --extra crawler python -m crawler.eval_dirigido --brain 27b      # DGX: fija + agente
     uv run --extra crawler python -m crawler.eval_dirigido --ids caidas_zolpidem --brain 27b
+    uv run --extra crawler python -m crawler.eval_dirigido --bench crawler/bench/dirigido_test.jsonl
 
-Bench: ``crawler/bench/dirigido.jsonl``, 12 questions with an answer in the literature and
-2 controls where there should be none. Each question carries the drug and reaction terms in
-English and 3 reference PMIDs (found with title-restricted PubMed searches and checked by
-title on 2026-11-23). Two systems:
+Two benches, like a practice exam and a final one:
+
+* ``crawler/bench/dirigido.jsonl`` (development): 12 questions with an answer in the literature
+  and 2 controls where there should be none. Look at its errors and change the agent.
+* ``crawler/bench/dirigido_test.jsonl`` (test, ``--bench crawler/bench/dirigido_test.jsonl``):
+  10 other questions and 2 controls, written before the first change to the agent. Run it
+  only to report, never to decide what to change.
+Each question carries the drug and reaction terms in English and 3 reference PMIDs (found
+with title-restricted PubMed searches and checked by title on 2026-11-23). Two systems:
 
 * ``fija``: one PubMed search with a fixed English query (``consulta_fija``), top 10. No model:
   what you get without an agent.
@@ -27,7 +33,7 @@ What is measured, per question and summed over the bench:
 * **Cost**: tokens, steps, seconds, PubMed and Bluesky searches.
 
 ``reports/crawler_dirigido_eval.json`` gets numbers and PMIDs only. Answers, traces and posts
-go to ``data/bluesky/dirigido/`` (they may quote posts by real people).
+go to ``data/bluesky/dirigido/<bench>_<brain>/`` (they may quote posts by real people).
 """
 
 from __future__ import annotations
@@ -43,7 +49,8 @@ from pathlib import Path
 from crawler.citas import check_citations
 from crawler.config import DATA_DIR
 
-BENCH = Path(__file__).parent / "bench" / "dirigido.jsonl"
+BENCH = Path(__file__).parent / "bench" / "dirigido.jsonl"  # development: look at its errors
+TEST = Path(__file__).parent / "bench" / "dirigido_test.jsonl"  # final exam: run, do not tune
 REPORT = Path("reports") / "crawler_dirigido_eval.json"
 FIXED_TOP = 10
 
@@ -252,6 +259,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     bench = load_bench(args.bench)
+    if args.salida == REPORT and args.bench != BENCH:  # each bench, its own report
+        args.salida = REPORT.with_name(f"crawler_dirigido_eval_{args.bench.stem}.json")
     if args.ids:
         bench = [q for q in bench if q["id"] in set(args.ids)]
         if args.salida == REPORT:  # a few questions must not overwrite the full report
@@ -275,7 +284,7 @@ def main(argv: list[str] | None = None) -> None:
 
         source = FrozenSource.load(args.muestra) if args.muestra else LiveSource()
         brands = load_brands()
-        out_dir = DATA_DIR / "dirigido" / args.brain
+        out_dir = DATA_DIR / "dirigido" / f"{args.bench.stem}_{args.brain}"
         rows = []
         for q in bench:
             rows.append(run_agent(q, source, brands, args.brain, out_dir))

@@ -151,10 +151,16 @@ pregunta lleva los términos del fármaco y de la reacción en inglés y 3 PMID 
 buscados en PubMed por título y comprobados el 2026-11-23. Se comparan la búsqueda fija (una
 consulta en inglés, los 10 primeros artículos, sin modelo) y el agente.
 
+Como con el triaje, hay **práctica y examen**: `dirigido.jsonl` es el de desarrollo (se miran
+sus fallos y se cambia el agente); [`bench/dirigido_test.jsonl`](bench/dirigido_test.jsonl), 10
+preguntas y 2 controles distintos, se escribió **antes del primer cambio** y solo se ejecuta para
+dar la nota final.
+
 ```bash
 uv run python -m crawler.eval_dirigido --sistemas fija                   # sin modelo, en cualquier sitio
 uv run --extra crawler python -m crawler.eval_dirigido --brain 27b       # DGX: fija + agente
 uv run --extra crawler python -m crawler.eval_dirigido --ids caidas_zolpidem --sistemas agente
+uv run --extra crawler python -m crawler.eval_dirigido --brain 27b --bench crawler/bench/dirigido_test.jsonl
 ```
 
 | Medida | Qué es |
@@ -165,9 +171,27 @@ uv run --extra crawler python -m crawler.eval_dirigido --ids caidas_zolpidem --s
 | Controles | Si la respuesta admite que no hay evidencia (heurística: leedlas) |
 | Coste | Tokens, pasos, segundos, búsquedas en PubMed y Bluesky |
 
-Las cifras van a `reports/crawler_dirigido_eval.json` (sin texto); respuestas, trazas y posts, a
-`data/bluesky/dirigido/<cerebro>/`. Búsqueda fija (2026-11-23): **76 % de artículos relevantes
-[68-83]** y 16 de 36 de referencia (44 %).
+Las cifras van a `reports/crawler_dirigido_eval[_dirigido_test].json` (sin texto); respuestas,
+trazas y posts, a `data/bluesky/dirigido/<banco>_<cerebro>/`.
+
+**v1 (2026-11-23, desarrollo, 27B):**
+
+| | Búsqueda fija | Agente v1 |
+|---|---|---|
+| PMID citados sin respaldo | — | **0 de 81** [0-4 %]; posts: 0 de 31 |
+| Artículos relevantes | 77 % entregados [69-84] | 81 % entregados; **93 % de los citados** [85-97] |
+| De referencia encontrados | **16 de 36** (44 %) | 6 de 36 (17 %) |
+| Controles | — | los dos: "no hay evidencia"; los PMID que cita los presenta como otra cosa |
+| Coste por pregunta | 0 tokens | 63 000 tokens, 13,6 pasos, 26 s |
+
+No inventa nada y filtra bien, pero encuentra menos que una búsqueda simple: hace 8,1 búsquedas
+en Bluesky (casi todas vacías; en 8 de 14 preguntas agotó las 10) y 1,7 en PubMed, y en una
+(síndrome serotoninérgico con tramadol) se quedó en bucle en Bluesky sin llegar a PubMed.
+**Cambio v2:** PubMed primero y al menos dos búsquedas allí; Bluesky después, con 5 búsquedas
+como máximo y dejándolo si las primeras no traen nada.
+
+Búsqueda fija en el examen (`dirigido_test`, 2026-11-23): 62 % de artículos relevantes [52-72] y
+14 de 30 de referencia (47 %). Ojo: PubMed en vivo puede reordenar resultados de un día a otro.
 
 ## La evaluación
 
