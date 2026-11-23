@@ -44,6 +44,7 @@ crawler/
   text.py       anonimización (@usuarios, enlaces, correos), ids con hash, coincidencia sin tildes
   sources.py    LiveSource (Bluesky en vivo) y FrozenSource (muestra congelada): misma interfaz
   pubmed.py     PubMed (E-utilities), para el modo dirigido
+  citas.py      comprueba que cada PMID y post citado lo devolvió una herramienta
   store.py      RawMention: el contrato con el triaje
   tools.py      herramientas del agente, con los controles dentro
   prompts.py    un prompt por modo: vigilancia, hilos, dirigido
@@ -52,6 +53,7 @@ crawler/
   collect.py    construye la muestra congelada
   annotate.py   lote para anotar, pre-anotación, kappa, gold
   evaluate.py   recall por tipo de mención, precisión y coste de cada sistema
+  eval_dirigido.py  evaluación del modo dirigido (preguntas en bench/dirigido.jsonl)
   monitor.py    vigilancia periódica
   ANOTACION.md  guía de anotación
 ```
@@ -136,7 +138,36 @@ print(run.response.final_answer)
 ```
 
 La herramienta `buscar_evidencia` (en `crawler/agent.py`) hace lo mismo y se puede registrar en
-el analista: `agent.registry.register(buscar_evidencia)`.
+el analista: `agent.registry.register(buscar_evidencia)`. Devuelve `resumen`, `posts`,
+`articulos` y `referencias_sin_respaldo`: los PMID o posts que el resumen cita pero que ninguna
+búsqueda devolvió (inventados); el analista no debe citarlos.
+
+### Evaluación del modo dirigido
+
+[`bench/dirigido.jsonl`](bench/dirigido.jsonl): 12 preguntas del analista con respuesta en la
+literatura (hiponatremia con sertralina, síndrome serotoninérgico con tramadol, acidosis láctica
+con metformina…) y 2 controles sin ella (¿cambia la sertralina el color de los ojos?). Cada
+pregunta lleva los términos del fármaco y de la reacción en inglés y 3 PMID de referencia,
+buscados en PubMed por título y comprobados el 2026-11-23. Se comparan la búsqueda fija (una
+consulta en inglés, los 10 primeros artículos, sin modelo) y el agente.
+
+```bash
+uv run python -m crawler.eval_dirigido --sistemas fija                   # sin modelo, en cualquier sitio
+uv run --extra crawler python -m crawler.eval_dirigido --brain 27b       # DGX: fija + agente
+uv run --extra crawler python -m crawler.eval_dirigido --ids caidas_zolpidem --sistemas agente
+```
+
+| Medida | Qué es |
+|---|---|
+| **Citas sin respaldo** | PMID y posts citados en la respuesta que ninguna herramienta devolvió. Lo más grave: llegarían al informe como evidencia |
+| Relevancia | Artículo con un término del fármaco y uno de la reacción en el título o el resumen. Aproximada, automática e igual para los dos sistemas |
+| Referencia encontrados | Cuántos de los 3 PMID de referencia aparecen. Hay muchos otros artículos válidos: sirve para comparar, no como nota absoluta |
+| Controles | Si la respuesta admite que no hay evidencia (heurística: leedlas) |
+| Coste | Tokens, pasos, segundos, búsquedas en PubMed y Bluesky |
+
+Las cifras van a `reports/crawler_dirigido_eval.json` (sin texto); respuestas, trazas y posts, a
+`data/bluesky/dirigido/<cerebro>/`. Búsqueda fija (2026-11-23): **76 % de artículos relevantes
+[68-83]** y 16 de 36 de referencia (44 %).
 
 ## La evaluación
 

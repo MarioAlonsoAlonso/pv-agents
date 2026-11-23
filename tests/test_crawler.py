@@ -555,3 +555,78 @@ def test_mentions_carry_the_whole_reply_chain():
     broken = FrozenSource([chain[0], chain[2], chain[3]])  # r1 deleted
     m2 = build_mention(broken, broken.get("r3"), "sertralina", "indirecta", "agente")
     assert [c.post_id for c in m2.conversacion] == ["r2"] and not m2.conversacion_completa
+
+
+# ---------------------------------------------------------------------------- directed mode
+
+
+def test_citations_without_backing_are_flagged():
+    from crawler.citas import check_citations
+
+    answer = (
+        "PubMed: hiponatremia descrita (PMID: 8681276, 22295265 y 99999999); "
+        "también 11965835. Bluesky: [p546aff1211d9] y [pdd2984e9aa82]. Dosis de 2019 mg."
+    )
+    check = check_citations(
+        answer,
+        [{"pmid": "8681276"}, {"pmid": "22295265"}, {"pmid": "11965835"}],
+        {"p546aff1211d9": None},
+    )
+    assert check["pmids_citados"] == ["8681276", "22295265", "99999999", "11965835"]
+    assert check["pmids_sin_respaldo"] == ["99999999"]  # never returned by a search
+    assert check["posts_sin_respaldo"] == ["pdd2984e9aa82"]  # never shown
+
+
+def test_directed_scoring_relevance_reference_and_controls():
+    from crawler.eval_dirigido import load_bench, score_question, summarize
+
+    bench = load_bench()
+    assert len(bench) == 14 and sum(q["control"] for q in bench) == 2
+    assert all(len(q["pmids_clave"]) == 3 for q in bench if not q["control"])
+    q = next(q for q in bench if q["id"] == "hiponatremia_sertralina")
+    arts = [
+        {"pmid": "8681276", "titulo": "Sertraline-associated hyponatremia.", "resumen": ""},
+        {"pmid": "1", "titulo": "Sertraline and sexual dysfunction", "resumen": ""},
+        {"pmid": "1", "titulo": "Sertraline and sexual dysfunction", "resumen": ""},  # repeated
+    ]
+    fixed = score_question(q, arts)
+    assert (fixed["articulos"], fixed["relevantes"], fixed["clave_encontrados"]) == (2, 1, 1)
+    agent = score_question(q, arts, "Hay casos (PMID 8681276, PMID 12345678).", {})
+    assert agent["pmids_sin_respaldo"] == ["12345678"] and agent["citados_relevantes"] == 1
+    control = next(q for q in bench if q["control"])
+    c = score_question(control, [], "No he encontrado artículos ni posts sobre esto.", {})
+    assert c["admite_sin_evidencia"] and c["pmids_citados"] == 0
+    s = summarize([agent, c])
+    assert s["pmids_sin_respaldo"]["k"] == 1 and s["pmids_sin_respaldo"]["n"] == 2
+    assert s["controles"][control["id"]]["admite_sin_evidencia"]
+
+
+def test_directed_run_searches_pubmed_and_reports_unbacked_pmids(monkeypatch, source, tmp_path):
+    import crawler.agent
+    import crawler.pubmed
+    from crawler.eval_dirigido import load_bench, run_agent
+
+    articles = [
+        {
+            "pmid": "8681276",
+            "titulo": "Sertraline-associated hyponatremia.",
+            "revista": "x",
+            "año": "1995",
+            "resumen": "",
+        }
+    ]
+    monkeypatch.setattr(crawler.pubmed, "search_pubmed", lambda q, n=5, client=None: articles)
+    llm = _ScriptedLLM(
+        [
+            _call("buscar_pubmed", consulta="sertraline hyponatremia"),
+            _call("buscar_bluesky", consulta="sertralina"),
+            _call("final_answer", answer="Casos publicados: PMID 8681276 y PMID 31415926."),
+        ]
+    )
+    monkeypatch.setitem(crawler.agent._SHARED_BRAINS, "fake", Brain(llm=llm))
+    q = next(q for q in load_bench() if q["id"] == "hiponatremia_sertralina")
+    row = run_agent(q, source, BRANDS, "fake", tmp_path)
+    assert row["coste"]["busquedas_pubmed"] == 1 and row["coste"]["busquedas_bluesky"] == 1
+    assert row["pmids_sin_respaldo"] == ["31415926"] and row["clave_citados"] == 1
+    saved = json.loads((tmp_path / "hiponatremia_sertralina.json").read_text("utf-8"))
+    assert saved["respuesta"].startswith("Casos publicados")

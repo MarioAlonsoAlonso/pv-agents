@@ -259,8 +259,10 @@ def buscar_evidencia(
     """Ask the crawler sub-agent to look for evidence in social media (Bluesky, Spanish
     patients' posts) and in the literature (PubMed). Returns its summary with post ids and
     PMIDs. Slow (a full agent run): use it only when the technical sheet and FAERS are not
-    enough."""
+    enough. References listed in 'referencias_sin_respaldo' were not returned by any search:
+    do not cite them."""
     from crawler.cima import load_brands
+    from crawler.citas import check_citations
     from crawler.sources import LiveSource
 
     result = investigar(
@@ -270,10 +272,14 @@ def buscar_evidencia(
         load_brands(),
         brain=os.environ.get("ARCA_CRAWLER_BRAIN", "27b"),
     )
+    ctx, answer = result.context, result.response.final_answer or ""
+    check = check_citations(answer, ctx.articles, ctx.shown)
+    articles = {a["pmid"]: a for a in ctx.articles}  # several searches can return the same one
     return {
-        "resumen": result.response.final_answer,
-        "posts": [
-            {"id": m.post_id, "texto": m.texto} for m in result.context.store.mentions.values()
+        "resumen": answer,
+        "posts": [{"id": m.post_id, "texto": m.texto} for m in ctx.store.mentions.values()],
+        "articulos": [
+            {"pmid": a["pmid"], "titulo": a["titulo"], "año": a["año"]} for a in articles.values()
         ],
-        "articulos": [{"pmid": a["pmid"], "titulo": a["titulo"]} for a in result.context.articles],
+        "referencias_sin_respaldo": check["pmids_sin_respaldo"] + check["posts_sin_respaldo"],
     }
