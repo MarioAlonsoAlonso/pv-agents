@@ -175,6 +175,35 @@ class CaseStore:
         ]
         return sorted(out, key=Case.priority)
 
+    def filter(self, drug: str | None = None, **criteria) -> list[Case]:
+        """Cases matching every criterion, by priority. Criteria: ``sexo``, ``desenlace``,
+        ``paciente`` (triage values), ``origen`` (``agente`` / ``busqueda_fija``), ``grave``
+        (bool), ``con_edad`` (bool: the age is known) and ``desde`` / ``hasta`` (ISO dates)."""
+        out = []
+        for c in self.of_drug(drug):
+            t = c.triaje
+            if any(
+                criteria.get(f) not in (None, "") and t.get(f) != criteria[f]
+                for f in ("sexo", "desenlace", "paciente")
+            ):
+                continue
+            if criteria.get("origen") and c.encontrado_por != criteria["origen"]:
+                continue
+            if criteria.get("grave") is not None and c.grave != criteria["grave"]:
+                continue
+            if (
+                criteria.get("con_edad") is not None
+                and (t.get("edad", "desconocido") not in ("", "desconocido"))
+                != criteria["con_edad"]
+            ):
+                continue
+            if criteria.get("desde") and c.fecha[:10] < criteria["desde"]:
+                continue
+            if criteria.get("hasta") and c.fecha[:10] > criteria["hasta"]:
+                continue
+            out.append(c)
+        return out
+
     def get(self, case_id: str) -> Case:
         case_id = case_id.strip().strip("[]")
         if case_id not in self.cases:

@@ -339,3 +339,49 @@ def test_without_the_reasoning_model_the_cached_codes_do_not_leak(tmp_path):
     assert make_registry(store).call("ver_caso", {"caso_id": ms[0].id}).result["meddra"] == [
         "Somnolence"
     ]
+
+
+def test_case_filter_and_v2_checks(tmp_path):
+    ms, store = _store(tmp_path)
+    assert len(store.filter("sertralina", sexo="mujer")) == 1
+    assert len(store.filter("sertralina", grave=True)) == 1
+    assert len(store.filter("sertralina", origen="agente")) == 1
+    assert len(store.filter("sertralina", desde="2026-01-01")) == 2
+    assert check_one({"type": "n_casos", "filtro": {"sexo": "mujer"}}, "Hay 1 mujer", {}, store)
+    assert check_one(
+        {"type": "n_casos", "filtro": {"paciente": "familiar_o_conocido"}},
+        "No hay ninguno",
+        {},
+        store,
+    )
+    notif = {"type": "meddra_notif", "esperados": ["Cough"], "ausentes": ["Diarrhoea"]}
+    assert check_one(notif, "Cough\nDiarrhoea no se codifica: se niega", {}, store)
+    assert not check_one(notif, "Cough; Diarrhoea", {}, store)
+    assert not check_one(notif, "Tos", {}, store)
+    assert not check_one(
+        {"type": "regex_ausente", "value": "registrado"}, "ya está registrado", {}, store
+    )
+
+
+def test_routing_of_a_request():
+    from coordinator.evaluate import routing, routing_summary
+
+    task = {"fuentes": ["rag", "faers"]}
+    r = routing(task, ["search_knowledge_base", "listar_casos", "final_answer"])
+    assert r["fuentes_faltan"] == ["faers"] and r["fuentes_de_mas"] == ["casos"]
+    rows = [{**r, "id": "x"}, {**routing({"fuentes": []}, ["final_answer"]), "id": "y"}]
+    summary = routing_summary(rows)["rutas"]
+    assert summary["todas_las_fuentes_necesarias"] == 0.5
+    assert summary["por_fuente"]["casos"]["usada_sin_necesitarla"] == 1
+
+
+def test_the_v2_bench_is_well_formed():
+    from coordinator.bench.v2 import build
+
+    tasks = build()
+    assert len(tasks) >= 100 and len({t["id"] for t in tasks}) == len(tasks)
+    assert {t["conjunto"] for t in tasks} == {"dev", "test"}
+    known = {"casos", "meddra", "rag", "faers", "evidencia"}
+    assert all(set(t["fuentes"]) <= known for t in tasks)
+    death = [t for t in tasks if t.get("familia") == "death"]
+    assert all("Death" in t["comprobar"][0]["ausentes"] for t in death)

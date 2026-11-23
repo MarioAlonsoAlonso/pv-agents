@@ -24,7 +24,16 @@ Check types, besides those of ``agent/evaluate.py`` (``contains``, ``regex``, ``
 * ``cita_fragmento``: a fragment id of the knowledge base is cited;
 * ``ids_graves``: every serious case is named;
 * ``alguno``: at least one of the checks in ``de`` passes;
-* ``herramientas_distintas``: at least ``min`` of the tools in ``de`` were used.
+* ``herramientas_distintas``: at least ``min`` of the tools in ``de`` were used;
+* ``n_casos``: the number of cases matching ``filtro`` (``CaseStore.filter``) is in the answer;
+* ``faers_live``, ``faers_top``: a FAERS count / the top reactions, computed now;
+* ``meddra_notif``: every expected Preferred Term is named and no forbidden one is coded;
+* ``regex_ausente``: the pattern must NOT appear (e.g. claiming an ICSR was registered).
+
+Benchmark v2 (``--bench coordinator/bench/tareas_v2.jsonl``, ``coordinator/bench/v2.py``): ~100
+requests with their expected sources, split in ``--conjunto dev`` and ``test``. Besides
+success, it reports the routing: whether the coordinator consulted every source the request
+needed, and whether it consulted sources it did not need.
 
 Besides success, every answer is checked for **numbers without support**: numbers that do not
 appear in any observation nor in the request (invented counts, PRRs, frequencies).
@@ -61,13 +70,17 @@ def placeholders(store: CaseStore, drug: str = DRUG) -> dict[str, str]:
     cases = store.of_drug(drug)
     if not cases:
         return {}
-    with_sex = [c for c in cases if c.triaje.get("sexo") in ("mujer", "hombre")]
+    with_sex = [c for c in cases if c.triaje.get("sexo") in ("mujer", "hombre")] or cases
     indirect = [c for c in cases if c.encontrado_por == "agente"]
     deduced = [c for c in indirect if "[" in c.triaje.get("reacciones", "")]
+    serious = sorted((c for c in cases if c.grave), key=lambda c: c.fecha) or cases
     return {
         "caso_prioritario": cases[0].id,
-        "caso_con_sexo": (with_sex or cases)[0].id,
+        "caso_con_sexo": with_sex[0].id,
+        "caso_con_sexo_2": with_sex[min(1, len(with_sex) - 1)].id,
         "caso_indirecto": (deduced or indirect or cases)[0].id,
+        "caso_grave_antiguo": serious[0].id,
+        "caso_grave_reciente": serious[-1].id,
     }
 
 
@@ -126,7 +139,41 @@ def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> boo
         return any(t.lower() in answer.lower() for t, n in counts.items() if n == best)
     if kind == "prr_live":
         target = live_prr(check["drug"], check["reaction"])
-        return any(abs(n - target) <= check.get("tolerance", 0.05) for n in numbers_in(answer))
+        tolerance = check.get("tolerance_rel", 0) * target or check.get("tolerance", 0.05)
+        return any(abs(n - target) <= tolerance for n in numbers_in(answer))
+    if kind == "faers_live":
+        from tool_use.tools import faers_reaction_counts
+
+        target = faers_reaction_counts(drug=check["drug"], reaction=check["reaction"])[
+            "reports_with_drug_and_reaction"
+        ]
+        tolerance = check.get("tolerance_rel", 0.02) * target
+        return any(abs(n - target) <= tolerance for n in numbers_in(answer))
+    if kind == "faers_top":
+        from tool_use.tools import faers_reaction_counts
+
+        top = faers_reaction_counts(drug=check["drug"], top=check.get("n", 5))["top_reactions"]
+        names = [r["reaction"].lower() for r in top]
+        return sum(n in answer.lower() for n in names) >= check.get("min", 3)
+    if kind == "n_casos":
+        return has_number(answer, len(store.filter(DRUG, **check.get("filtro", {})))) or (
+            not store.filter(DRUG, **check.get("filtro", {}))
+            and re.search(r"(?i)ningún|ninguno|no hay", answer) is not None
+        )
+    if kind == "meddra_notif":
+        low = answer.lower()
+        if not all(t.lower() in low for t in check["esperados"]):
+            return False
+        # A forbidden term may be named to explain why it is NOT coded ("Diarrhoea no se
+        # codifica: se niega"); it only fails on a line that does not exclude it.
+        excluding = re.compile(r"(?i)\bno\b|excl|descart|neg|absorb|desenlace|omit|sin codificar")
+        for line in low.splitlines():
+            for term in check.get("ausentes", []):
+                if term.lower() in line and not excluding.search(line):
+                    return False
+        return True
+    if kind == "regex_ausente":
+        return re.search(check["value"], answer) is None
     if kind == "cita_fragmento":
         return CHUNK_ID.search(answer) is not None
     if kind == "ids_graves":
@@ -194,6 +241,33 @@ def unsupported_citations(answer: str, response: dict) -> list[str]:
     return sorted({i for i in CHUNK_ID.findall(answer) if i not in seen})
 
 
+# Which source each tool consults: the routing of a request is the set of sources it used.
+SOURCE_OF = {
+    "listar_casos": "casos",
+    "ver_caso": "casos",
+    "codificar_meddra": "meddra",
+    "codificar_notificacion": "meddra",
+    "agrupar_por_meddra": "meddra",
+    "search_knowledge_base": "rag",
+    "faers_reaction_counts": "faers",
+    "disproportionality_prr": "faers",
+    "buscar_evidencia": "evidencia",
+}
+SOURCES = ("casos", "meddra", "rag", "faers", "evidencia")
+
+
+def routing(task: dict, used: list[str]) -> dict:
+    """Expected sources (``fuentes``) against the sources the coordinator consulted."""
+    expected = set(task.get("fuentes", []))
+    seen = {SOURCE_OF[t] for t in used if t in SOURCE_OF}
+    return {
+        "fuentes_esperadas": sorted(expected),
+        "fuentes_usadas": sorted(seen),
+        "fuentes_faltan": sorted(expected - seen),
+        "fuentes_de_mas": sorted(seen - expected),
+    }
+
+
 def score_task(task: dict, response: dict, store: CaseStore) -> dict:
     answer = response.get("final_answer", "")
     checks = task["comprobar"] if isinstance(task["comprobar"], list) else [task["comprobar"]]
@@ -206,8 +280,10 @@ def score_task(task: dict, response: dict, store: CaseStore) -> dict:
     used = [s["action"]["name"] for s in response.get("steps", []) if s.get("action")]
     return {
         "id": task["id"],
+        "conjunto": task.get("conjunto", ""),
         "tipo": task.get("tipo", "dirigida"),
         "categoria": task["categoria"],
+        **(routing(task, used) if "fuentes" in task else {}),
         "correcta": all(results),
         "comprobaciones": results,
         "herramientas_usadas": used,
@@ -242,7 +318,38 @@ def summarise(rows: list[dict]) -> dict:
             }
             for kind in ("dirigida", "abierta")
         },
+        "por_categoria": {
+            cat: {
+                "tareas": sum(r["categoria"] == cat for r in rows),
+                "exito": sum(r["correcta"] for r in rows if r["categoria"] == cat)
+                / max(sum(r["categoria"] == cat for r in rows), 1),
+            }
+            for cat in sorted({r["categoria"] for r in rows})
+        },
+        **(routing_summary(rows) if rows and "fuentes_esperadas" in rows[0] else {}),
         "por_tarea": {r["id"]: r["correcta"] for r in rows},
+    }
+
+
+def routing_summary(rows: list[dict]) -> dict:
+    """How often the coordinator went to every source it needed, how often it consulted one it
+    did not need, and, per source, needed vs used (a confusion of the routing)."""
+    n = max(len(rows), 1)
+    per_source = {}
+    for src in SOURCES:
+        needed = [r for r in rows if src in r["fuentes_esperadas"]]
+        used = [r for r in rows if src in r["fuentes_usadas"]]
+        per_source[src] = {
+            "necesaria": len(needed),
+            "usada_cuando_necesaria": sum(src in r["fuentes_usadas"] for r in needed),
+            "usada_sin_necesitarla": sum(src not in r["fuentes_esperadas"] for r in used),
+        }
+    return {
+        "rutas": {
+            "todas_las_fuentes_necesarias": sum(not r["fuentes_faltan"] for r in rows) / n,
+            "alguna_fuente_de_mas": sum(bool(r["fuentes_de_mas"]) for r in rows) / n,
+            "por_fuente": per_source,
+        }
     }
 
 
@@ -268,13 +375,33 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="only score the answers already saved (no model: works outside the DGX)",
     )
+    parser.add_argument("--bench", type=Path, default=BENCH, help="tareas.jsonl or tareas_v2.jsonl")
+    parser.add_argument(
+        "--conjunto",
+        choices=["dev", "test", "todos"],
+        default="todos",
+        help="v2: development (look and improve) or test (once, at the end)",
+    )
+    parser.add_argument("--etiqueta", default="", help="suffix to repeat a run, e.g. rep2")
     parser.add_argument("--report", type=Path, default=Path("reports/coordinator_eval.json"))
     args = parser.parse_args(argv)
 
     store = CaseStore.from_files()
     slots = placeholders(store)
-    bench = [json.loads(line) for line in BENCH.read_text("utf-8").splitlines() if line.strip()]
-    bench = [fill(t, slots) for t in bench]
+    bench = [
+        json.loads(line) for line in args.bench.read_text("utf-8").splitlines() if line.strip()
+    ]
+    bench = [
+        fill(t, slots)
+        for t in bench
+        if args.conjunto == "todos" or t.get("conjunto") == args.conjunto
+    ]
+    # Files and report keys of the v1 benchmark keep their names; others carry the bench name.
+    suffix = (
+        ("" if args.bench == BENCH else f"_{args.bench.stem}")
+        + (f"_{args.conjunto}" if args.conjunto != "todos" else "")
+        + (f"_{args.etiqueta}" if args.etiqueta else "")
+    )
     # --tareas chooses what to run; the summary always scores every task already answered
     # (running only the new tasks must not drop the others from the report).
     tasks = [t for t in bench if not args.tareas or t["id"] in args.tareas]
@@ -284,8 +411,8 @@ def main(argv: list[str] | None = None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     brains: dict = {}
     for variant in args.variantes:
-        key = f"{variant}·{args.brain}"
-        traces = out_dir / f"{variant}_{args.brain}_respuestas.jsonl"
+        key = f"{variant}·{args.brain}" + suffix.replace("_", "·")
+        traces = out_dir / f"{variant}_{args.brain}{suffix}_respuestas.jsonl"
         if args.de_nuevo:
             traces.unlink(missing_ok=True)
         done = {}
@@ -349,6 +476,26 @@ def main(argv: list[str] | None = None) -> None:
                 print(
                     f"    {kind}: {round(k['exito'] * k['tareas'])}/{k['tareas']} correctas, "
                     f"{k['pasos_medios']:.1f} pasos de media"
+                )
+        if "rutas" in s:
+            print(
+                "    por categoría: "
+                + ", ".join(
+                    f"{c} {round(v['exito'] * v['tareas'])}/{v['tareas']}"
+                    for c, v in s["por_categoria"].items()
+                )
+            )
+            r = s["rutas"]
+            print(
+                f"    rutas: todas las fuentes necesarias en "
+                f"{100 * r['todas_las_fuentes_necesarias']:.0f} % · alguna fuente de más en "
+                f"{100 * r['alguna_fuente_de_mas']:.0f} %"
+            )
+            for src, v in r["por_fuente"].items():
+                print(
+                    f"      {src:<10} necesaria {v['necesaria']:>3} · usada cuando hacía falta "
+                    f"{v['usada_cuando_necesaria']:>3} · usada sin hacer falta "
+                    f"{v['usada_sin_necesitarla']:>3}"
                 )
     print(f"\n→ cifras en {args.report}; respuestas y trazas en {out_dir}")
 
