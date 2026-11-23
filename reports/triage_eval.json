@@ -194,5 +194,211 @@
    "seconds": 0.01689799999985553,
    "no_answer": 0
   }
+ },
+ "palabras_palabras_conversacion_test": {
+  "fecha": "2026-11-23T13:08:53+00:00",
+  "conjunto": "test",
+  "cerebro": "palabras",
+  "prompt": "palabras",
+  "por": "conversacion",
+  "menciones": 438,
+  "efectos_adversos": 89,
+  "deteccion": {
+   "k": 41,
+   "n": 89,
+   "valor": 0.4606741573033708,
+   "ic95": [
+    0.361,
+    0.564
+   ]
+  },
+  "precision": {
+   "k": 41,
+   "n": 81,
+   "valor": 0.5061728395061729,
+   "ic95": [
+    0.4,
+    0.612
+   ]
+  },
+  "f1": 0.482,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "acierto_si_no": {
+   "k": 350,
+   "n": 438,
+   "valor": 0.7990867579908676,
+   "ic95": [
+    0.759,
+    0.834
+   ]
+  },
+  "kappa_si_no": 0.358,
+  "descarte_no_es_mencion": {
+   "k": 103,
+   "n": 110,
+   "valor": 0.9363636363636364,
+   "ic95": [
+    0.874,
+    0.969
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 80,
+    "n": 309,
+    "valor": 0.2588996763754045,
+    "ic95": [
+     0.213,
+     0.31
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 103
+    },
+    "pregunta_o_consejo": {
+     "sin_reaccion": 20
+    },
+    "broma_opinion_noticia": {
+     "sin_reaccion": 106
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 80
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 41,
+   "n": 89,
+   "valor": 0.4606741573033708,
+   "ic95": [
+    0.361,
+    0.564
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 41,
+    "n": 41,
+    "valor": 1.0,
+    "ic95": [
+     0.914,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 41
+    }
+   },
+   "edad": {
+    "k": 41,
+    "n": 41,
+    "valor": 1.0,
+    "ic95": [
+     0.914,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 41
+    }
+   },
+   "sexo": {
+    "k": 25,
+    "n": 41,
+    "valor": 0.6097560975609756,
+    "ic95": [
+     0.457,
+     0.743
+    ],
+    "valores_hoja": {
+     "desconocido": 25,
+     "mujer": 8,
+     "hombre": 8
+    }
+   },
+   "grave": {
+    "k": 40,
+    "n": 41,
+    "valor": 0.975609756097561,
+    "ic95": [
+     0.874,
+     0.996
+    ],
+    "valores_hoja": {
+     "no_consta": 40,
+     "si": 1
+    }
+   },
+   "desenlace": {
+    "k": 36,
+    "n": 41,
+    "valor": 0.8780487804878049,
+    "ic95": [
+     0.745,
+     0.947
+    ],
+    "valores_hoja": {
+     "desconocido": 36,
+     "recuperado": 4,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 247,
+    "efectos_adversos": 69,
+    "deteccion": {
+     "k": 31,
+     "n": 69,
+     "valor": 0.4492753623188406,
+     "ic95": [
+      0.338,
+      0.566
+     ]
+    },
+    "precision": {
+     "k": 31,
+     "n": 46,
+     "valor": 0.6739130434782609,
+     "ic95": [
+      0.53,
+      0.791
+     ]
+    },
+    "f1": 0.539
+   },
+   "agente": {
+    "menciones": 191,
+    "efectos_adversos": 20,
+    "deteccion": {
+     "k": 10,
+     "n": 20,
+     "valor": 0.5,
+     "ic95": [
+      0.299,
+      0.701
+     ]
+    },
+    "precision": {
+     "k": 10,
+     "n": 35,
+     "valor": 0.2857142857142857,
+     "ic95": [
+      0.163,
+      0.451
+     ]
+    },
+    "f1": 0.364
+   }
+  },
+  "coste": {
+   "calls": 0,
+   "repairs": 0,
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "seconds": 0.013671700000486453,
+   "no_answer": 0
+  }
  }
 }

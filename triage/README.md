@@ -123,6 +123,26 @@ razonamiento (221), con el doble de tokens y 10 veces más tiempo (65 min frente
 
 **Configuración elegida para el examen: `v2`, `--por mencion`, `27b` sin razonamiento.**
 
+## Resultado en el examen (medido una sola vez, 2026-11-23)
+
+438 menciones, 89 efectos adversos, configuración elegida en desarrollo sin tocar nada después.
+
+| Sistema | Detección | Precisión | Acierto sí/no | Descarta `no_es_mencion` | Tokens |
+|---|---|---|---|---|---|
+| `palabras` (sin modelo) | 46 % [36–56] | 51 % [40–61] | 80 % | 94 % | 0 |
+| **`v2` por post · 27b** | **79 % [69–86]** | **80 % [70–87]** | **92 %** (κ 0,74) | 95 % [89–98] | 1,05 M (2 395 / mención, 10 min) |
+
+Datos del caso, en los 70 efectos adversos que ambos marcan: paciente 100 %, edad 100 %, sexo
+77 %, grave 99 %, desenlace 89 %. Por origen: detección 80 % y precisión 92 % en las menciones de
+la búsqueda fija; 75 % y **54 %** en las del agente del rastreador.
+
+**Lectura.** En el examen se pierden unos 10 puntos respecto a desarrollo (detección 90 → 79 %,
+precisión 92 → 80 %): es el ajuste a desarrollo de haber elegido entre tres prompts y tres
+configuraciones mirando los mismos 287 casos, y es justo lo que el examen está para medir. La
+caída más fuerte está en la precisión de las respuestas indirectas (95 → 54 %), que era la
+principal ventaja de leer cada post por separado: no generaliza. Aun así, el 27B detecta 33
+puntos más que las palabras clave con más precisión.
+
 v2 frente a v0 en el acierto sí/no: 269 frente a 254 de 287 (21 casos solo los acierta v2, 6
 solo v0), McNemar p = 0,006. v0 frente a v1: 254 frente a 260, p = 0,34 (no significativo). v1 es más estricta: la mitad de falsas alarmas, pero pierde más casos. En v1,
 5 de los 75 % fueron a revisión humana solo porque el modelo dejó vacía la reacción (desde v2 el

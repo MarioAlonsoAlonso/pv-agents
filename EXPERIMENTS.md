@@ -774,3 +774,30 @@ mejor en detección, precisión y acierto; su ventaja sobre la lectura por conve
 significativa con 287 menciones, pero va en la misma dirección en las dos ejecuciones y supera
 el ruido medido. Su precio es 1,7 veces más tokens (el prompt se repite en cada petición), con
 el mismo tiempo. Es la que se mide, una sola vez, en el examen.
+
+### 2026-11-23 · Proyecto final · Triaje: el examen
+
+**Qué hicimos.** Una sola ejecución de la configuración elegida en desarrollo (v2, una petición
+por post, 27B sin razonamiento) sobre las 438 menciones del examen (89 efectos adversos), sin
+cambiar nada después. Para comparar, la línea base por palabras clave sobre el mismo examen.
+
+**Qué pasó.**
+
+| | Detección | Precisión | Acierto sí/no | Precisión, menciones del agente |
+|---|---|---|---|---|
+| Palabras clave | 46 % [36–56] | 51 % [40–61] | 80 % | 29 % |
+| v2 por post · desarrollo | 90 % [81–95] | 92 % [83–96] | 95 % | 95 % |
+| **v2 por post · examen** | **79 % [69–86]** | **80 % [70–87]** | **92 %** | **54 %** |
+
+Coste: 1,05 M tokens (2 395 por mención), 10 minutos, ninguna reparación.
+
+**Qué concluimos.** La diferencia entre desarrollo y examen (unos 10 puntos en detección y
+precisión) es el ajuste a desarrollo: tres prompts y tres configuraciones elegidos mirando los
+mismos 287 casos. Sin el examen habríamos dado un 90 %. Lo que más cae es la precisión en las
+respuestas indirectas que encuentra el agente del rastreador (95 → 54 %): la ventaja de leer
+cada post por separado venía en buena parte de un par de hilos de desarrollo. Para el sistema,
+la cifra es la del examen: el triaje encuentra 4 de cada 5 efectos adversos y 4 de cada 5 de sus
+alarmas son reales, frente a menos de la mitad con palabras clave. Como el revisor humano ve todo
+lo que el triaje marca, el error caro es el 21 % de casos perdidos; con más tiempo, el siguiente
+paso sería medir la detección con un umbral más permisivo (por ejemplo, marcar «sí» toda mención
+con un síntoma aunque el modelo dude) en un lote nuevo.
