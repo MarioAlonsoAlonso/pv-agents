@@ -89,9 +89,10 @@ imposibles (otra red social y otro año; un fármaco sin casos), donde tiene que
 sabe. Las peticiones nombran casos con huecos (`{caso_prioritario}`…) que se rellenan con los
 datos, así que el banco no contiene ningún post.
 
-**Métricas:** éxito, uso de las herramientas necesarias, pasos, tokens, tiempo y **números sin
-respaldo**: cifras de la respuesta que no aparecen en ninguna observación (recuentos, PRR o
-frecuencias inventados).
+**Métricas:** éxito, uso de las herramientas necesarias, pasos, tokens, tiempo, **números sin
+respaldo** (cifras de la respuesta que no aparecen en ninguna observación: recuentos, PRR o
+frecuencias inventados) y **citas sin respaldo** (ids de fragmentos de la ficha técnica que la
+respuesta cita pero que ninguna búsqueda devolvió).
 
 **Ablaciones** (`--variantes`): `completo`, `sin_rag`, `sin_meddra` (el 27B tiene que poner los
 términos MedDRA él solo) y `sin_evidencia`. Responden a "¿aporta cada pieza?".
@@ -102,7 +103,21 @@ relanzar el mismo comando sigue donde se quedó.
 
 ## Resultados
 
-Pendiente (DGX).
+**Primera prueba con el 27B** (2026-11-23): «¿Hay casos graves de sertralina? Codifica en MedDRA
+el más urgente y dime si esa reacción aparece en la ficha técnica y si hay señal en FAERS.»
+
+7 pasos, 32 000 tokens: `listar_casos` (graves) → `ver_caso` → `codificar_meddra` (Insomnia,
+Mania) → `search_knowledge_base` (manía: frecuente, y advertencia de la sección 4.4) →
+`faers_reaction_counts` (Mania) → `disproportionality_prr` (PRR 5,85, IC 95 % 5,49–6,25: señal)
+→ respuesta. Todas las cifras salen de las observaciones y las tres citas de la ficha técnica
+están en lo que devolvió el RAG. Ofrece preparar el ICSR en lugar de hacerlo sin pedírselo.
+
+En el primer intento el coordinador solo consultó el insomnio: la herramienta daba «Mania» por
+no reconocida porque no está en el subconjunto de 90 PT del repositorio, y el 27B lo leyó como
+que el modelo de razonamiento la había descartado. Desde entonces la herramienta explica que
+esos términos son válidos para FAERS.
+
+Banco completo: pendiente (DGX).
 
 ## Piezas
 

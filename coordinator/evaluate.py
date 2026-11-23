@@ -142,6 +142,12 @@ def unsupported_numbers(answer: str, task: str, response: dict) -> list[float]:
     return sorted(out)
 
 
+def unsupported_citations(answer: str, response: dict) -> list[str]:
+    """Fragment ids cited in the answer that no observation contains (invented citations)."""
+    seen = " ".join(s.get("observation") or "" for s in response.get("steps", []))
+    return sorted({i for i in CHUNK_ID.findall(answer) if i not in seen})
+
+
 def score_task(task: dict, response: dict, store: CaseStore) -> dict:
     answer = response.get("final_answer", "")
     checks = task["comprobar"] if isinstance(task["comprobar"], list) else [task["comprobar"]]
@@ -160,6 +166,7 @@ def score_task(task: dict, response: dict, store: CaseStore) -> dict:
         "herramientas_usadas": used,
         "herramientas_requeridas": all(t in used for t in task["herramientas"]),
         "numeros_sin_respaldo": unsupported_numbers(answer, task["tarea"], response),
+        "citas_sin_respaldo": unsupported_citations(answer, response),
         "pasos": response.get("n_steps", 0),
         "tokens": response.get("tokens_used", 0),
         "parada": response.get("stop_reason", ""),
@@ -173,6 +180,7 @@ def summarise(rows: list[dict]) -> dict:
         "exito": sum(r["correcta"] for r in rows) / n,
         "herramientas_requeridas": sum(r["herramientas_requeridas"] for r in rows) / n,
         "respuestas_con_numeros_sin_respaldo": sum(bool(r["numeros_sin_respaldo"]) for r in rows),
+        "respuestas_con_citas_sin_respaldo": sum(bool(r["citas_sin_respaldo"]) for r in rows),
         "pasos_medios": sum(r["pasos"] for r in rows) / n,
         "tokens_medios": sum(r["tokens"] for r in rows) / n,
         "segundos_medios": sum(r.get("segundos", 0) for r in rows) / n,

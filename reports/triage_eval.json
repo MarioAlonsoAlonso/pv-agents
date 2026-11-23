@@ -400,5 +400,1714 @@
    "seconds": 0.013671700000486453,
    "no_answer": 0
   }
+ },
+ "v0_27b_conversacion_dev": {
+  "fecha": "2026-11-23T12:03:36+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v0",
+  "por": "conversacion",
+  "menciones": 287,
+  "efectos_adversos": 72,
+  "deteccion": {
+   "k": 59,
+   "n": 72,
+   "valor": 0.8194444444444444,
+   "ic95": [
+    0.715,
+    0.891
+   ]
+  },
+  "precision": {
+   "k": 59,
+   "n": 79,
+   "valor": 0.7468354430379747,
+   "ic95": [
+    0.641,
+    0.83
+   ]
+  },
+  "f1": 0.781,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "acierto_si_no": {
+   "k": 254,
+   "n": 287,
+   "valor": 0.8850174216027874,
+   "ic95": [
+    0.843,
+    0.917
+   ]
+  },
+  "kappa_si_no": 0.704,
+  "descarte_no_es_mencion": {
+   "k": 49,
+   "n": 58,
+   "valor": 0.8448275862068966,
+   "ic95": [
+    0.731,
+    0.916
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 105,
+    "n": 195,
+    "valor": 0.5384615384615384,
+    "ic95": [
+     0.468,
+     0.607
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 17,
+     "broma_opinion_noticia": 19,
+     "no_es_mencion": 5,
+     "pregunta_o_consejo": 8
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 12,
+     "broma_opinion_noticia": 4,
+     "sin_reaccion": 2,
+     "no_es_mencion": 1
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 3,
+     "broma_opinion_noticia": 42,
+     "pregunta_o_consejo": 9,
+     "sin_reaccion": 7
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 46,
+     "pregunta_o_consejo": 7,
+     "broma_opinion_noticia": 13
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 59,
+   "n": 72,
+   "valor": 0.8194444444444444,
+   "ic95": [
+    0.715,
+    0.891
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 58,
+    "n": 59,
+    "valor": 0.9830508474576272,
+    "ic95": [
+     0.91,
+     0.997
+    ],
+    "valores_hoja": {
+     "autor": 59
+    }
+   },
+   "edad": {
+    "k": 59,
+    "n": 59,
+    "valor": 1.0,
+    "ic95": [
+     0.939,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 59
+    }
+   },
+   "sexo": {
+    "k": 48,
+    "n": 59,
+    "valor": 0.8135593220338984,
+    "ic95": [
+     0.696,
+     0.893
+    ],
+    "valores_hoja": {
+     "hombre": 13,
+     "desconocido": 36,
+     "mujer": 10
+    }
+   },
+   "grave": {
+    "k": 57,
+    "n": 59,
+    "valor": 0.9661016949152542,
+    "ic95": [
+     0.885,
+     0.991
+    ],
+    "valores_hoja": {
+     "no_consta": 59
+    }
+   },
+   "desenlace": {
+    "k": 48,
+    "n": 59,
+    "valor": 0.8135593220338984,
+    "ic95": [
+     0.696,
+     0.893
+    ],
+    "valores_hoja": {
+     "desconocido": 52,
+     "recuperado": 5,
+     "recuperandose": 1,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 176,
+    "efectos_adversos": 48,
+    "deteccion": {
+     "k": 38,
+     "n": 48,
+     "valor": 0.7916666666666666,
+     "ic95": [
+      0.657,
+      0.883
+     ]
+    },
+    "precision": {
+     "k": 38,
+     "n": 46,
+     "valor": 0.8260869565217391,
+     "ic95": [
+      0.693,
+      0.909
+     ]
+    },
+    "f1": 0.809
+   },
+   "agente": {
+    "menciones": 111,
+    "efectos_adversos": 24,
+    "deteccion": {
+     "k": 21,
+     "n": 24,
+     "valor": 0.875,
+     "ic95": [
+      0.69,
+      0.957
+     ]
+    },
+    "precision": {
+     "k": 21,
+     "n": 33,
+     "valor": 0.6363636363636364,
+     "ic95": [
+      0.466,
+      0.778
+     ]
+    },
+    "f1": 0.737
+   }
+  },
+  "coste": {
+   "calls": 150,
+   "repairs": 1,
+   "prompt_tokens": 132969,
+   "completion_tokens": 37628,
+   "seconds": 468.39841821799746,
+   "no_answer": 0
+  }
+ },
+ "v1_27b_conversacion_dev": {
+  "fecha": "2026-11-23T11:59:42+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v1",
+  "por": "conversacion",
+  "menciones": 287,
+  "efectos_adversos": 72,
+  "deteccion": {
+   "k": 54,
+   "n": 72,
+   "valor": 0.75,
+   "ic95": [
+    0.639,
+    0.836
+   ]
+  },
+  "precision": {
+   "k": 54,
+   "n": 63,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.75,
+    0.923
+   ]
+  },
+  "f1": 0.8,
+  "sin_respuesta": 0,
+  "a_revision_humana": 5,
+  "acierto_si_no": {
+   "k": 260,
+   "n": 287,
+   "valor": 0.9059233449477352,
+   "ic95": [
+    0.867,
+    0.935
+   ]
+  },
+  "kappa_si_no": 0.739,
+  "descarte_no_es_mencion": {
+   "k": 55,
+   "n": 58,
+   "valor": 0.9482758620689655,
+   "ic95": [
+    0.859,
+    0.982
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 139,
+    "n": 206,
+    "valor": 0.6747572815533981,
+    "ic95": [
+     0.608,
+     0.735
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 6,
+     "broma_opinion_noticia": 4,
+     "no_es_mencion": 38,
+     "pregunta_o_consejo": 7
+    },
+    "pregunta_o_consejo": {
+     "no_es_mencion": 3,
+     "pregunta_o_consejo": 12,
+     "broma_opinion_noticia": 4,
+     "sin_reaccion": 2
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 8,
+     "broma_opinion_noticia": 42,
+     "pregunta_o_consejo": 7,
+     "sin_reaccion": 5
+    },
+    "sin_reaccion": {
+     "pregunta_o_consejo": 13,
+     "broma_opinion_noticia": 8,
+     "sin_reaccion": 47
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 49,
+   "n": 72,
+   "valor": 0.6805555555555556,
+   "ic95": [
+    0.566,
+    0.777
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 48,
+    "n": 49,
+    "valor": 0.9795918367346939,
+    "ic95": [
+     0.893,
+     0.996
+    ],
+    "valores_hoja": {
+     "autor": 49
+    }
+   },
+   "edad": {
+    "k": 49,
+    "n": 49,
+    "valor": 1.0,
+    "ic95": [
+     0.927,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 49
+    }
+   },
+   "sexo": {
+    "k": 37,
+    "n": 49,
+    "valor": 0.7551020408163265,
+    "ic95": [
+     0.619,
+     0.854
+    ],
+    "valores_hoja": {
+     "desconocido": 32,
+     "mujer": 10,
+     "hombre": 7
+    }
+   },
+   "grave": {
+    "k": 48,
+    "n": 49,
+    "valor": 0.9795918367346939,
+    "ic95": [
+     0.893,
+     0.996
+    ],
+    "valores_hoja": {
+     "no_consta": 49
+    }
+   },
+   "desenlace": {
+    "k": 45,
+    "n": 49,
+    "valor": 0.9183673469387755,
+    "ic95": [
+     0.808,
+     0.968
+    ],
+    "valores_hoja": {
+     "recuperado": 4,
+     "desconocido": 45
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 176,
+    "efectos_adversos": 48,
+    "deteccion": {
+     "k": 36,
+     "n": 48,
+     "valor": 0.75,
+     "ic95": [
+      0.612,
+      0.851
+     ]
+    },
+    "precision": {
+     "k": 36,
+     "n": 42,
+     "valor": 0.8571428571428571,
+     "ic95": [
+      0.722,
+      0.933
+     ]
+    },
+    "f1": 0.8
+   },
+   "agente": {
+    "menciones": 111,
+    "efectos_adversos": 24,
+    "deteccion": {
+     "k": 18,
+     "n": 24,
+     "valor": 0.75,
+     "ic95": [
+      0.551,
+      0.88
+     ]
+    },
+    "precision": {
+     "k": 18,
+     "n": 21,
+     "valor": 0.8571428571428571,
+     "ic95": [
+      0.654,
+      0.95
+     ]
+    },
+    "f1": 0.8
+   }
+  },
+  "coste": {
+   "calls": 155,
+   "repairs": 6,
+   "prompt_tokens": 303894,
+   "completion_tokens": 33481,
+   "seconds": 441.789531110011,
+   "no_answer": 5
+  }
+ },
+ "v1_27b_conversacion_dev_lim5": {
+  "fecha": "2026-11-23T11:53:38+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v1",
+  "por": "conversacion",
+  "menciones": 14,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 5,
+   "n": 7,
+   "valor": 0.7142857142857143,
+   "ic95": [
+    0.359,
+    0.918
+   ]
+  },
+  "precision": {
+   "k": 5,
+   "n": 5,
+   "valor": 1.0,
+   "ic95": [
+    0.566,
+    1.0
+   ]
+  },
+  "f1": 0.833,
+  "sin_respuesta": 0,
+  "a_revision_humana": 1,
+  "acierto_si_no": {
+   "k": 12,
+   "n": 14,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.601,
+    0.96
+   ]
+  },
+  "kappa_si_no": 0.714,
+  "descarte_no_es_mencion": {
+   "k": 3,
+   "n": 3,
+   "valor": 1.0,
+   "ic95": [
+    0.438,
+    1.0
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 4,
+    "n": 7,
+    "valor": 0.5714285714285714,
+    "ic95": [
+     0.25,
+     0.842
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 3
+    },
+    "pregunta_o_consejo": {
+     "no_es_mencion": 2
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 1,
+     "broma_opinion_noticia": 1
+    },
+    "sin_reaccion": {}
+   }
+  },
+  "caso": {
+   "paciente": {
+    "k": 4,
+    "n": 5,
+    "valor": 0.8,
+    "ic95": [
+     0.376,
+     0.964
+    ],
+    "valores_hoja": {
+     "autor": 5
+    }
+   },
+   "edad": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 5
+    }
+   },
+   "sexo": {
+    "k": 3,
+    "n": 5,
+    "valor": 0.6,
+    "ic95": [
+     0.231,
+     0.882
+    ],
+    "valores_hoja": {
+     "desconocido": 2,
+     "mujer": 3
+    }
+   },
+   "grave": {
+    "k": 4,
+    "n": 5,
+    "valor": 0.8,
+    "ic95": [
+     0.376,
+     0.964
+    ],
+    "valores_hoja": {
+     "no_consta": 5
+    }
+   },
+   "desenlace": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 5
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 5,
+    "efectos_adversos": 4,
+    "deteccion": {
+     "k": 3,
+     "n": 4,
+     "valor": 0.75,
+     "ic95": [
+      0.301,
+      0.954
+     ]
+    },
+    "precision": {
+     "k": 3,
+     "n": 3,
+     "valor": 1.0,
+     "ic95": [
+      0.438,
+      1.0
+     ]
+    },
+    "f1": 0.857
+   },
+   "agente": {
+    "menciones": 9,
+    "efectos_adversos": 3,
+    "deteccion": {
+     "k": 2,
+     "n": 3,
+     "valor": 0.6666666666666666,
+     "ic95": [
+      0.208,
+      0.939
+     ]
+    },
+    "precision": {
+     "k": 2,
+     "n": 2,
+     "valor": 1.0,
+     "ic95": [
+      0.342,
+      1.0
+     ]
+    },
+    "f1": 0.8
+   }
+  },
+  "coste": {
+   "calls": 6,
+   "repairs": 1,
+   "prompt_tokens": 14111,
+   "completion_tokens": 1889,
+   "seconds": 24.143077158003507,
+   "no_answer": 1
+  }
+ },
+ "v2_27b-thinking_conversacion_dev": {
+  "fecha": "2026-11-23T12:53:19+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b-thinking",
+  "prompt": "v2",
+  "por": "conversacion",
+  "menciones": 287,
+  "efectos_adversos": 72,
+  "deteccion": {
+   "k": 66,
+   "n": 72,
+   "valor": 0.9166666666666666,
+   "ic95": [
+    0.83,
+    0.961
+   ]
+  },
+  "precision": {
+   "k": 66,
+   "n": 109,
+   "valor": 0.6055045871559633,
+   "ic95": [
+    0.512,
+    0.692
+   ]
+  },
+  "f1": 0.729,
+  "sin_respuesta": 0,
+  "a_revision_humana": 53,
+  "acierto_si_no": {
+   "k": 238,
+   "n": 287,
+   "valor": 0.8292682926829268,
+   "ic95": [
+    0.781,
+    0.868
+   ]
+  },
+  "kappa_si_no": 0.612,
+  "descarte_no_es_mencion": {
+   "k": 41,
+   "n": 58,
+   "valor": 0.7068965517241379,
+   "ic95": [
+    0.58,
+    0.808
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 143,
+    "n": 172,
+    "valor": 0.8313953488372093,
+    "ic95": [
+     0.768,
+     0.88
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 38,
+     "broma_opinion_noticia": 2,
+     "pregunta_o_consejo": 1
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 7,
+     "broma_opinion_noticia": 1,
+     "no_es_mencion": 2
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 45,
+     "pregunta_o_consejo": 4,
+     "sin_reaccion": 5,
+     "no_es_mencion": 5
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 53,
+     "broma_opinion_noticia": 6,
+     "pregunta_o_consejo": 3
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 49,
+   "n": 72,
+   "valor": 0.6805555555555556,
+   "ic95": [
+    0.566,
+    0.777
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 49,
+    "n": 49,
+    "valor": 1.0,
+    "ic95": [
+     0.927,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 49
+    }
+   },
+   "edad": {
+    "k": 49,
+    "n": 49,
+    "valor": 1.0,
+    "ic95": [
+     0.927,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 49
+    }
+   },
+   "sexo": {
+    "k": 42,
+    "n": 49,
+    "valor": 0.8571428571428571,
+    "ic95": [
+     0.733,
+     0.929
+    ],
+    "valores_hoja": {
+     "hombre": 7,
+     "desconocido": 35,
+     "mujer": 7
+    }
+   },
+   "grave": {
+    "k": 49,
+    "n": 49,
+    "valor": 1.0,
+    "ic95": [
+     0.927,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 49
+    }
+   },
+   "desenlace": {
+    "k": 43,
+    "n": 49,
+    "valor": 0.8775510204081632,
+    "ic95": [
+     0.758,
+     0.943
+    ],
+    "valores_hoja": {
+     "desconocido": 43,
+     "recuperandose": 1,
+     "recuperado": 4,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 176,
+    "efectos_adversos": 48,
+    "deteccion": {
+     "k": 43,
+     "n": 48,
+     "valor": 0.8958333333333334,
+     "ic95": [
+      0.778,
+      0.955
+     ]
+    },
+    "precision": {
+     "k": 43,
+     "n": 58,
+     "valor": 0.7413793103448276,
+     "ic95": [
+      0.616,
+      0.837
+     ]
+    },
+    "f1": 0.811
+   },
+   "agente": {
+    "menciones": 111,
+    "efectos_adversos": 24,
+    "deteccion": {
+     "k": 23,
+     "n": 24,
+     "valor": 0.9583333333333334,
+     "ic95": [
+      0.798,
+      0.993
+     ]
+    },
+    "precision": {
+     "k": 23,
+     "n": 51,
+     "valor": 0.45098039215686275,
+     "ic95": [
+      0.323,
+      0.586
+     ]
+    },
+    "f1": 0.613
+   }
+  },
+  "coste": {
+   "calls": 165,
+   "repairs": 16,
+   "prompt_tokens": 413191,
+   "completion_tokens": 342217,
+   "seconds": 3919.931788644002,
+   "no_answer": 53
+  }
+ },
+ "v2_27b_conversacion_dev": {
+  "fecha": "2026-11-23T12:13:43+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "conversacion",
+  "menciones": 287,
+  "efectos_adversos": 72,
+  "deteccion": {
+   "k": 63,
+   "n": 72,
+   "valor": 0.875,
+   "ic95": [
+    0.779,
+    0.933
+   ]
+  },
+  "precision": {
+   "k": 63,
+   "n": 72,
+   "valor": 0.875,
+   "ic95": [
+    0.779,
+    0.933
+   ]
+  },
+  "f1": 0.875,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "acierto_si_no": {
+   "k": 269,
+   "n": 287,
+   "valor": 0.9372822299651568,
+   "ic95": [
+    0.903,
+    0.96
+   ]
+  },
+  "kappa_si_no": 0.833,
+  "descarte_no_es_mencion": {
+   "k": 54,
+   "n": 58,
+   "valor": 0.9310344827586207,
+   "ic95": [
+    0.836,
+    0.973
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 145,
+    "n": 206,
+    "valor": 0.7038834951456311,
+    "ic95": [
+     0.638,
+     0.762
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 12,
+     "no_es_mencion": 35,
+     "broma_opinion_noticia": 5,
+     "pregunta_o_consejo": 2
+    },
+    "pregunta_o_consejo": {
+     "no_es_mencion": 4,
+     "pregunta_o_consejo": 12,
+     "broma_opinion_noticia": 3,
+     "sin_reaccion": 2
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 4,
+     "broma_opinion_noticia": 39,
+     "sin_reaccion": 11,
+     "pregunta_o_consejo": 9
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 59,
+     "pregunta_o_consejo": 6,
+     "no_es_mencion": 1,
+     "broma_opinion_noticia": 2
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 63,
+   "n": 72,
+   "valor": 0.875,
+   "ic95": [
+    0.779,
+    0.933
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 63,
+    "n": 63,
+    "valor": 1.0,
+    "ic95": [
+     0.943,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 63
+    }
+   },
+   "edad": {
+    "k": 63,
+    "n": 63,
+    "valor": 1.0,
+    "ic95": [
+     0.943,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 63
+    }
+   },
+   "sexo": {
+    "k": 53,
+    "n": 63,
+    "valor": 0.8412698412698413,
+    "ic95": [
+     0.732,
+     0.911
+    ],
+    "valores_hoja": {
+     "hombre": 12,
+     "desconocido": 39,
+     "mujer": 12
+    }
+   },
+   "grave": {
+    "k": 62,
+    "n": 63,
+    "valor": 0.9841269841269841,
+    "ic95": [
+     0.915,
+     0.997
+    ],
+    "valores_hoja": {
+     "no_consta": 63
+    }
+   },
+   "desenlace": {
+    "k": 56,
+    "n": 63,
+    "valor": 0.8888888888888888,
+    "ic95": [
+     0.788,
+     0.945
+    ],
+    "valores_hoja": {
+     "desconocido": 55,
+     "recuperado": 6,
+     "recuperandose": 1,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 176,
+    "efectos_adversos": 48,
+    "deteccion": {
+     "k": 44,
+     "n": 48,
+     "valor": 0.9166666666666666,
+     "ic95": [
+      0.804,
+      0.967
+     ]
+    },
+    "precision": {
+     "k": 44,
+     "n": 49,
+     "valor": 0.8979591836734694,
+     "ic95": [
+      0.782,
+      0.956
+     ]
+    },
+    "f1": 0.907
+   },
+   "agente": {
+    "menciones": 111,
+    "efectos_adversos": 24,
+    "deteccion": {
+     "k": 19,
+     "n": 24,
+     "valor": 0.7916666666666666,
+     "ic95": [
+      0.595,
+      0.908
+     ]
+    },
+    "precision": {
+     "k": 19,
+     "n": 23,
+     "valor": 0.8260869565217391,
+     "ic95": [
+      0.629,
+      0.93
+     ]
+    },
+    "f1": 0.809
+   }
+  },
+  "coste": {
+   "calls": 150,
+   "repairs": 1,
+   "prompt_tokens": 360982,
+   "completion_tokens": 32845,
+   "seconds": 415.952747059011,
+   "no_answer": 0
+  }
+ },
+ "v2_27b_conversacion_dev_rep2": {
+  "fecha": "2026-11-23T12:20:18+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "conversacion",
+  "menciones": 287,
+  "efectos_adversos": 72,
+  "deteccion": {
+   "k": 64,
+   "n": 72,
+   "valor": 0.8888888888888888,
+   "ic95": [
+    0.796,
+    0.943
+   ]
+  },
+  "precision": {
+   "k": 64,
+   "n": 74,
+   "valor": 0.8648648648648649,
+   "ic95": [
+    0.769,
+    0.925
+   ]
+  },
+  "f1": 0.877,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "acierto_si_no": {
+   "k": 269,
+   "n": 287,
+   "valor": 0.9372822299651568,
+   "ic95": [
+    0.903,
+    0.96
+   ]
+  },
+  "kappa_si_no": 0.835,
+  "descarte_no_es_mencion": {
+   "k": 54,
+   "n": 58,
+   "valor": 0.9310344827586207,
+   "ic95": [
+    0.836,
+    0.973
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 143,
+    "n": 205,
+    "valor": 0.697560975609756,
+    "ic95": [
+     0.632,
+     0.756
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 8,
+     "no_es_mencion": 41,
+     "broma_opinion_noticia": 3,
+     "pregunta_o_consejo": 2
+    },
+    "pregunta_o_consejo": {
+     "no_es_mencion": 4,
+     "pregunta_o_consejo": 12,
+     "broma_opinion_noticia": 3,
+     "sin_reaccion": 1
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 6,
+     "broma_opinion_noticia": 34,
+     "pregunta_o_consejo": 10,
+     "sin_reaccion": 13
+    },
+    "sin_reaccion": {
+     "pregunta_o_consejo": 8,
+     "sin_reaccion": 56,
+     "no_es_mencion": 2,
+     "broma_opinion_noticia": 2
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 64,
+   "n": 72,
+   "valor": 0.8888888888888888,
+   "ic95": [
+    0.796,
+    0.943
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 64,
+    "n": 64,
+    "valor": 1.0,
+    "ic95": [
+     0.943,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 64
+    }
+   },
+   "edad": {
+    "k": 64,
+    "n": 64,
+    "valor": 1.0,
+    "ic95": [
+     0.943,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 64
+    }
+   },
+   "sexo": {
+    "k": 52,
+    "n": 64,
+    "valor": 0.8125,
+    "ic95": [
+     0.7,
+     0.889
+    ],
+    "valores_hoja": {
+     "hombre": 12,
+     "desconocido": 39,
+     "mujer": 13
+    }
+   },
+   "grave": {
+    "k": 63,
+    "n": 64,
+    "valor": 0.984375,
+    "ic95": [
+     0.917,
+     0.997
+    ],
+    "valores_hoja": {
+     "no_consta": 64
+    }
+   },
+   "desenlace": {
+    "k": 57,
+    "n": 64,
+    "valor": 0.890625,
+    "ic95": [
+     0.791,
+     0.946
+    ],
+    "valores_hoja": {
+     "desconocido": 55,
+     "recuperado": 6,
+     "recuperandose": 2,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 176,
+    "efectos_adversos": 48,
+    "deteccion": {
+     "k": 44,
+     "n": 48,
+     "valor": 0.9166666666666666,
+     "ic95": [
+      0.804,
+      0.967
+     ]
+    },
+    "precision": {
+     "k": 44,
+     "n": 48,
+     "valor": 0.9166666666666666,
+     "ic95": [
+      0.804,
+      0.967
+     ]
+    },
+    "f1": 0.917
+   },
+   "agente": {
+    "menciones": 111,
+    "efectos_adversos": 24,
+    "deteccion": {
+     "k": 20,
+     "n": 24,
+     "valor": 0.8333333333333334,
+     "ic95": [
+      0.641,
+      0.933
+     ]
+    },
+    "precision": {
+     "k": 20,
+     "n": 26,
+     "valor": 0.7692307692307693,
+     "ic95": [
+      0.579,
+      0.89
+     ]
+    },
+    "f1": 0.8
+   }
+  },
+  "coste": {
+   "calls": 152,
+   "repairs": 3,
+   "prompt_tokens": 368389,
+   "completion_tokens": 33165,
+   "seconds": 406.42643996900006,
+   "no_answer": 0
+  }
+ },
+ "v2_27b_mencion_dev": {
+  "fecha": "2026-11-23T12:57:54+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "mencion",
+  "menciones": 287,
+  "efectos_adversos": 72,
+  "deteccion": {
+   "k": 65,
+   "n": 72,
+   "valor": 0.9027777777777778,
+   "ic95": [
+    0.813,
+    0.952
+   ]
+  },
+  "precision": {
+   "k": 65,
+   "n": 71,
+   "valor": 0.9154929577464789,
+   "ic95": [
+    0.828,
+    0.961
+   ]
+  },
+  "f1": 0.909,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "acierto_si_no": {
+   "k": 274,
+   "n": 287,
+   "valor": 0.9547038327526133,
+   "ic95": [
+    0.924,
+    0.973
+   ]
+  },
+  "kappa_si_no": 0.879,
+  "descarte_no_es_mencion": {
+   "k": 57,
+   "n": 58,
+   "valor": 0.9827586206896551,
+   "ic95": [
+    0.909,
+    0.997
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 149,
+    "n": 209,
+    "valor": 0.7129186602870813,
+    "ic95": [
+     0.648,
+     0.77
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 45,
+     "sin_reaccion": 7,
+     "pregunta_o_consejo": 3,
+     "broma_opinion_noticia": 2
+    },
+    "pregunta_o_consejo": {
+     "no_es_mencion": 7,
+     "pregunta_o_consejo": 12,
+     "broma_opinion_noticia": 2
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 4,
+     "broma_opinion_noticia": 38,
+     "pregunta_o_consejo": 12,
+     "sin_reaccion": 9
+    },
+    "sin_reaccion": {
+     "pregunta_o_consejo": 9,
+     "sin_reaccion": 54,
+     "no_es_mencion": 2,
+     "broma_opinion_noticia": 3
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 65,
+   "n": 72,
+   "valor": 0.9027777777777778,
+   "ic95": [
+    0.813,
+    0.952
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 65,
+    "n": 65,
+    "valor": 1.0,
+    "ic95": [
+     0.944,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 65
+    }
+   },
+   "edad": {
+    "k": 64,
+    "n": 65,
+    "valor": 0.9846153846153847,
+    "ic95": [
+     0.918,
+     0.997
+    ],
+    "valores_hoja": {
+     "desconocido": 65
+    }
+   },
+   "sexo": {
+    "k": 54,
+    "n": 65,
+    "valor": 0.8307692307692308,
+    "ic95": [
+     0.722,
+     0.903
+    ],
+    "valores_hoja": {
+     "hombre": 13,
+     "desconocido": 40,
+     "mujer": 12
+    }
+   },
+   "grave": {
+    "k": 65,
+    "n": 65,
+    "valor": 1.0,
+    "ic95": [
+     0.944,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 65
+    }
+   },
+   "desenlace": {
+    "k": 60,
+    "n": 65,
+    "valor": 0.9230769230769231,
+    "ic95": [
+     0.832,
+     0.967
+    ],
+    "valores_hoja": {
+     "desconocido": 57,
+     "recuperado": 6,
+     "recuperandose": 1,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 176,
+    "efectos_adversos": 48,
+    "deteccion": {
+     "k": 45,
+     "n": 48,
+     "valor": 0.9375,
+     "ic95": [
+      0.832,
+      0.979
+     ]
+    },
+    "precision": {
+     "k": 45,
+     "n": 50,
+     "valor": 0.9,
+     "ic95": [
+      0.786,
+      0.957
+     ]
+    },
+    "f1": 0.918
+   },
+   "agente": {
+    "menciones": 111,
+    "efectos_adversos": 24,
+    "deteccion": {
+     "k": 20,
+     "n": 24,
+     "valor": 0.8333333333333334,
+     "ic95": [
+      0.641,
+      0.933
+     ]
+    },
+    "precision": {
+     "k": 20,
+     "n": 21,
+     "valor": 0.9523809523809523,
+     "ic95": [
+      0.773,
+      0.992
+     ]
+    },
+    "f1": 0.889
+   }
+  },
+  "coste": {
+   "calls": 288,
+   "repairs": 1,
+   "prompt_tokens": 656929,
+   "completion_tokens": 27412,
+   "seconds": 380.42367227497743,
+   "no_answer": 0
+  }
+ },
+ "v2_27b_mencion_test": {
+  "fecha": "2026-11-23T13:07:00+00:00",
+  "conjunto": "test",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "mencion",
+  "menciones": 438,
+  "efectos_adversos": 89,
+  "deteccion": {
+   "k": 70,
+   "n": 89,
+   "valor": 0.7865168539325843,
+   "ic95": [
+    0.69,
+    0.859
+   ]
+  },
+  "precision": {
+   "k": 70,
+   "n": 88,
+   "valor": 0.7954545454545454,
+   "ic95": [
+    0.7,
+    0.867
+   ]
+  },
+  "f1": 0.791,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "acierto_si_no": {
+   "k": 401,
+   "n": 438,
+   "valor": 0.9155251141552512,
+   "ic95": [
+    0.886,
+    0.938
+   ]
+  },
+  "kappa_si_no": 0.738,
+  "descarte_no_es_mencion": {
+   "k": 104,
+   "n": 110,
+   "valor": 0.9454545454545454,
+   "ic95": [
+    0.886,
+    0.975
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 247,
+    "n": 331,
+    "valor": 0.7462235649546828,
+    "ic95": [
+     0.697,
+     0.79
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "pregunta_o_consejo": 8,
+     "no_es_mencion": 82,
+     "sin_reaccion": 10,
+     "broma_opinion_noticia": 4
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 23,
+     "no_es_mencion": 9
+    },
+    "broma_opinion_noticia": {
+     "sin_reaccion": 16,
+     "broma_opinion_noticia": 68,
+     "pregunta_o_consejo": 11,
+     "no_es_mencion": 8
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 74,
+     "no_es_mencion": 4,
+     "pregunta_o_consejo": 11,
+     "broma_opinion_noticia": 3
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 70,
+   "n": 89,
+   "valor": 0.7865168539325843,
+   "ic95": [
+    0.69,
+    0.859
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 70,
+    "n": 70,
+    "valor": 1.0,
+    "ic95": [
+     0.948,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 70
+    }
+   },
+   "edad": {
+    "k": 70,
+    "n": 70,
+    "valor": 1.0,
+    "ic95": [
+     0.948,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 69,
+     "41": 1
+    }
+   },
+   "sexo": {
+    "k": 54,
+    "n": 70,
+    "valor": 0.7714285714285715,
+    "ic95": [
+     0.66,
+     0.854
+    ],
+    "valores_hoja": {
+     "desconocido": 46,
+     "mujer": 15,
+     "hombre": 9
+    }
+   },
+   "grave": {
+    "k": 69,
+    "n": 70,
+    "valor": 0.9857142857142858,
+    "ic95": [
+     0.923,
+     0.997
+    ],
+    "valores_hoja": {
+     "no_consta": 67,
+     "si": 3
+    }
+   },
+   "desenlace": {
+    "k": 62,
+    "n": 70,
+    "valor": 0.8857142857142857,
+    "ic95": [
+     0.79,
+     0.941
+    ],
+    "valores_hoja": {
+     "desconocido": 64,
+     "recuperado": 5,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 247,
+    "efectos_adversos": 69,
+    "deteccion": {
+     "k": 55,
+     "n": 69,
+     "valor": 0.7971014492753623,
+     "ic95": [
+      0.688,
+      0.875
+     ]
+    },
+    "precision": {
+     "k": 55,
+     "n": 60,
+     "valor": 0.9166666666666666,
+     "ic95": [
+      0.819,
+      0.964
+     ]
+    },
+    "f1": 0.853
+   },
+   "agente": {
+    "menciones": 191,
+    "efectos_adversos": 20,
+    "deteccion": {
+     "k": 15,
+     "n": 20,
+     "valor": 0.75,
+     "ic95": [
+      0.531,
+      0.888
+     ]
+    },
+    "precision": {
+     "k": 15,
+     "n": 28,
+     "valor": 0.5357142857142857,
+     "ic95": [
+      0.358,
+      0.705
+     ]
+    },
+    "f1": 0.625
+   }
+  },
+  "coste": {
+   "calls": 438,
+   "repairs": 0,
+   "prompt_tokens": 1007666,
+   "completion_tokens": 41196,
+   "seconds": 581.2715556630064,
+   "no_answer": 0
+  }
  }
 }

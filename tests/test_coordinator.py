@@ -6,7 +6,14 @@ import json
 from agent.react_agent import Brain
 from coordinator.agent import CoordinatorAgent, coordinar
 from coordinator.cases import CaseStore
-from coordinator.evaluate import check_one, fill, placeholders, score_task, unsupported_numbers
+from coordinator.evaluate import (
+    check_one,
+    fill,
+    placeholders,
+    score_task,
+    unsupported_citations,
+    unsupported_numbers,
+)
 from coordinator.tools import make_registry, parse_terms
 from crawler.store import ConversationPost, RawMention
 
@@ -230,3 +237,9 @@ def test_unsupported_numbers_catch_invented_figures():
         and row["herramientas_requeridas"]
         and row["numeros_sin_respaldo"] == [4300.0]
     )
+
+
+def test_unsupported_citations():
+    response = {"steps": [{"observation": "[ee3f3fd9f0-0073] (Ficha técnica …) insomnio"}]}
+    answer = "Muy frecuente [ee3f3fd9f0-0073]; además [ee3f3fd9f0-0016]"
+    assert unsupported_citations(answer, response) == ["ee3f3fd9f0-0016"]
