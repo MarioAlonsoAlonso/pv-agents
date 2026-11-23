@@ -82,6 +82,7 @@ def test_fix_does_the_mechanical_part():
     assert row["criterio_gravedad"] == ""
     assert fix({**YES, "sexo": "", "sexo_fuente": "deducido"})["sexo_fuente"] == ""
     assert fix({**YES, "reacciones": ["mareo", "sueño"]})["reacciones"] == "mareo | sueño"
+    assert fix({**YES, "reacciones": ""})["reacciones"] == "[no especificada]"
 
 
 def test_repair_once_then_send_to_human_review():

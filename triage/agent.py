@@ -78,6 +78,10 @@ def fix(item: dict) -> dict:
         row["paciente"] = "desconocido"
     if not row["desenlace"]:
         row["desenlace"] = "desconocido"
+    if row["es_efecto_adverso"].lower() == "si" and not row["reacciones"]:
+        # The decision is what matters; with v1, 5 clear cases went to review only because the
+        # reaction was left empty (2026-11-23). The coder will read the post anyway.
+        row["reacciones"] = "[no especificada]"
     return row
 
 
@@ -171,7 +175,7 @@ def groups(mentions: list[RawMention], por: str = "conversacion", size: int = 8)
     by_thread: dict[str, list[RawMention]] = {}
     for m in mentions:
         by_thread.setdefault(m.hilo_id, []).append(m)
-    out = []
+    out: list[list[RawMention]] = []
     for group in by_thread.values():
         out.extend(group[i : i + size] for i in range(0, len(group), size))
     return out

@@ -47,6 +47,7 @@ pidieran (por ejemplo, consultar la ficha técnica en los casos dudosos), el buc
 |---|---|
 | `v0` | El prompt con el que el 27B pre-anotó la hoja de soluciones, tal cual. **Ojo:** la hoja se construyó revisando los desacuerdos entre Claude y el 27B con este prompt, así que está algo favorecido |
 | `v1` | v0 + reglas para las trampas conocidas (broma con síntoma real, otro fármaco, síntomas de un mensaje anterior, retirada, falta de eficacia) + ejemplos inventados |
+| `v2` | v1 + los casos que v1 perdía: pregunta que cuenta un síntoma propio, queja vaga atribuida al fármaco, otro fármaco en el post pero algo atribuido a este, tomas olvidadas; «ante la duda, a revisión»; no suponer «hombre» por defecto |
 
 `--por mencion` hace una petición por post en lugar de por conversación (más caro; sirve para
 medir si agrupar contagia el tema del hilo a las respuestas, como le pasaba al 27B al anotar).
@@ -109,8 +110,14 @@ paciente es el autor**, así que esos dos campos no se pueden afinar en desarrol
 | Versión | Cerebro | Detección | Precisión | Descarta `no_es_mencion` | Tokens |
 |---|---|---|---|---|---|
 | `palabras` | — | 36 % [26–48] | 57 % [42–70] | 88 % [77–94] | 0 |
-| `v0` | 27b | pendiente (DGX) | | | |
-| `v1` | 27b | pendiente (DGX) | | | |
+| `v0` | 27b | **82 % [72–89]** | 75 % [64–83] | 84 % [73–92] | 594 / mención |
+| `v1` | 27b | 75 % [64–84] | **86 % [75–92]** | **95 % [86–98]** | 1 176 / mención |
+| `v2` | 27b | pendiente (DGX) | | | |
+
+v0 frente a v1 en el acierto sí/no: 254 frente a 260 de 287, McNemar p = 0,34 (no
+significativo). v1 es más estricta: la mitad de falsas alarmas, pero pierde más casos. En v1,
+5 de los 75 % fueron a revisión humana solo porque el modelo dejó vacía la reacción (desde v2 el
+código acepta el «sí» con `[no especificada]`).
 
 ## Piezas
 

@@ -677,3 +677,38 @@ Las garantías en el código (texto copiado de la fuente, solo posts vistos, hil
 pesaron más que el prompt o el modelo. Pendiente: validar la versión final en un lote nuevo u
 otro fármaco, porque las cuatro versiones se ajustaron mirando los mismos 567 posts. Detalle en
 [`crawler/RESULTADOS.md`](crawler/RESULTADOS.md).
+
+### 2026-11-23 · Proyecto final · Triaje: ¿es un efecto adverso? Línea base, v0 y v1
+
+**Qué queríamos saber.** Si el 27B distingue en las menciones del rastreador las que describen
+un efecto adverso de la sertralina (22 % en el examen) de las bromas, preguntas, opiniones,
+experiencias sin nada malo y errores del rastreador, y si hace falta un modelo para eso.
+
+**Qué hicimos.** `triage/`: una petición al 27B por conversación (trozos de 8 menciones),
+validación en el código con los valores de la hoja de soluciones, una reparación si falta una
+respuesta o no es válida y, si sigue sin haberla, revisión humana como posible efecto adverso.
+Desarrollo: 287 menciones (72 efectos adversos) de `evaluacion_triaje`; el examen (438) no se ha
+tocado. Tres sistemas: una línea base por palabras clave (lista fija de síntomas, sin modelo),
+v0 (el prompt de la preanotación) y v1 (v0 + reglas para las trampas conocidas + ejemplos
+inventados).
+
+**Qué pasó.** (desarrollo, intervalos de Wilson al 95 %)
+
+| Sistema | Detección | Precisión | Descarta errores del rastreador | Tokens/mención |
+|---|---|---|---|---|
+| Palabras clave | 36 % [26–48] | 57 % [42–70] | 88 % | 0 |
+| v0 · 27B | **82 %** [72–89] | 75 % [64–83] | 84 % | 594 |
+| v1 · 27B | 75 % [64–84] | **86 %** [75–92] | **95 %** | 1 176 |
+
+v0 frente a v1 en el sí/no: 254 y 260 aciertos de 287, McNemar p = 0,34. v1 comete la mitad de
+falsas alarmas (sobre todo deja de atribuir a la sertralina efectos de otro antidepresivo del
+mismo hilo), pero pierde 9 casos que v0 encontraba: preguntas que cuentan un síntoma propio,
+quejas vagas ("sus efectos secundarios") que toma por opinión, posts que hablan de otro fármaco
+pero culpan a la sertralina de algo, y síntomas por olvidar tomas. Otros 9 casos los pierden las
+dos. 5 casos de v1 fueron a revisión humana solo porque el modelo dejó vacía la reacción.
+
+**Qué concluimos.** Hace falta un modelo: las palabras clave pierden dos de cada tres casos.
+Entre los prompts hay un *trade-off* entre detección y precisión, no una mejora global, y en
+farmacovigilancia pesa más la detección. v2 conserva las reglas de v1 que daban precisión y
+añade los casos que perdía, con el principio de que ante la duda decide una persona; el código
+acepta un «sí» sin reacción. Pendiente: medir v2 en desarrollo.
