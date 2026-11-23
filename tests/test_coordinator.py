@@ -449,3 +449,22 @@ def test_percentages_of_observed_counts_are_supported():
     response = {"steps": [{"observation": '{"menciones": 725, "casos": 159}'}]}
     assert unsupported_numbers("159 de 725, un 21,9 %", "t", response) == []
     assert unsupported_numbers("un 37,5 % del total", "t", response)  # not a ratio of the two
+
+
+def test_meddra_check_reads_what_is_coded():
+    _, store = _store()
+    check = {"type": "meddra_notif", "esperados": ["Cough"], "ausentes": ["Diarrhoea"]}
+    assert check_one(
+        check, "- **Cough** (tos seca)\n- Diarrhoea: se niega, no se codifica", {}, store
+    )
+    assert not check_one(check, "- **Dry cough** (tos seca)", {}, store)  # not the PT
+    assert not check_one(check, "- Cough\n- Diarrhoea", {}, store)  # forbidden term coded
+    both = {"type": "meddra_notif", "esperados": ["Anaphylactic reaction", "Headache"]}
+    answer = (
+        "- **Anaphylactic reaction**\n"
+        "- El dolor de cabeza no se ha codificado: podría añadirse Headache"
+    )
+    assert not check_one(both, answer, {}, store)
+    assert check_one(both, "1. Anaphylactic reaction\n2. Headache", {}, store)
+    lack = {"type": "meddra_notif", "esperados": ["Drug ineffective"]}
+    assert check_one(lack, "- **Drug ineffective** (no le hizo efecto)", {}, store)

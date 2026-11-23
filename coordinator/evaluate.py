@@ -113,6 +113,25 @@ def live_prr(drug: str, reaction: str) -> float:
     )["prr"]
 
 
+# A line that says a term is NOT coded ("Diarrhoea no se codifica: se niega", "el dolor de
+# cabeza no se ha codificado por separado"): terms named there do not count as coded.
+EXCLUDING = re.compile(
+    r"(?i)no se (ha )?codific|no codific|no se incluy|excluy|excluid|descart|negad|se niega|"
+    r"absorb|es un desenlace|omit|sin codificar|no es una reacci|antecedente|indicaci[oó]n"
+)
+
+
+def coded_terms_lines(answer: str) -> list[str]:
+    return [line for line in answer.splitlines() if not EXCLUDING.search(line)]
+
+
+def term_in(term: str, line: str) -> bool:
+    """The term on its own, not inside a longer one: "Cough" is not in "Dry cough" (2026-11-23:
+    a substring check took "Dry cough" for the expected "Cough")."""
+    pattern = rf"(?<![A-Za-zÀ-ÿ] )(?<![A-Za-zÀ-ÿ]){re.escape(term)}(?![A-Za-zÀ-ÿ])"
+    return re.search(pattern, line, re.IGNORECASE) is not None
+
+
 def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> bool:
     kind = check.get("type")
     cases = store.of_drug(DRUG)
@@ -162,17 +181,10 @@ def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> boo
             and re.search(r"(?i)ningún|ninguno|no hay", answer) is not None
         )
     if kind == "meddra_notif":
-        low = answer.lower()
-        if not all(t.lower() in low for t in check["esperados"]):
+        coded = coded_terms_lines(answer)
+        if not all(any(term_in(t, line) for line in coded) for t in check["esperados"]):
             return False
-        # A forbidden term may be named to explain why it is NOT coded ("Diarrhoea no se
-        # codifica: se niega"); it only fails on a line that does not exclude it.
-        excluding = re.compile(r"(?i)\bno\b|excl|descart|neg|absorb|desenlace|omit|sin codificar")
-        for line in low.splitlines():
-            for term in check.get("ausentes", []):
-                if term.lower() in line and not excluding.search(line):
-                    return False
-        return True
+        return not any(any(term_in(t, line) for line in coded) for t in check.get("ausentes", []))
     if kind == "ids_filtro":
         ids = [c.id for c in store.filter(DRUG, **check.get("filtro", {}))]
         return (
