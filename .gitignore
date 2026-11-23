@@ -46,3 +46,9 @@ reports/*.csv
 Thumbs.db
 
 .mypy_cache
+
+# Raw crawler evaluations: they may contain text from real posts. Only the cleaned copies
+# (reports/crawler_eval_sertralina_v*.json) go to git, added by hand.
+reports/crawler_eval.json
+reports/crawler_eval_v*.json
+reports/crawler_dirigido_eval_parcial.json

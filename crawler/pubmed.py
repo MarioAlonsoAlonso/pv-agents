@@ -67,7 +67,9 @@ def parse_articles(xml: str) -> list[dict]:
                 "revista": node.findtext(".//Journal/Title", ""),
                 "año": node.findtext(".//JournalIssue/PubDate/Year", "")
                 or node.findtext(".//JournalIssue/PubDate/MedlineDate", "")[:4],
-                "resumen": abstract[:900] + ("…" if len(abstract) > 900 else ""),
+                # Whole abstracts (most are < 2500): cut at 900, the agent missed the exceptions
+                # that come late ("…except lorazepam") and wrote the opposite (2026-11-23).
+                "resumen": abstract[:2500] + ("…" if len(abstract) > 2500 else ""),
             }
         )
     return articles

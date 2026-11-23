@@ -148,6 +148,9 @@ class ReActAgent:
     sessions: dict[str, ConversationMemory] = field(default_factory=dict)
     # Subclasses with other tools (crawler/agent.py) need longer observations, e.g. a thread.
     max_observation_chars: int = MAX_OBSERVATION_CHARS
+    # An empty final answer (e.g. the output ran out of tokens inside the call) goes back to
+    # the model as an error instead of ending the run. Off by default: phase-4 behaviour.
+    retry_empty_final_answer: bool = False
 
     @classmethod
     def from_env(cls) -> ReActAgent:
@@ -301,8 +304,17 @@ class ReActAgent:
                 continue
             action = AgentAction(name=call.name, arguments=call.arguments)
             if call.name == "final_answer":
+                answer = str(call.arguments.get("answer", ""))
+                if not answer.strip() and self.retry_empty_final_answer:
+                    observation = (
+                        "error: final_answer arrived without text (too long?). Call it again "
+                        "with the complete answer, shorter if needed."
+                    )
+                    steps.append(AgentStep(thought=thought, action=action, observation=observation))
+                    memory.add("tool", observation, name="final_answer")
+                    continue
                 steps.append(AgentStep(thought=thought, action=action))
-                return respond(str(call.arguments.get("answer", "")), True, "final_answer")
+                return respond(answer, True, "final_answer")
 
             key = json.dumps([call.name, call.arguments], sort_keys=True, default=str)
             seen_calls[key] = seen_calls.get(key, 0) + 1

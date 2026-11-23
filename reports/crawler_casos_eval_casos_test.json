@@ -1,0 +1,97 @@
+{
+ "sistemas": {
+  "fija": {
+   "resumen": {
+    "preguntas": 5,
+    "recall": {
+     "k": 37,
+     "n": 44,
+     "valor": 0.841,
+     "ic95": [
+      0.706,
+      0.921
+     ]
+    },
+    "precision": {
+     "k": 37,
+     "n": 101,
+     "valor": 0.366,
+     "ic95": [
+      0.279,
+      0.464
+     ]
+    },
+    "sin_juzgar": 0,
+    "controles": {
+     "control_sangrado_sertralina": 2
+    },
+    "por_pregunta": {
+     "sexual_sertralina": "7/8 encontrados, 29 de más, 0 sin juzgar",
+     "temblores_sertralina": "5/5 encontrados, 1 de más, 0 sin juzgar",
+     "digestivo_sertralina": "12/15 encontrados, 6 de más, 0 sin juzgar",
+     "embotamiento_sertralina": "5/7 encontrados, 13 de más, 0 sin juzgar",
+     "somnolencia_sertralina": "8/9 encontrados, 15 de más, 0 sin juzgar"
+    }
+   },
+   "preguntas": [
+    {
+     "id": "sexual_sertralina",
+     "control": false,
+     "positivos": 8,
+     "encontrados": 36,
+     "aciertos": 7,
+     "juzgados": 36,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "temblores_sertralina",
+     "control": false,
+     "positivos": 5,
+     "encontrados": 6,
+     "aciertos": 5,
+     "juzgados": 6,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "digestivo_sertralina",
+     "control": false,
+     "positivos": 15,
+     "encontrados": 18,
+     "aciertos": 12,
+     "juzgados": 18,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "embotamiento_sertralina",
+     "control": false,
+     "positivos": 7,
+     "encontrados": 18,
+     "aciertos": 5,
+     "juzgados": 18,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "somnolencia_sertralina",
+     "control": false,
+     "positivos": 9,
+     "encontrados": 23,
+     "aciertos": 8,
+     "juzgados": 23,
+     "sin_juzgar": 0
+    },
+    {
+     "id": "control_sangrado_sertralina",
+     "control": true,
+     "positivos": 0,
+     "encontrados": 2,
+     "aciertos": 0,
+     "juzgados": 2,
+     "sin_juzgar": 0
+    }
+   ]
+  }
+ },
+ "fecha": "2026-11-23T15:59:25+00:00",
+ "bench": "casos_test.jsonl",
+ "gold_construido": "2026-11-23T15:57:32+00:00"
+}
