@@ -171,8 +171,24 @@ Cada pregunta lleva términos en inglés y 3 PMID de referencia comprobados el 2
 | Coste | Tokens, pasos, segundos, búsquedas |
 
 Sistema de comparación (`fija`): una búsqueda en PubMed con una consulta fija, los 10 primeros.
-En desarrollo, 77 % de artículos relevantes y 16 de 36 de referencia; en el examen, 62 % y 14 de
-30 (PubMed en vivo puede reordenar de un día a otro).
+
+**Desarrollo (2026-11-23, 27B):**
+
+| | Búsqueda fija | Bluesky + PubMed (v1) | `buscar_literatura` (v2) |
+|---|---|---|---|
+| PMID citados sin respaldo | — | 0 de 81 | **0 de 129** [0-3 %] |
+| Relevantes | 77 % de lo entregado | 93 % de lo citado | **94 % de lo citado** [89-97] (78 % de todo lo visto) |
+| De referencia encontrados | 15-16 de 36 | 6 de 36 | **15 de 36** (14 citados) |
+| Controles | — | "no hay evidencia" | "no hay evidencia" |
+| Coste por pregunta | 0 tokens | 63 000 tokens, 13,6 pasos | **11 600 tokens, 4 pasos, 24 s** |
+
+Separar PubMed devolvió al agente lo que pierde frente a la búsqueda fija (encuentra lo mismo:
+15 de 36) con una quinta parte del coste, y lo que entrega al analista está filtrado: el 94 % de
+lo que cita es relevante, frente al 77 % de una lista sin filtrar. No inventa referencias. Lo que
+no mide este banco es la calidad del resumen (mecanismo, grupos de riesgo): leerlo a mano.
+
+Examen (`literatura_test`), búsqueda fija: 62 % relevantes y 14 de 30 de referencia (PubMed en
+vivo puede reordenar de un día a otro).
 
 ### Evaluación de `buscar_mas_casos`
 
