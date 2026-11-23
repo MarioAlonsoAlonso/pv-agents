@@ -80,7 +80,10 @@ def score(results: list[SystemResult], gold: dict[str, dict]) -> dict:
         "busquedas": sum(r.searches for r in results),
         "hilos_leidos": sum(r.threads_read for r in results),
         "segundos": round(sum(r.seconds for r in results), 1),
-        "terminos_nuevos": [t for r in results for t in r.new_terms],
+        # Without the model's "motivo": it sometimes quotes the post where it saw the term.
+        "terminos_nuevos": [
+            {"termino": t["termino"], "farmaco": t["farmaco"]} for r in results for t in r.new_terms
+        ],
         "motivos_parada": [s for r in results for s in r.stop_reasons],
         "por_farmaco": per_drug,
     }

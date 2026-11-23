@@ -7,7 +7,7 @@
 | ``agrupar_por_meddra`` | Equivalent cases: how many cases share each Preferred Term |
 | ``search_knowledge_base`` | The phase-3 RAG over the CIMA technical sheets and EMA guidelines |
 | ``faers_reaction_counts``, ``disproportionality_prr`` | Phase-2 tools: FAERS and the signal |
-| ``buscar_evidencia`` | The crawler's directed sub-agent (Bluesky + PubMed) |
+| ``buscar_literatura`` | The crawler's literature sub-agent (PubMed): is it described, is it new |
 | ``create_icsr_report`` | The ICSR draft, held for human confirmation |
 
 Naranjo (``naranjo_causality``) is left out on purpose: its ten questions (rechallenge,
@@ -16,7 +16,10 @@ them in. Causality here is what the proposal asked of that agent: whether there 
 cases, whether the reaction is known (technical sheet) and whether there is a signal (FAERS).
 
 ``variant`` removes components for the ablations: ``sin_rag``, ``sin_meddra``,
-``sin_evidencia``.
+``sin_literatura`` (``sin_evidencia`` is its old name, from when the sub-agent searched Bluesky
+and PubMed at once). The crawler's other analyst tool, ``buscar_mas_casos``, is parked (Mario,
+2026-11-23): for the watched drugs the cases are already in the case store, so "how many
+patients tell X" is a query on it, not a new search.
 """
 
 from __future__ import annotations
@@ -30,7 +33,7 @@ from pydantic import Field
 from coordinator.cases import CaseStore
 from tool_use.registry import ToolRegistry, tool
 
-VARIANTS = ("completo", "sin_rag", "sin_meddra", "sin_evidencia")
+VARIANTS = ("completo", "sin_rag", "sin_meddra", "sin_literatura", "sin_evidencia")
 
 
 class CodingFailed(RuntimeError):
@@ -196,7 +199,7 @@ def make_registry(
         }
 
     from agent.react_agent import final_answer, search_knowledge_base
-    from crawler.agent import buscar_evidencia
+    from crawler.agent import buscar_literatura
     from tool_use.tools import (
         create_icsr_report,
         disproportionality_prr,
@@ -215,6 +218,6 @@ def make_registry(
         registry.register(codificar_meddra, agrupar_por_meddra)
     if variant != "sin_rag":
         registry.register(search_knowledge_base)
-    if variant != "sin_evidencia":
-        registry.register(buscar_evidencia)
+    if variant not in ("sin_literatura", "sin_evidencia"):
+        registry.register(buscar_literatura)
     return registry

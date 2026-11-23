@@ -1,0 +1,6 @@
+{"id": "calor_sertralina", "farmaco": "sertralina", "reaccion": "calor excesivo o sudoración (intolerancia al calor)", "patron_gold": "calor|calipo|sudor|sudo\\b|sudando|temperatura|🥵", "palabras_fija": "calor|sudo|sudor|temperatura", "control": false}
+{"id": "insomnio_sertralina", "farmaco": "sertralina", "reaccion": "insomnio", "patron_gold": "insomnio|no (me )?dej\\w* dormir|sin dormir|no dormi|no he dormido|quitaba el sueno|no pegar un ojo|3 horas|no duermo|duermo fatal|no puedo dormir|me despierta", "palabras_fija": "insomnio|dormir|dormi|duermo|desvel", "control": false}
+{"id": "bruxismo_sertralina", "farmaco": "sertralina", "reaccion": "bruxismo (apretar o rechinar los dientes)", "patron_gold": "bruxismo|mandibula", "palabras_fija": "bruxismo|mandibula|dientes", "control": false}
+{"id": "piernas_inquietas_sertralina", "farmaco": "sertralina", "reaccion": "síndrome de piernas inquietas", "patron_gold": "piernas inquietas", "palabras_fija": "piernas", "control": false}
+{"id": "mareo_sertralina", "farmaco": "sertralina", "reaccion": "mareo o vértigo", "patron_gold": "mare[oa]|vertigo", "palabras_fija": "mare[oa]|vertigo", "control": false}
+{"id": "control_pelo_sertralina", "farmaco": "sertralina", "reaccion": "caída del pelo", "patron_gold": "\\bpelo\\b|cabello|alopecia", "palabras_fija": "\\bpelo\\b|cabello|alopecia", "control": true}

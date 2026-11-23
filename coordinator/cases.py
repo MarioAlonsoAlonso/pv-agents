@@ -178,10 +178,18 @@ class CaseStore:
     def filter(self, drug: str | None = None, **criteria) -> list[Case]:
         """Cases matching every criterion, by priority. Criteria: ``sexo``, ``desenlace``,
         ``paciente`` (triage values), ``origen`` (``agente`` / ``busqueda_fija``), ``grave``
-        (bool), ``con_edad`` (bool: the age is known) and ``desde`` / ``hasta`` (ISO dates)."""
+        (bool), ``con_edad`` (bool: the age is known), ``desde`` / ``hasta`` (ISO dates) and
+        ``buscar`` (a word, or a list of words, any of which appears in the reactions as the
+        triage wrote them; case and accents do not matter)."""
+        from crawler.text import fold
+
+        words = criteria.get("buscar") or []
+        words = [fold(w) for w in ([words] if isinstance(words, str) else words) if w.strip()]
         out = []
         for c in self.of_drug(drug):
             t = c.triaje
+            if words and not any(w in fold(t.get("reacciones", "")) for w in words):
+                continue
             if any(
                 criteria.get(f) not in (None, "") and t.get(f) != criteria[f]
                 for f in ("sexo", "desenlace", "paciente")

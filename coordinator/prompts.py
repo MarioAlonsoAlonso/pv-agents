@@ -22,8 +22,12 @@ la respuesta. Lo que tienes a mano (usa solo las que aparecen en la lista de her
   definiciones). Cita los ids de los fragmentos que uses.
 - `faers_reaction_counts` y `disproportionality_prr`: notificaciones en FAERS y la señal (PRR)
   de un par fármaco-reacción. La reacción va como término MedDRA en inglés.
-- `buscar_evidencia`: un sub-agente que busca más casos en Bluesky y PubMed. Es lento: úsalo solo
-  si el técnico pide más evidencia o lo anterior no basta.
+- `buscar_literatura`: un sub-agente que busca en PubMed qué dice la literatura de un fármaco y
+  una reacción (si está descrita, qué tipo de evidencia hay, quién está en riesgo). Úsalo para
+  saber si algo es nuevo, sobre todo cuando la ficha técnica no recoge la reacción. Es lento.
+  No cites los PMID de `referencias_sin_respaldo`.
+- Lo que cuentan los pacientes está en nuestros casos (`listar_casos`, `ver_caso`): no hay que
+  buscarlo fuera.
 - `create_icsr_report`: el borrador del informe oficial (ICSR) de un caso. NO se registra: queda
   pendiente de que una persona lo confirme. Úsalo solo si el técnico lo pide. El notificante de
   un post es siempre "consumer"; edad y sexo, los del caso ("desconocido" → null / "unknown").

@@ -299,24 +299,67 @@ CASOS = [
 
 MEDDRA_FAMILIES = ["single", "multi", "diagnosis", "death", "lack_of_effect"]
 
+# Evidence beyond our sheet and FAERS. Mario's decision (2026-11-23): the literature sub-agent
+# (PubMed) answers "is it described / is it new"; what patients tell is in our case store
+# (searched by reaction), not a new search on Bluesky. (request, sources, checks, kind)
+PMID = rx(r"(?i)PMID:?\s*\d{6,}")
 EVIDENCIA = [
-    ("¿Hay casos publicados de síndrome serotoninérgico con sertralina y tramadol?", "pubmed"),
-    ("Busca literatura sobre sangrado gastrointestinal con ISRS como la sertralina.", "pubmed"),
-    ("¿Qué cuentan los pacientes en Bluesky sobre el bruxismo con sertralina?", "bluesky"),
-    ("¿Hay gente en redes contando que la sertralina le quita el apetito?", "bluesky"),
     (
-        "¿Hay más evidencia de aumento de peso con sertralina, en pacientes o en la literatura?",
-        "ambas",
+        "¿Hay casos publicados de síndrome serotoninérgico con sertralina y tramadol?",
+        ["literatura"],
+        [PMID],
+        "dirigida",
     ),
-    ("¿Hay estudios sobre sertralina y riesgo de caídas en ancianos?", "pubmed"),
-    ("¿La gente comenta en redes que tiene pesadillas con la sertralina?", "bluesky"),
-    ("Además de nuestros casos, ¿hay más gente hablando de manía con la sertralina?", "ambas"),
+    (
+        "Busca literatura sobre sangrado gastrointestinal con ISRS como la sertralina.",
+        ["literatura"],
+        [PMID],
+        "dirigida",
+    ),
+    (
+        "¿Qué cuentan nuestros pacientes sobre el bruxismo con la sertralina?",
+        ["casos"],
+        [{"type": "ids_filtro", "filtro": {"buscar": "brux"}, "min": 2}],
+        "abierta",
+    ),
+    (
+        "¿Hay pacientes que se quejen de calor o sudores con la sertralina?",
+        ["casos"],
+        [{"type": "ids_filtro", "filtro": {"buscar": ["calor", "sud"]}, "min": 2}],
+        "abierta",
+    ),
+    (
+        "¿El bruxismo con sertralina está descrito en la literatura?",
+        ["literatura"],
+        [PMID],
+        "abierta",
+    ),
+    (
+        "¿Hay estudios sobre sertralina y riesgo de caídas en ancianos?",
+        ["literatura"],
+        [PMID],
+        "dirigida",
+    ),
+    (
+        "¿Cuántos de nuestros casos hablan de insomnio o de no poder dormir?",
+        ["casos"],
+        [{"type": "ids_filtro", "filtro": {"buscar": ["insomn", "dorm"]}, "min": 2}],
+        "abierta",
+    ),
+    (
+        "Lo del calor con la sertralina que cuentan nuestros pacientes, ¿es algo nuevo o está descrito?",
+        ["casos", "rag", "literatura"],
+        [
+            {
+                "type": "herramientas_distintas",
+                "de": ["search_knowledge_base", "buscar_literatura"],
+                "min": 1,
+            },
+            rx(r"(?i)hiperhidrosis|sudor|calor"),
+        ],
+        "abierta",
+    ),
 ]
-EVIDENCE_CHECK = {
-    "pubmed": rx(r"(?i)PMID:?\s*\d{6,}"),
-    "bluesky": rx(r"\[p[0-9a-f]{12}\]"),
-    "ambas": rx(r"(?i)PMID:?\s*\d{6,}|\[p[0-9a-f]{12}\]"),
-}
 
 # Open requests that need several sources: (request, sources, checks)
 ABIERTAS = [
@@ -417,7 +460,7 @@ ABIERTAS = [
         [
             {
                 "type": "herramientas_distintas",
-                "de": ["listar_casos", "ver_caso", "buscar_evidencia"],
+                "de": ["listar_casos", "ver_caso"],
                 "min": 1,
             },
             CITA,
@@ -585,17 +628,9 @@ def build() -> list[dict]:
             categoria="meddra",
             familia=p["branches"]["family"],
         )
-    for i, (request, where) in enumerate(EVIDENCIA):
-        add(
-            "e",
-            i,
-            request,
-            ["evidencia"],
-            [EVIDENCE_CHECK[where]],
-            "abierta",
-            tools=["buscar_evidencia"],
-            categoria="evidencia",
-        )
+    for i, (request, sources, checks, kind) in enumerate(EVIDENCIA):
+        tools = ["buscar_literatura"] if sources == ["literatura"] else []
+        add("e", i, request, sources, checks, kind, tools=tools, categoria="evidencia")
     for i, (request, sources, checks) in enumerate(ABIERTAS):
         add("o", i, request, sources, checks, "abierta", categoria="combinada")
     for i, (request, check) in enumerate(SIN_HERRAMIENTAS):

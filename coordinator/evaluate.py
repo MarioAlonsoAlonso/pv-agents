@@ -28,7 +28,8 @@ Check types, besides those of ``agent/evaluate.py`` (``contains``, ``regex``, ``
 * ``n_casos``: the number of cases matching ``filtro`` (``CaseStore.filter``) is in the answer;
 * ``faers_live``, ``faers_top``: a FAERS count / the top reactions, computed now;
 * ``meddra_notif``: every expected Preferred Term is named and no forbidden one is coded;
-* ``regex_ausente``: the pattern must NOT appear (e.g. claiming an ICSR was registered).
+* ``regex_ausente``: the pattern must NOT appear (e.g. claiming an ICSR was registered);
+* ``ids_filtro``: at least ``min`` of the cases matching ``filtro`` are named.
 
 Benchmark v2 (``--bench coordinator/bench/tareas_v2.jsonl``, ``coordinator/bench/v2.py``): ~100
 requests with their expected sources, split in ``--conjunto dev`` and ``test``. Besides
@@ -172,6 +173,13 @@ def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> boo
                 if term.lower() in line and not excluding.search(line):
                     return False
         return True
+    if kind == "ids_filtro":
+        ids = [c.id for c in store.filter(DRUG, **check.get("filtro", {}))]
+        return (
+            sum(i in answer for i in ids) >= min(check.get("min", 1), len(ids))
+            if ids
+            else (re.search(r"(?i)ningún|ninguno|no hay", answer) is not None)
+        )
     if kind == "regex_ausente":
         return re.search(check["value"], answer) is None
     if kind == "cita_fragmento":
@@ -243,23 +251,25 @@ def unsupported_citations(answer: str, response: dict) -> list[str]:
 
 # Which source each tool consults: the routing of a request is the set of sources it used.
 SOURCE_OF = {
-    "listar_casos": "casos",
-    "ver_caso": "casos",
-    "codificar_meddra": "meddra",
-    "codificar_notificacion": "meddra",
-    "agrupar_por_meddra": "meddra",
-    "search_knowledge_base": "rag",
-    "faers_reaction_counts": "faers",
-    "disproportionality_prr": "faers",
-    "buscar_evidencia": "evidencia",
+    "listar_casos": ("casos",),
+    "ver_caso": ("casos",),
+    "codificar_meddra": ("meddra",),
+    "codificar_notificacion": ("meddra",),
+    "agrupar_por_meddra": ("meddra",),
+    "search_knowledge_base": ("rag",),
+    "faers_reaction_counts": ("faers",),
+    "disproportionality_prr": ("faers",),
+    "buscar_literatura": ("literatura",),
+    "buscar_evidencia": ("literatura", "redes"),  # the old sub-agent searched both
+    "buscar_mas_casos": ("redes",),
 }
-SOURCES = ("casos", "meddra", "rag", "faers", "evidencia")
+SOURCES = ("casos", "meddra", "rag", "faers", "literatura", "redes")
 
 
 def routing(task: dict, used: list[str]) -> dict:
     """Expected sources (``fuentes``) against the sources the coordinator consulted."""
     expected = set(task.get("fuentes", []))
-    seen = {SOURCE_OF[t] for t in used if t in SOURCE_OF}
+    seen = {src for t in used for src in SOURCE_OF.get(t, ())}
     return {
         "fuentes_esperadas": sorted(expected),
         "fuentes_usadas": sorted(seen),

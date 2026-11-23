@@ -8,7 +8,7 @@
   invent a mention, and the same (post, drug) is never saved twice.
 * ``proponer_termino``: a new way people name the drug ("la sertra"), for the next searches.
 * ``nombres_comerciales``: brands from CIMA (official data, not the model's memory).
-* ``buscar_pubmed``: literature, only in directed mode.
+* ``buscar_pubmed``: literature, only in ``literatura`` mode (the analyst's tool).
 * Budgets (searches, threads) are enforced by the tools: when they run out the observation
   says so and the model has to finish.
 
@@ -133,7 +133,7 @@ def _snippet(text: str) -> str:
 
 
 def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
-    """The tools of one run. ``mode`` is ``vigilancia``, ``hilos`` or ``dirigido``."""
+    """The tools of one run. ``mode`` is ``vigilancia``, ``hilos``, ``casos`` or ``literatura``."""
 
     @tool
     def nombres_comerciales(
@@ -292,11 +292,15 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
     registry = ToolRegistry().register(final_answer)
     if mode == "hilos":
         registry.register(leer_hilo, guardar_menciones, proponer_termino)
-    else:
+    elif mode == "vigilancia":
         registry.register(
             nombres_comerciales, buscar_bluesky, leer_hilo, guardar_menciones, proponer_termino
         )
-    if mode == "dirigido":
+    elif mode == "casos":  # Bluesky only, for the analyst: no new terms for the watch list
+        registry.register(nombres_comerciales, buscar_bluesky, leer_hilo, guardar_menciones)
+    elif mode != "literatura":
+        raise ValueError(f"unknown mode {mode!r}")
+    if mode == "literatura":  # PubMed only
 
         @tool
         def buscar_pubmed(

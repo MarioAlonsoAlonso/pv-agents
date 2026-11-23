@@ -105,11 +105,13 @@ def test_tools_list_read_code_and_group(tmp_path):
 def test_variants_remove_components():
     _, store = _store()
     full = set(make_registry(store).tools)
-    assert {"codificar_meddra", "search_knowledge_base", "buscar_evidencia"} <= full
+    assert {"codificar_meddra", "search_knowledge_base", "buscar_literatura"} <= full
+    assert "buscar_mas_casos" not in full  # parked: patients' reports are in the case store
     assert "naranjo_causality" not in full
     assert "search_knowledge_base" not in make_registry(store, "sin_rag").tools
     assert "codificar_meddra" not in make_registry(store, "sin_meddra").tools
-    assert "buscar_evidencia" not in make_registry(store, "sin_evidencia").tools
+    assert "buscar_literatura" not in make_registry(store, "sin_literatura").tools
+    assert "buscar_literatura" not in make_registry(store, "sin_evidencia").tools  # old name
 
 
 def test_parse_terms():
@@ -177,7 +179,7 @@ def test_loop_codes_and_holds_the_icsr_for_a_person(tmp_path):
 def test_slow_tools_have_long_timeouts():
     _, store = _store()
     agent = CoordinatorAgent(registry=make_registry(store))
-    assert agent.timeouts["codificar_meddra"] >= 300 and agent.timeouts["buscar_evidencia"] >= 600
+    assert agent.timeouts["codificar_meddra"] >= 300 and agent.timeouts["buscar_literatura"] >= 600
 
 
 def test_bench_placeholders_and_checks(tmp_path):
@@ -381,7 +383,24 @@ def test_the_v2_bench_is_well_formed():
     tasks = build()
     assert len(tasks) >= 100 and len({t["id"] for t in tasks}) == len(tasks)
     assert {t["conjunto"] for t in tasks} == {"dev", "test"}
-    known = {"casos", "meddra", "rag", "faers", "evidencia"}
+    known = {"casos", "meddra", "rag", "faers", "literatura"}
     assert all(set(t["fuentes"]) <= known for t in tasks)
     death = [t for t in tasks if t.get("familia") == "death"]
     assert all("Death" in t["comprobar"][0]["ausentes"] for t in death)
+
+
+def test_cases_can_be_searched_by_reaction(tmp_path):
+    ms, store = _store(tmp_path)
+    # cases 0, 1 and 4 say "me da muchísimo sueño"; case 2 has "[náuseas]"
+    assert {c.id for c in store.filter("sertralina", buscar="SUEÑO")} == {
+        ms[0].id,
+        ms[1].id,
+        ms[4].id,
+    }
+    assert [c.id for c in store.filter("sertralina", buscar="nauseas")] == [ms[2].id]
+    assert len(store.filter("sertralina", buscar=["sueño", "náuseas"])) == 4
+    check = {"type": "ids_filtro", "filtro": {"buscar": "náuseas"}, "min": 2}
+    assert check_one(check, f"El caso {ms[2].id}", {}, store)  # min is capped at what exists
+    assert check_one(
+        {"type": "ids_filtro", "filtro": {"buscar": "brux"}}, "No hay ninguno", {}, store
+    )

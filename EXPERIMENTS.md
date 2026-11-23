@@ -877,3 +877,37 @@ pequeño, local y con un acierto medido por un verificador. Para comparar de ver
 codificaciones haría falta el test verificable de la fase 1 con el 27B. Una ejecución por
 variante: diferencias de una petición son ruido. Y otra vez: lo que más cambió el comportamiento
 fue lo que dicen y garantizan las herramientas, no el prompt.
+
+### 2026-11-23 · Proyecto final · Herramienta de literatura del analista (PubMed)
+
+**Pregunta.** El analista valida señales: ¿la reacción está descrita, es plausible, en quién? La
+ficha técnica está en el RAG; faltaba la literatura. ¿Aporta un agente frente a una búsqueda fija
+en PubMed?
+
+**Montaje.** 14 preguntas de desarrollo (12 con respuesta en la literatura y 2 controles sin ella)
+y 12 de examen escritas antes del primer cambio, con 3 PMID de referencia por pregunta (búsqueda
+por título, comprobados). Medidas: PMID citados que ninguna búsqueda devolvió, relevancia
+(fármaco y reacción en título o resumen), referencias encontradas, controles y coste; la
+fidelidad del resumen, a mano.
+
+**Iteraciones en desarrollo.** v1 buscaba en Bluesky y PubMed a la vez: 0 de 81 citas
+inventadas, pero 8 búsquedas en Bluesky por pregunta (casi todas vacías) y 1,7 en PubMed;
+6 de 36 referencias frente a 16 de la búsqueda fija, y un bucle. v2, solo PubMed: 15 de 36 con
+una quinta parte del coste. Leyendo respuestas a mano, una afirmaba lo contrario de su artículo:
+los resúmenes se cortaban a 900 caracteres y la excepción ("…salvo el lorazepam") quedaba fuera.
+El mismo corte rebajaba la relevancia medida de la búsqueda fija (77 % → 93 % con resúmenes
+completos): la "ventaja de filtrado" del agente era un artefacto. v3: resúmenes completos y no
+atribuir a un artículo lo que no dice; v3.1: una respuesta final vacía (no cabía en 2048 tokens)
+vuelve al modelo.
+
+**Examen (una ejecución).** 0 de 86 PMID sin respaldo (la primera puntuación dio 2: eran años
+tras un PMID; corregida la comprobación, se repuntuaron las mismas respuestas), 95 % de lo citado
+relevante, 13 de 30 referencias (fija: 14), 15 200 tokens y 25 s por pregunta. Fidelidad
+revisada en 3 respuestas: las cifras de los 26 artículos citados están en sus resúmenes.
+
+**Conclusión.** Encuentra lo mismo que una búsqueda simple y no inventa; lo que aporta es un
+resumen fiel y ordenado. Leer las respuestas encontró dos errores que ninguna cifra mostraba (el
+corte de los resúmenes y el de la propia medida). La herramienta de casos en Bluesky se aparcó:
+con fármacos vigilados, contar casos es una consulta a la base de menciones clasificadas. Detalle
+en [`crawler/README.md`](crawler/README.md).
+
