@@ -712,3 +712,31 @@ Entre los prompts hay un *trade-off* entre detección y precisión, no una mejor
 farmacovigilancia pesa más la detección. v2 conserva las reglas de v1 que daban precisión y
 añade los casos que perdía, con el principio de que ante la duda decide una persona; el código
 acepta un «sí» sin reacción. Pendiente: medir v2 en desarrollo.
+
+### 2026-11-23 · Proyecto final · Triaje v2
+
+**Qué cambiamos.** v1 + los cuatro tipos de caso que v1 perdía (pregunta con síntoma propio,
+queja vaga atribuida al fármaco, otro fármaco en el post pero algo atribuido a la sertralina,
+tomas olvidadas o dejarla), el principio «lo que marques sí lo revisa una persona; lo que marques
+no se pierde», no suponer «hombre» sin una palabra con género y no confundir síntomas de la
+enfermedad con efectos del fármaco. En el código, un «sí» sin reacción se acepta como
+`[no especificada]` en lugar de ir a revisión.
+
+**Qué pasó.** (desarrollo, 287 menciones, 72 efectos adversos)
+
+| | Detección | Precisión | Acierto sí/no | Sexo | Tokens/mención |
+|---|---|---|---|---|---|
+| v0 | 82 % [72–89] | 75 % [64–83] | 89 % | 81 % | 594 |
+| v1 | 75 % [64–84] | 86 % [75–92] | 91 % | 76 % | 1 176 |
+| **v2** | **88 % [78–93]** | **88 % [78–93]** | **94 %** (κ 0,83) | 84 % | 1 372 |
+
+v2 frente a v0: 21 menciones solo las acierta v2 y 6 solo v0, McNemar p = 0,006: la primera
+diferencia significativa. Ninguna mención fue a revisión humana. Por origen: detección 92 % en
+las de la búsqueda fija y 79 % en las del agente del rastreador (respuestas indirectas).
+
+**Qué concluimos.** v2 rompe el *trade-off* de v0/v1: sube la detección sin perder precisión.
+Los 18 fallos que quedan (9 perdidos, 9 falsas alarmas) no tienen un patrón común: síntomas que
+pueden ser de la enfermedad o del fármaco, erratas, una toma equivocada y dos respuestas en un
+hilo sobre otro antidepresivo. Seguir ajustando el prompt a estos 287 casos sería ajustarse al
+conjunto de desarrollo, así que el prompt se cierra en v2. Coste: 2,3 veces el de v0, por el
+prompt más largo (~400 000 tokens y 7 minutos para 287 menciones con 2 peticiones simultáneas).

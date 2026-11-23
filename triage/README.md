@@ -112,10 +112,10 @@ paciente es el autor**, así que esos dos campos no se pueden afinar en desarrol
 | `palabras` | — | 36 % [26–48] | 57 % [42–70] | 88 % [77–94] | 0 |
 | `v0` | 27b | **82 % [72–89]** | 75 % [64–83] | 84 % [73–92] | 594 / mención |
 | `v1` | 27b | 75 % [64–84] | **86 % [75–92]** | **95 % [86–98]** | 1 176 / mención |
-| `v2` | 27b | pendiente (DGX) | | | |
+| **`v2`** | 27b | **88 % [78–93]** | **88 % [78–93]** | 93 % [84–97] | 1 372 / mención |
 
-v0 frente a v1 en el acierto sí/no: 254 frente a 260 de 287, McNemar p = 0,34 (no
-significativo). v1 es más estricta: la mitad de falsas alarmas, pero pierde más casos. En v1,
+v2 frente a v0 en el acierto sí/no: 269 frente a 254 de 287 (21 casos solo los acierta v2, 6
+solo v0), McNemar p = 0,006. v0 frente a v1: 254 frente a 260, p = 0,34 (no significativo). v1 es más estricta: la mitad de falsas alarmas, pero pierde más casos. En v1,
 5 de los 75 % fueron a revisión humana solo porque el modelo dejó vacía la reacción (desde v2 el
 código acepta el «sí» con `[no especificada]`).
 
