@@ -77,7 +77,10 @@ def main(argv: list[str] | None = None) -> None:
         until = to_iso(datetime.now(UTC))
         since = to_iso(datetime.now(UTC) - timedelta(days=args.dias))
     print(f"fuente: {'muestra ' + str(args.muestra) if args.muestra else 'Bluesky en vivo'}")
-    print(f"periodo: {since} → {until} · cerebro: {args.brain}")
+    if args.modo == "investigar":  # directed mode searches all of Bluesky: evidence has no date
+        print(f"periodo: todo Bluesky (modo dirigido) · cerebro: {args.brain}")
+    else:
+        print(f"periodo: {since} → {until} · cerebro: {args.brain}")
 
     store = MentionStore()
     if args.modo == "vigilar":
