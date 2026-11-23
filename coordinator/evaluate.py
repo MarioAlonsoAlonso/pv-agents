@@ -36,11 +36,14 @@ from collections import Counter
 from pathlib import Path
 
 from coordinator.cases import FOLDER, CaseStore
-from tool_use.evaluate import _NUMBER, numbers_in
+from tool_use.evaluate import numbers_in
 
 BENCH = Path(__file__).parent / "bench" / "tareas.jsonl"
 CHUNK_ID = re.compile(r"\b[A-Za-z0-9_.]{3,}-s?\d{4}\b")
 CASE_ID = re.compile(r"M-[0-9a-f]{10}")
+# A written number: thousands in groups of exactly three ('21.054.159', '4 300') or a plain
+# number with decimals ('2,66'). With a looser pattern "IC95 5,49" was read as 95549.
+WRITTEN_NUMBER = re.compile(r"\d{1,3}(?:[.,\s]\d{3})+(?:,\d+)?(?!\d)|\d+(?:[.,]\d+)?")
 DRUG = "sertralina"
 
 
@@ -127,19 +130,44 @@ def unsupported_numbers(answer: str, task: str, response: dict) -> list[float]:
     seen = " ".join(s.get("observation") or "" for s in response.get("steps", [])) + " " + task
     support = set(numbers_in(CASE_ID.sub(" ", seen)))
     clean = CHUNK_ID.sub(" ", CASE_ID.sub(" ", answer))
+    whole = {int(x) for x in support if x == int(x) and x < 1e8}
+    # Simple arithmetic on observed numbers is not an invention: "the other 157" (159 - 2).
+    derived = {a + b for a in whole for b in whole} | {a - b for a in whole for b in whole}
 
     def backed(n: float) -> bool:
         if n in support or abs(n) <= 10 or 1900 <= n <= 2100:  # small counts, years
+            return True
+        if n == int(n) and int(n) in derived:
             return True
         return any(abs(n - s) <= 0.0051 * max(abs(s), 1) for s in support)  # rounding
 
     out = set()
     # A written number ('2,62', '1.680') has several readings: it is backed if any of them is.
-    for token in _NUMBER.findall(clean):
+    for token in WRITTEN_NUMBER.findall(clean):
         readings = numbers_in(token)
         if readings and not any(backed(n) for n in readings):
             out.add(max(readings))
     return sorted(out)
+
+
+def meddra_from_traces(store: CaseStore, items) -> None:
+    """The MedDRA terms the coordinator saw, read back from its ``codificar_meddra``
+    observations, for the cases the store has not coded (scoring outside the DGX, where the
+    cache is). Only term-like values: a failed coding is not a coding."""
+    from coordinator.tools import is_term
+
+    for item in items:
+        for step in item.get("steps", []):
+            action = step.get("action") or {}
+            if action.get("name") != "codificar_meddra":
+                continue
+            try:
+                observed = json.loads(step.get("observation") or "")
+            except json.JSONDecodeError:
+                continue
+            terms = [t for t in observed.get("terminos_meddra", []) if is_term(t)]
+            if terms and observed.get("caso") and observed["caso"] not in store.meddra:
+                store.meddra[observed["caso"]] = terms
 
 
 def unsupported_citations(answer: str, response: dict) -> list[str]:
@@ -206,6 +234,11 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--brain", default="27b")
     parser.add_argument("--max-steps", type=int, default=20)
     parser.add_argument("--de-nuevo", action="store_true", help="ignore previous answers")
+    parser.add_argument(
+        "--solo-puntuar",
+        action="store_true",
+        help="only score the answers already saved (no model: works outside the DGX)",
+    )
     parser.add_argument("--report", type=Path, default=Path("reports/coordinator_eval.json"))
     args = parser.parse_args(argv)
 
@@ -230,9 +263,10 @@ def main(argv: list[str] | None = None) -> None:
                     item = json.loads(line)
                     done[item["id"]] = item
         print(f"\n=== {key}" + (f" (reanudando: {len(done)} hechas)" if done else ""))
-        warm_up(variant)
+        if not args.solo_puntuar:
+            warm_up(variant)
         for task in tasks:
-            if task["id"] in done:
+            if task["id"] in done or args.solo_puntuar:
                 continue
             start = time.perf_counter()
             try:
@@ -255,12 +289,19 @@ def main(argv: list[str] | None = None) -> None:
                     else ""
                 )
             )
+        meddra_from_traces(store, done.values())
         rows = []
         for task in tasks:
             if task["id"] in done:
                 row = score_task(task, done[task["id"]], store)
                 row["segundos"] = done[task["id"]].get("segundos", 0)
                 rows.append(row)
+                if args.solo_puntuar:
+                    print(
+                        f"  {row['id']} {'✓' if row['correcta'] else '✗'} {row['comprobaciones']}"
+                        f" · números sin respaldo: {row['numeros_sin_respaldo']}"
+                        f" · citas sin respaldo: {row['citas_sin_respaldo']}"
+                    )
         report[key] = {**summarise(rows), "filas": rows}
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, ensure_ascii=False, indent=1), "utf-8")
@@ -268,7 +309,8 @@ def main(argv: list[str] | None = None) -> None:
         print(
             f"  éxito {100 * s['exito']:.0f} % · herramientas requeridas "
             f"{100 * s['herramientas_requeridas']:.0f} % · con números sin respaldo "
-            f"{s['respuestas_con_numeros_sin_respaldo']} · {s['tokens_medios']:.0f} tokens/tarea"
+            f"{s['respuestas_con_numeros_sin_respaldo']} · con citas sin respaldo "
+            f"{s['respuestas_con_citas_sin_respaldo']} · {s['tokens_medios']:.0f} tokens/tarea"
         )
     print(f"\n→ cifras en {args.report}; respuestas y trazas en {out_dir}")
 

@@ -138,7 +138,14 @@ class CaseStore:
                 if case.es_efecto_adverso:
                     store.cases[m.id] = case
         if meddra_file and meddra_file.exists():
-            store.meddra = json.loads(meddra_file.read_text("utf-8"))
+            from coordinator.tools import is_term
+
+            saved = json.loads(meddra_file.read_text("utf-8"))
+            # Entries with non-terms come from a failed coding (before the fix of
+            # 2026-11-23): dropped, so that the case is coded again.
+            store.meddra = {
+                i: terms for i, terms in saved.items() if terms and all(map(is_term, terms))
+            }
         return store
 
     @classmethod

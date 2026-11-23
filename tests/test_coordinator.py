@@ -243,3 +243,42 @@ def test_unsupported_citations():
     response = {"steps": [{"observation": "[ee3f3fd9f0-0073] (Ficha técnica …) insomnio"}]}
     answer = "Muy frecuente [ee3f3fd9f0-0073]; además [ee3f3fd9f0-0016]"
     assert unsupported_citations(answer, response) == ["ee3f3fd9f0-0016"]
+
+
+def test_a_coding_that_does_not_finish_is_an_error_not_terms(tmp_path, monkeypatch):
+    import agent.react_agent as ra
+    from coordinator.tools import CodingFailed, rlm_coder
+
+    class _Cut:
+        calls = 0
+
+        def answer(self, text):
+            _Cut.calls += 1
+
+            class R:
+                raw = "<think>Okay, let's tackle this query. The user is asking"
+
+            return R()
+
+    monkeypatch.setattr(ra, "_RLM", _Cut())
+    try:
+        rlm_coder("me da sueño")
+        raise AssertionError("expected CodingFailed")
+    except CodingFailed:
+        pass
+    assert _Cut.calls == 2  # one retry
+    ms, store = _store(tmp_path)
+    record = make_registry(store).call("codificar_meddra", {"caso_id": ms[0].id})
+    assert not record.ok and "did not finish" in record.error
+    assert ms[0].id not in store.meddra  # nothing cached
+
+
+def test_corrupt_codings_in_the_cache_are_dropped(tmp_path):
+    ms = [_m(1, "me da sueño")]
+    cache = tmp_path / "meddra.json"
+    cache.write_text(
+        json.dumps({ms[0].id: ["<think>", "Okay, let's tackle this query about the user"]}),
+        "utf-8",
+    )
+    store = CaseStore.build([(ms, {ms[0].id: YES})], cache)
+    assert store.meddra == {}

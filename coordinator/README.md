@@ -117,7 +117,33 @@ no reconocida porque no está en el subconjunto de 90 PT del repositorio, y el 2
 que el modelo de razonamiento la había descartado. Desde entonces la herramienta explica que
 esos términos son válidos para FAERS.
 
-Banco completo: pendiente (DGX).
+**Banco completo, variante `completo`** (2026-11-23, 27B, 159 casos de 725 menciones):
+
+| Éxito | Herramientas necesarias | Con números sin respaldo | Con citas sin respaldo | Pasos | Tokens/tarea | Tiempo |
+|---|---|---|---|---|---|---|
+| **13/13** | 12/13 | 0 | 0 | 2–17 (media 4,2) | 24 700 | 3 s – 13 min |
+
+- Las dos peticiones imposibles (otra red social y otro año; un fármaco sin casos) las contesta
+  diciendo qué no cubre el sistema, sin inventar.
+- El ICSR queda pendiente de confirmación. La primera llamada falló la validación (puso la edad
+  como el texto `"None"`) y el 27B la corrigió solo con el mensaje de error.
+- La única petición sin todas las herramientas previstas es el ICSR: el 27B puso él mismo el
+  término MedDRA (Insomnia, el correcto) en lugar de llamar al modelo de razonamiento.
+- El coste está en el modelo de razonamiento: codificar un caso tarda ~2,5 minutos (Qwen3-1.7B
+  con `generate` de Hugging Face en una GPU de 16 GB), así que las dos peticiones que codifican
+  cinco casos tardan ~13 minutos; el resto, segundos.
+
+**Fallos encontrados al revisar las trazas, y arreglados:**
+1. El modelo de razonamiento a veces no termina su respuesta (razona hasta el límite de tokens;
+   en la fase 1 pasaba en 19 de 200). La herramienta guardaba ese razonamiento como si fueran
+   términos (`"<think>"`, `"Okay, let's tackle…"`). El 27B lo detectó y lo descartó, pero quedaba
+   en la caché. Ahora se reintenta una vez y, si no, la herramienta devuelve un error y no
+   guarda nada; la caché descarta entradas corruptas al cargar.
+2. El detector de números sin respaldo daba tres falsos positivos («IC95 5,49» leído como 95 549)
+   y no aceptaba restas evidentes («el resto, 157» = 159 − 2). Corregido y vuelto a puntuar sin
+   llamar al modelo (`--solo-puntuar`).
+
+Ablaciones (`sin_rag`, `sin_meddra`, `sin_evidencia`): pendiente (DGX).
 
 ## Piezas
 

@@ -801,3 +801,33 @@ alarmas son reales, frente a menos de la mitad con palabras clave. Como el revis
 lo que el triaje marca, el error caro es el 21 % de casos perdidos; con más tiempo, el siguiente
 paso sería medir la detección con un umbral más permisivo (por ejemplo, marcar «sí» toda mención
 con un síntoma aunque el modelo dude) en un lote nuevo.
+
+### 2026-11-23 · Proyecto final · Coordinador: el 27B con todo el sistema como herramientas
+
+**Qué queríamos saber.** Si el 27B, con un bucle ReAct y una herramienta por agente o componente
+(casos del rastreador + triaje, el modelo de razonamiento MedDRA de la fase 1, el RAG de fichas
+técnicas y guías de la EMA, FAERS y PRR, el sub-agente de búsqueda del rastreador y el ICSR con
+confirmación humana), responde bien a las peticiones de un técnico sin inventar datos.
+
+**Qué hicimos.** `coordinator/`: el rastreo y el triaje se hacen antes, por código (725
+menciones → 159 casos, ordenados con los graves primero); el coordinador trabaja sobre casos.
+Banco de 13 peticiones con comprobación automática (casos y prioridad, MedDRA, ficha técnica con
+cita, señal con el PRR calculado en vivo, normativa, ICSR pendiente, evidencia en Bluesky y
+PubMed, resumen para el comité y dos imposibles). Además del éxito, se cuentan los números y las
+citas de la respuesta que no aparecen en ninguna observación.
+
+**Qué pasó.** Variante completa: 13/13 correctas, 0 números y 0 citas sin respaldo, 24 700
+tokens y 4,2 pasos por petición de media. En la primera prueba con el 27B el coordinador solo
+consultó FAERS por el insomnio y no por la manía del caso grave: la herramienta MedDRA daba
+«Mania» por no reconocida (no está en el subconjunto de 90 PT del repositorio) y el 27B lo leyó
+como un descarte del modelo de razonamiento. Al decir la herramienta la verdad (término válido
+para FAERS, fuera del subconjunto por licencia), consultó la manía: PRR 5,85 [5,49–6,25], señal.
+Revisando las trazas aparecieron otros dos fallos: el modelo de razonamiento a veces no termina
+su respuesta y su razonamiento se guardaba como términos (arreglado: reintento y error), y el
+detector de números tenía falsos positivos (arreglado y vuelto a puntuar).
+
+**Qué concluimos.** El coordinador funciona y no inventa cifras, pero su calidad depende de lo
+que le dicen las herramientas: un mensaje ambiguo («no reconocido») cambió qué reacción
+investigaba. Igual que en el rastreador y el triaje, lo que más pesa es lo que se garantiza en
+el código. El cuello de botella de tiempo es el modelo de razonamiento (~2,5 min por caso).
+Pendiente: las ablaciones sin RAG, sin el modelo MedDRA y sin el sub-agente.

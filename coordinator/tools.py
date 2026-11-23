@@ -33,22 +33,52 @@ from tool_use.registry import ToolRegistry, tool
 VARIANTS = ("completo", "sin_rag", "sin_meddra", "sin_evidencia")
 
 
-def rlm_coder(text: str) -> str:
-    """The phase-1 reasoning model (``ARCA_RLM_ADAPTER``): 'PT; PT'."""
-    from agent.react_agent import code_meddra
+class CodingFailed(RuntimeError):
+    """The reasoning model did not reach an answer (it kept reasoning until the token limit)."""
 
-    return code_meddra(report=text)
+
+def rlm_coder(text: str, attempts: int = 2) -> str:
+    """The phase-1 reasoning model (``ARCA_RLM_ADAPTER``): 'PT; PT'.
+
+    The model sometimes reasons until the token limit without writing ``<answer>`` (phase 1:
+    19 of 200 test answers). ``split_thinking`` then falls back to the raw text, and on
+    2026-11-23 its reasoning ("<think> Okay, let's tackle…") was stored as MedDRA terms. Now a
+    completion without ``<answer>`` is retried once (the model samples) and then reported as
+    a failure, never as terms."""
+    import agent.react_agent as ra
+    from rlm.rewards import extract_answer
+
+    if ra._RLM is None:
+        from rlm.inference import ReasoningModel
+
+        model = ReasoningModel.from_env()
+        model.load()
+        ra._RLM = model
+    for _ in range(attempts):
+        answer = extract_answer(ra._RLM.answer(text).raw)
+        if answer and "<think>" not in answer:
+            return answer
+    raise CodingFailed(
+        f"the reasoning model did not finish its answer in {attempts} attempts (it kept "
+        "reasoning until the token limit). Say that this case could not be coded automatically."
+    )
+
+
+def is_term(name: str) -> bool:
+    """A MedDRA term is a short name, never a sentence or a tag."""
+    return 0 < len(name) <= 60 and "<" not in name and len(name.split()) <= 6
 
 
 def parse_terms(answer: str) -> tuple[list[str], list[str]]:
-    """'Somnolence; Nausea' -> Preferred Terms of our dictionary, and what is not one."""
+    """'Somnolence; Nausea' -> Preferred Terms of our dictionary, and the other proposed terms.
+    Anything that is not term-like (a sentence, a tag) is dropped."""
     from rlm.meddra import MedDRADictionary
 
     dictionary = MedDRADictionary.default()
     pts, unknown = [], []
     for raw in answer.replace("\n", ";").split(";"):
         name = raw.strip(" .")
-        if not name:
+        if not is_term(name):
             continue
         pt = dictionary.to_pt(name)
         if pt and pt not in pts:
