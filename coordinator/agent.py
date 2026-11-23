@@ -49,6 +49,25 @@ class CoordinatorAgent(CrawlerAgent):
             max_steps=max_steps, tools_description=tools, action_format=action
         )
 
+    def observe(self, name: str, arguments: dict, allow_actions: bool, pending: list) -> str:
+        """Before an ICSR draft is queued for a person, check the rules of a valid ICSR (the
+        harness only checks the argument types): a draft that could never be registered
+        (patient not identifiable, terms outside the dictionary) must not reach the queue as
+        "pending". The two serious cases of the sample have neither age nor sex."""
+        if name == "create_icsr_report" and not allow_actions:
+            from tool_use.tools import icsr_problem
+
+            try:
+                args = self.registry.tools[name].validate(arguments)
+            except Exception as exc:  # noqa: BLE001 - validation errors are observations
+                return f"error: invalid arguments: {exc}"
+            problem = icsr_problem(
+                args["reactions"], args["patient_age"], args["patient_sex"], args["suspect_drug"]
+            )
+            if problem:
+                return f"error: this ICSR could not be registered: {problem}"
+        return super().observe(name, arguments, allow_actions, pending)
+
     def execute(self, name: str, arguments: dict) -> ToolCallRecord:
         timeout = self.timeouts.get(name, DEFAULT_TIMEOUT)
         pool = ThreadPoolExecutor(max_workers=1)

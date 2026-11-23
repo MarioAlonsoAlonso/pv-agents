@@ -8,6 +8,11 @@ involved and automatic checks of the final answer. Requests may name cases with 
 (``{caso_prioritario}``, ``{caso_con_sexo}``, ``{caso_indirecto}``), resolved from the case
 store, so the benchmark has no post text and works on any data.
 
+Two kinds of request (``tipo``): ``dirigida`` (the request names what to do: "codifica…",
+"calcula el PRR…") and ``abierta`` (what a technician would actually say: "¿qué tengo pendiente
+hoy?", "¿hay algo que tenga que notificar ya?"), where the coordinator has to work out the
+steps itself. Results are given for both.
+
 Check types, besides those of ``agent/evaluate.py`` (``contains``, ``regex``, ``number``,
 ``pending_action``):
 
@@ -16,7 +21,10 @@ Check types, besides those of ``agent/evaluate.py`` (``contains``, ``regex``, ``
 * ``meddra_del_caso``: a MedDRA term of the case (as the reasoning model coded it) is named;
 * ``pt_mas_frecuente``: the most repeated term among the ``n`` most urgent coded cases;
 * ``prr_live``: the PRR computed now from FAERS is in the answer;
-* ``cita_fragmento``: a fragment id of the knowledge base is cited.
+* ``cita_fragmento``: a fragment id of the knowledge base is cited;
+* ``ids_graves``: every serious case is named;
+* ``alguno``: at least one of the checks in ``de`` passes;
+* ``herramientas_distintas``: at least ``min`` of the tools in ``de`` were used.
 
 Besides success, every answer is checked for **numbers without support**: numbers that do not
 appear in any observation nor in the request (invented counts, PRRs, frequencies).
@@ -119,6 +127,14 @@ def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> boo
         return any(abs(n - target) <= check.get("tolerance", 0.05) for n in numbers_in(answer))
     if kind == "cita_fragmento":
         return CHUNK_ID.search(answer) is not None
+    if kind == "ids_graves":
+        serious = [c.id for c in cases if c.grave]
+        return bool(serious) and all(i in answer for i in serious)
+    if kind == "alguno":
+        return any(check_one(c, answer, response, store) for c in check["de"])
+    if kind == "herramientas_distintas":
+        used = {s["action"]["name"] for s in response.get("steps", []) if s.get("action")}
+        return len(used & set(check["de"])) >= check.get("min", 1)
     from agent.evaluate import _check_one
 
     return _check_one(check, answer, response, None)
@@ -188,6 +204,7 @@ def score_task(task: dict, response: dict, store: CaseStore) -> dict:
     used = [s["action"]["name"] for s in response.get("steps", []) if s.get("action")]
     return {
         "id": task["id"],
+        "tipo": task.get("tipo", "dirigida"),
         "categoria": task["categoria"],
         "correcta": all(results),
         "comprobaciones": results,
@@ -213,6 +230,16 @@ def summarise(rows: list[dict]) -> dict:
         "tokens_medios": sum(r["tokens"] for r in rows) / n,
         "segundos_medios": sum(r.get("segundos", 0) for r in rows) / n,
         "paradas": dict(Counter(r["parada"] for r in rows)),
+        "por_tipo": {
+            kind: {
+                "tareas": sum(r["tipo"] == kind for r in rows),
+                "exito": sum(r["correcta"] for r in rows if r["tipo"] == kind)
+                / max(sum(r["tipo"] == kind for r in rows), 1),
+                "pasos_medios": sum(r["pasos"] for r in rows if r["tipo"] == kind)
+                / max(sum(r["tipo"] == kind for r in rows), 1),
+            }
+            for kind in ("dirigida", "abierta")
+        },
         "por_tarea": {r["id"]: r["correcta"] for r in rows},
     }
 
@@ -312,6 +339,12 @@ def main(argv: list[str] | None = None) -> None:
             f"{s['respuestas_con_numeros_sin_respaldo']} · con citas sin respaldo "
             f"{s['respuestas_con_citas_sin_respaldo']} · {s['tokens_medios']:.0f} tokens/tarea"
         )
+        for kind, k in s["por_tipo"].items():
+            if k["tareas"]:
+                print(
+                    f"    {kind}: {round(k['exito'] * k['tareas'])}/{k['tareas']} correctas, "
+                    f"{k['pasos_medios']:.1f} pasos de media"
+                )
     print(f"\n→ cifras en {args.report}; respuestas y trazas en {out_dir}")
 
 

@@ -282,3 +282,50 @@ def test_corrupt_codings_in_the_cache_are_dropped(tmp_path):
     )
     store = CaseStore.build([(ms, {ms[0].id: YES})], cache)
     assert store.meddra == {}
+
+
+def test_open_request_checks(tmp_path):
+    ms, store = _store(tmp_path)
+    serious = ms[1].id
+    response = {
+        "steps": [
+            {"action": {"name": "listar_casos"}},
+            {"action": {"name": "search_knowledge_base"}},
+        ]
+    }
+    assert check_one({"type": "ids_graves"}, f"Urgente: {serious}", response, store)
+    assert not check_one({"type": "ids_graves"}, "nada urgente", response, store)
+    either = {
+        "type": "alguno",
+        "de": [
+            {"type": "pending_action", "value": "create_icsr_report"},
+            {"type": "regex", "value": "identificab"},
+        ],
+    }
+    assert check_one(either, "el paciente no es identificable", response, store)
+    assert not check_one(either, "listo", response, store)
+    tools = {"type": "herramientas_distintas", "de": ["search_knowledge_base", "codificar_meddra"]}
+    assert check_one({**tools, "min": 1}, "", response, store)
+    assert not check_one({**tools, "min": 2}, "", response, store)
+
+
+def test_an_icsr_that_could_never_be_registered_is_not_queued(tmp_path):
+    ms, store = _store(tmp_path)
+    agent = CoordinatorAgent(registry=make_registry(store))
+    args = {
+        "reporter_type": "consumer",
+        "patient_age": None,
+        "patient_sex": "unknown",
+        "suspect_drug": "sertraline",
+        "reactions": ["Insomnia"],
+        "serious": True,
+        "outcome": "unknown",
+        "narrative": "Caso grave sin edad ni sexo.",
+    }
+    pending = []
+    obs = agent.observe("create_icsr_report", args, False, pending)
+    assert obs.startswith("error") and "not identifiable" in obs and pending == []
+    obs = agent.observe("create_icsr_report", {**args, "patient_sex": "male"}, False, pending)
+    assert "human confirmation" in obs and len(pending) == 1
+    obs = agent.observe("create_icsr_report", {**args, "reactions": ["Mania"]}, False, [])
+    assert "not Preferred Terms" in obs

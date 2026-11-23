@@ -46,7 +46,7 @@ observación, detección de bucles, memoria y confirmación humana de las accion
 | `search_knowledge_base` | **RAG** de la fase 3 (BM25 + denso sobre fichas de CIMA y guías de la EMA) | ¿Es conocida la reacción? ¿Con qué frecuencia? ¿Qué plazo marca la norma? |
 | `faers_reaction_counts`, `disproportionality_prr` | Herramientas de la fase 2 | Notificaciones en FAERS y señal (PRR, regla de Evans) |
 | `buscar_evidencia` | Sub-agente dirigido del rastreador | Más casos en Bluesky y PubMed |
-| `create_icsr_report` | Herramienta de la fase 2, con `requires_confirmation` | Borrador del ICSR, pendiente de confirmar |
+| `create_icsr_report` | Herramienta de la fase 2, con `requires_confirmation` | Borrador del ICSR, pendiente de confirmar. Antes de dejarlo pendiente, el código comprueba que sería un ICSR válido (paciente identificable, términos del diccionario): un borrador que nunca se podría registrar no llega a la cola |
 
 **Fuera a propósito: Naranjo.** Sus diez preguntas (reexposición, placebo, niveles en sangre…)
 no se pueden contestar desde un post y el modelo las rellenaría. La causalidad aquí es lo que
@@ -81,8 +81,19 @@ La demo imprime la traza (pensamiento, acción, observación real) y la guarda e
 
 ## Evaluación
 
-**Banco** ([`bench/tareas.jsonl`](bench/tareas.jsonl)): 13 peticiones de un técnico, cada una con
-comprobación automática. Cubre casos y prioridad, codificación MedDRA, ficha técnica (con cita
+**Banco** ([`bench/tareas.jsonl`](bench/tareas.jsonl)): 18 peticiones con comprobación
+automática, de dos tipos:
+
+- **13 dirigidas** (`c01`–`c13`): la petición dice qué hacer («codifica…», «calcula el PRR…»).
+  Miden si el coordinador ejecuta bien las herramientas.
+- **5 abiertas** (`a01`–`a05`): lo que diría de verdad un técnico, sin decir cómo («Buenos días,
+  ¿qué tengo pendiente hoy con la sertralina?», «¿Hay algo que tenga que notificar ya?», «Lo de
+  la manía, ¿es nuevo o ya se conocía?», «Prepara lo que haya que mandar a la AEMPS», «¿Estamos
+  viendo algo raro?»). Miden si sabe **decidir** los pasos: por ejemplo, que «notificar ya»
+  significa buscar los casos graves y el plazo de las guías de la EMA, o que los dos casos
+  graves no pueden ir a un ICSR porque no tienen ni edad ni sexo.
+
+Las dirigidas: Cubre casos y prioridad, codificación MedDRA, ficha técnica (con cita
 del fragmento), señal en FAERS (PRR calculado en vivo), normativa, ICSR pendiente de
 confirmación, evidencia en redes y PubMed, un resumen completo para el comité y dos peticiones
 imposibles (otra red social y otro año; un fármaco sin casos), donde tiene que decir que no lo

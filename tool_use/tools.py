@@ -457,6 +457,31 @@ def disproportionality_prr(
 # --------------------------------------------------------------- 4. action: ICSR file
 
 
+def icsr_problem(
+    reactions: list[str], patient_age: int | None, patient_sex: str, suspect_drug: str
+) -> str | None:
+    """Why these data cannot make a valid ICSR (the four minimum elements and our MedDRA
+    dictionary), or None. Used by ``create_icsr_report`` and, before queueing a draft for
+    confirmation, by the agents: a draft that could never be registered is not "pending"."""
+    from rlm.meddra import MedDRADictionary
+
+    dictionary = MedDRADictionary.default()
+    not_pts = [name for name in reactions if not dictionary.to_pt(name)]
+    if not_pts:
+        return (
+            f"not Preferred Terms of our MedDRA dictionary: {not_pts}. Do not substitute "
+            "another reaction: correct the term only if it is a spelling or language issue, "
+            "otherwise tell the user the report could not be created for these terms."
+        )
+    if not reactions:
+        return "an ICSR needs at least one suspected reaction"
+    if patient_age is None and patient_sex == "unknown":
+        return "the patient is not identifiable: give the age or the sex"
+    if not suspect_drug.strip():
+        return "an ICSR needs a suspect drug"
+    return None
+
+
 @tool(requires_confirmation=True)
 def create_icsr_report(
     reporter_type: Annotated[
@@ -502,22 +527,10 @@ def create_icsr_report(
     from rlm.meddra import MedDRADictionary
 
     dictionary = MedDRADictionary.default()
-    pts, not_pts = [], []
-    for name in reactions:
-        pt = dictionary.to_pt(name)
-        (pts.append(pt) if pt else not_pts.append(name))
-    if not_pts:
-        raise ValueError(
-            f"not Preferred Terms of our MedDRA dictionary: {not_pts}. Do not substitute "
-            "another reaction: correct the term only if it is a spelling or language issue, "
-            "otherwise tell the user the report could not be created for these terms."
-        )
-    if not pts:
-        raise ValueError("an ICSR needs at least one suspected reaction")
-    if patient_age is None and patient_sex == "unknown":
-        raise ValueError("the patient is not identifiable: give the age or the sex")
-    if not suspect_drug.strip():
-        raise ValueError("an ICSR needs a suspect drug")
+    problem = icsr_problem(reactions, patient_age, patient_sex, suspect_drug)
+    if problem:
+        raise ValueError(problem)
+    pts = [dictionary.to_pt(name) for name in reactions]
 
     report = {
         "schema": "simplified-E2B (pv-agents)",
