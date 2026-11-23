@@ -195,6 +195,13 @@ Lo que el agente añade es el resumen (tipo de evidencia, grupos de riesgo, meca
 que medirlo como **fidelidad**: cada afirmación con PMID, ¿está en ese artículo? v3: resúmenes
 completos y la regla en el prompt de no atribuir a un artículo lo que no dice.
 
+v3 en desarrollo: 0 de 113 PMID sin respaldo, 99 % de lo citado relevante (104 de 105), 15 de 36
+de referencia, 13 400 tokens por pregunta. Revisadas a mano todas las cifras de la respuesta del
+lorazepam: todas están en sus artículos, y ahora explica la excepción del aclaramiento y marca el
+mecanismo general como "sin cita". Un fallo: en caídas con zolpidem devolvió una respuesta vacía
+tras ver 17 artículos (la respuesta no cabía en 2048 tokens de salida). v3.1: 4096 tokens en
+modo literatura, y una respuesta final vacía vuelve al modelo como error en vez de terminar.
+
 ### Evaluación de `buscar_mas_casos`
 
 Sobre la **muestra congelada de sertralina**, con la **hoja de soluciones del triaje** como

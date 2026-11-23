@@ -679,3 +679,20 @@ def test_cases_answer_key_and_agent_run(monkeypatch, source, tmp_path):
     s = summarize([fixed, row])
     assert s["recall"]["k"] == 3 and s["precision"]["n"] == 4
     assert json.loads((tmp_path / "sueno.json").read_text("utf-8"))["positivos_perdidos"] == []
+
+
+def test_an_empty_final_answer_is_sent_back(source):
+    llm = _ScriptedLLM(
+        [
+            _call("final_answer", answer=""),  # e.g. the output ran out of tokens in the call
+            _call("final_answer", answer="Respuesta completa"),
+        ]
+    )
+    agent = CrawlerAgent(
+        registry=make_registry(_ctx(source), "literatura"),
+        mode="literatura",
+        brains={"fake": Brain(llm=llm)},
+    )
+    response = agent.run("¿Qué dice la literatura?", max_steps=5, brain="fake")
+    assert response.final_answer == "Respuesta completa" and response.n_steps == 2
+    assert "without text" in response.steps[0].observation

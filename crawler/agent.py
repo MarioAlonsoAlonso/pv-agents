@@ -51,6 +51,7 @@ class CrawlerAgent(ReActAgent):
     mode: str = "vigilancia"
     max_observation_chars: int = 8000
     token_budget: int = 24000  # the 27B has 65k tokens of context
+    retry_empty_final_answer: bool = True
     brains: dict[str, Brain] = field(default_factory=dict)
     # Native tool calling with remote brains (ARCA_REMOTE_NATIVE_TOOLS=0 to turn it off): the
     # course's server drops <tool_call> text when the request does not declare the tools.
@@ -90,7 +91,8 @@ class CrawlerAgent(ReActAgent):
             messages,
             # Room for a long list of ids plus the reasoning: with 768 the answer was cut
             # before the tool call and the run ended without saving (2026-11-19, v3).
-            max_new_tokens=4096 if brain.thinking else 2048,
+            # literatura: a summary citing 15 articles did not fit in 2048 (2026-11-23).
+            max_new_tokens=4096 if brain.thinking or self.mode == "literatura" else 2048,
             enable_thinking=brain.thinking,
             tools=self.registry.definitions(),
         )
