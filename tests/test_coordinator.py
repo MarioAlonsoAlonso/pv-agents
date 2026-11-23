@@ -404,3 +404,22 @@ def test_cases_can_be_searched_by_reaction(tmp_path):
     assert check_one(
         {"type": "ids_filtro", "filtro": {"buscar": "brux"}}, "No hay ninguno", {}, store
     )
+
+
+def test_listar_casos_searches_filters_and_counts(tmp_path):
+    ms, store = _store(tmp_path)
+    reg = make_registry(store)
+    out = reg.call("listar_casos", {"farmaco": "sertralina", "buscar": "nauseas, vómito"}).result
+    assert out["coinciden"] == 1 and out["casos"][0]["id"] == ms[2].id
+    out = reg.call("listar_casos", {"farmaco": "sertralina", "sexo": "mujer"}).result
+    assert out["coinciden"] == 1 and out["efectos_adversos"] == 4
+    out = reg.call(
+        "listar_casos", {"farmaco": "sertralina", "origen": "respuesta_en_conversacion"}
+    ).result
+    assert [c["id"] for c in out["casos"]] == [ms[2].id]
+    out = reg.call("listar_casos", {"farmaco": "sertralina", "limite": 2}).result
+    assert out["coinciden"] == 4 and out["mostrados"] == 2 and "2 casos más" in out["nota"]
+    out = reg.call("listar_casos", {"farmaco": "sertralina", "buscar": "calor"}).result
+    assert out["coinciden"] == 0 and "sinónimos" in out["nota"]
+    out = reg.call("listar_casos", {"farmaco": "sertralina", "desde": "2026-01-01"}).result
+    assert out["coinciden"] == 2

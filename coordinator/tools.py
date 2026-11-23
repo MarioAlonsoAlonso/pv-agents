@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field
 
@@ -105,23 +105,73 @@ def make_registry(
             str, Field(description="Active ingredient in Spanish, e.g. 'sertralina'.")
         ],
         solo_graves: Annotated[bool, Field(description="Only the serious cases.")] = False,
-        limite: Annotated[int, Field(ge=1, le=50, description="How many cases to list.")] = 15,
+        buscar: Annotated[
+            str | None,
+            Field(
+                description="Words to look for in the reactions as the patients wrote them, "
+                "comma-separated; a case matches if it contains ANY of them (case and accents do "
+                "not matter). Use several synonyms and word stems: 'calor, sudor, sofoc'."
+            ),
+        ] = None,
+        sexo: Annotated[
+            Literal["mujer", "hombre", "desconocido"] | None, Field(description="Patient's sex.")
+        ] = None,
+        desenlace: Annotated[
+            Literal["recuperado", "recuperandose", "no_recuperado", "desconocido"] | None,
+            Field(description="Outcome."),
+        ] = None,
+        origen: Annotated[
+            Literal["nombra_el_farmaco", "respuesta_en_conversacion"] | None,
+            Field(
+                description="'respuesta_en_conversacion': replies that do not name the drug "
+                "(found by the crawler's agent reading the thread)."
+            ),
+        ] = None,
+        desde: Annotated[str | None, Field(description="From this date, YYYY-MM-DD.")] = None,
+        hasta: Annotated[str | None, Field(description="Until this date, YYYY-MM-DD.")] = None,
+        limite: Annotated[int, Field(ge=1, le=50, description="How many cases to show.")] = 15,
     ) -> dict:
         """List the adverse event cases that the crawler found in social media and the triage
-        confirmed, most urgent first (serious, then most complete, then newest). Each case has
-        its id (M-…), date, seriousness, the reactions in the patient's own words, patient,
-        sex, age and outcome. Also says how many mentions were triaged in total."""
+        confirmed, most urgent first (serious, then most complete, then newest), optionally
+        filtered: by words in the reactions, sex, outcome, origin or dates. Each case has its id
+        (M-…), date, seriousness, the reactions in the patient's own words, patient, sex, age
+        and outcome. 'coinciden' is how many cases match the filters (use it to count); only
+        'mostrados' of them are listed. Do not say a reaction is absent from our cases without
+        searching for it with 'buscar'."""
         drug = farmaco.strip().lower()
-        cases = store.of_drug(drug, serious_only=solo_graves)
+        words = [w.strip() for w in (buscar or "").split(",") if w.strip()]
+        origin = {"nombra_el_farmaco": "busqueda_fija", "respuesta_en_conversacion": "agente"}
+        cases = store.filter(
+            drug,
+            buscar=words,
+            sexo=sexo,
+            desenlace=desenlace,
+            origen=origin.get(origen or ""),
+            grave=True if solo_graves else None,
+            desde=desde,
+            hasta=hasta,
+        )
         all_cases = store.of_drug(drug)
-        return {
+        out = {
             "farmaco": drug,
             "menciones_triadas": store.reviewed.get(drug, 0),
             "efectos_adversos": len(all_cases),
             "graves": sum(c.grave for c in all_cases),
+            "coinciden": len(cases),
             "mostrados": min(limite, len(cases)),
             "casos": [c.summary() for c in cases[:limite]],
         }
+        if len(cases) > limite:
+            out["nota"] = (
+                f"hay {len(cases) - limite} casos más que coinciden y no se muestran: "
+                "filtra (buscar, sexo, fechas…) o sube el límite (máx. 50)"
+            )
+        if words and not cases:
+            out["nota"] = (
+                f"ningún caso tiene {words} en las reacciones: prueba sinónimos o raíces "
+                "('sud' encuentra sudor, sudores, sudoración)"
+            )
+        return out
 
     @tool
     def ver_caso(
