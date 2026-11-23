@@ -177,18 +177,23 @@ Sistema de comparación (`fija`): una búsqueda en PubMed con una consulta fija,
 | | Búsqueda fija | Bluesky + PubMed (v1) | `buscar_literatura` (v2) |
 |---|---|---|---|
 | PMID citados sin respaldo | — | 0 de 81 | **0 de 129** [0-3 %] |
-| Relevantes | 77 % de lo entregado | 93 % de lo citado | **94 % de lo citado** [89-97] (78 % de todo lo visto) |
+| Relevantes (resúmenes cortados) | 77 % de lo entregado | 93 % de lo citado | **94 % de lo citado** [89-97] (78 % de todo lo visto) |
 | De referencia encontrados | 15-16 de 36 | 6 de 36 | **15 de 36** (14 citados) |
 | Controles | — | "no hay evidencia" | "no hay evidencia" |
 | Coste por pregunta | 0 tokens | 63 000 tokens, 13,6 pasos | **11 600 tokens, 4 pasos, 24 s** |
 
-Separar PubMed devolvió al agente lo que pierde frente a la búsqueda fija (encuentra lo mismo:
-15 de 36) con una quinta parte del coste, y lo que entrega al analista está filtrado: el 94 % de
-lo que cita es relevante, frente al 77 % de una lista sin filtrar. No inventa referencias. Lo que
-no mide este banco es la calidad del resumen (mecanismo, grupos de riesgo): leerlo a mano.
+Separar PubMed devolvió al agente lo que perdía frente a la búsqueda fija (encuentra lo mismo:
+15 de 36) con una quinta parte del coste, y no inventa referencias.
 
-Examen (`literatura_test`), búsqueda fija: 62 % relevantes y 14 de 30 de referencia (PubMed en
-vivo puede reordenar de un día a otro).
+**Corrección (2026-11-23).** Hasta aquí los resúmenes se cortaban a 900 caracteres, para el agente
+y para la medida de relevancia. Leyendo respuestas a mano: el agente citó una revisión
+(PMID 1684924) para decir que en ancianos el lorazepam se elimina peor, y el resumen completo dice
+lo contrario (es la excepción); esa frase estaba después del corte. Con resúmenes completos
+(hasta 2500 caracteres) la búsqueda fija pasa del 77 % al **93 % de relevantes** en desarrollo
+(85 % en el examen): **la ventaja de "filtrado" del agente era sobre todo un efecto del corte**.
+Lo que el agente añade es el resumen (tipo de evidencia, grupos de riesgo, mecanismo), y eso hay
+que medirlo como **fidelidad**: cada afirmación con PMID, ¿está en ese artículo? v3: resúmenes
+completos y la regla en el prompt de no atribuir a un artículo lo que no dice.
 
 ### Evaluación de `buscar_mas_casos`
 

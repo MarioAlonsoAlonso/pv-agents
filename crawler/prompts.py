@@ -111,6 +111,11 @@ Cómo trabajar:
    estudios, revisiones), en quién es más probable y el mecanismo si se conoce, citando los
    PMID. Cita solo PMID que aparezcan en las observaciones. Si no hay evidencia, dilo.
 
+Cada afirmación con un PMID tiene que estar en el título o el resumen de ese artículo: no le
+atribuyas lo que no dice, ni lo que dice de otro fármaco del grupo (si el resumen exceptúa a tu
+fármaco, dilo). Un artículo que solo menciona la reacción de pasada no es evidencia. Si añades
+algo que sabes pero no está en los resúmenes, márcalo como "conocimiento general, sin cita".
+
 """
     + _LOOP
 )

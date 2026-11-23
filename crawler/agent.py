@@ -134,6 +134,8 @@ def run(
     max_steps: int = 30,
 ) -> CrawlerRun:
     agent = CrawlerAgent(registry=make_registry(ctx, mode), mode=mode, brains=_SHARED_BRAINS)
+    if mode == "literatura":  # 5 whole abstracts per search do not fit in 8000 characters
+        agent.max_observation_chars = 15000
     response = agent.run(task, max_steps=max_steps, brain=brain)
     return CrawlerRun(response=response, context=ctx)
 
