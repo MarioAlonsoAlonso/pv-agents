@@ -113,24 +113,29 @@ def make_registry(
         """Code the reactions of one case into MedDRA Preferred Terms (in English) with the
         reasoning model trained for it (it applies the MedDRA coding rules: negated symptoms
         are not coded, a diagnosis absorbs its symptoms…). Use these terms as they are in
-        faers_reaction_counts and create_icsr_report. Slow the first time (loads the model)."""
+        faers_reaction_counts. Slow the first time (loads the model)."""
         case = store.get(caso_id)
         if case.id not in store.meddra:
-            pts, unknown = parse_terms(coder(case.report_text()))
-            store.save_meddra(case.id, pts)
+            pts, outside = parse_terms(coder(case.report_text()))
+            store.save_meddra(case.id, pts + outside)
         else:
-            pts, unknown = store.meddra[case.id], []
+            pts, outside = parse_terms("; ".join(store.meddra[case.id]))
         from rlm.meddra import MedDRADictionary
 
         dictionary = MedDRADictionary.default()
         return {
             "caso": case.id,
-            "terminos_meddra": pts,
+            "terminos_meddra": pts + outside,
             "soc": {pt: dictionary.soc(pt) for pt in pts},
-            "no_reconocidos": unknown,
-            "nota": "sin términos: el modelo no reconoció la reacción en su diccionario"
-            if not pts
-            else "Preferred Terms de MedDRA (inglés)",
+            "fuera_del_subconjunto": outside,
+            "nota": (
+                "Todos son los términos que propone el modelo y valen para "
+                "faers_reaction_counts. El repositorio solo incluye un subconjunto de 90 PT de "
+                "MedDRA (el diccionario completo tiene licencia): los de fuera_del_subconjunto "
+                "no tienen SOC aquí y create_icsr_report no los acepta."
+            )
+            if outside
+            else "Preferred Terms de MedDRA (inglés), todos en el subconjunto del repositorio",
         }
 
     @tool

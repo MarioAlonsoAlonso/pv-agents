@@ -81,12 +81,17 @@ def test_tools_list_read_code_and_group(tmp_path):
     seen = reg.call("ver_caso", {"caso_id": f"[{ms[2].id}]"}).result
     assert "náuseas" in seen["conversacion_anterior"]
     coded = reg.call("codificar_meddra", {"caso_id": ms[0].id}).result
-    assert coded["terminos_meddra"] == ["Somnolence"] and coded["no_reconocidos"] == ["Sueño raro"]
+    assert coded["terminos_meddra"] == ["Somnolence", "Sueño raro"]
+    assert coded["fuera_del_subconjunto"] == ["Sueño raro"] and "licencia" in coded["nota"]
     reg.call("codificar_meddra", {"caso_id": ms[0].id})
     assert len(calls) == 1  # coded once, then cached (and saved)
-    assert json.loads((tmp_path / "meddra.json").read_text("utf-8"))[ms[0].id] == ["Somnolence"]
+    again = reg.call("codificar_meddra", {"caso_id": ms[0].id}).result
+    assert again["fuera_del_subconjunto"] == ["Sueño raro"]  # same answer from the cache
+    saved = json.loads((tmp_path / "meddra.json").read_text("utf-8"))[ms[0].id]
+    assert saved == ["Somnolence", "Sueño raro"]
     grouped = reg.call("agrupar_por_meddra", {"farmaco": "sertralina"}).result
-    assert grouped["codificados"] == 1 and grouped["por_termino"][0]["termino"] == "Somnolence"
+    assert grouped["codificados"] == 1
+    assert {g["termino"] for g in grouped["por_termino"]} == {"Somnolence", "Sueño raro"}
     assert not reg.call("ver_caso", {"caso_id": "M-zzz"}).ok
 
 

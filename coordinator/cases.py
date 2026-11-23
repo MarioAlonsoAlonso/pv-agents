@@ -12,7 +12,7 @@ Priority, as a pharmacovigilance unit would review them: serious cases first (th
 valid ICSR), then the most recent.
 
 The MedDRA codes are added later, one case at a time, by the reasoning model
-(``codificar_meddra``); they are kept in ``data/coordinador/meddra.json`` so that a case is
+(``codificar_meddra``); they are kept in ``data/coordinador/meddra_terminos.json`` so that a case is
 coded only once.
 """
 
@@ -143,7 +143,7 @@ class CaseStore:
 
     @classmethod
     def from_files(
-        cls, sources=None, meddra_file: Path | None = FOLDER / "meddra.json"
+        cls, sources=None, meddra_file: Path | None = FOLDER / "meddra_terminos.json"
     ) -> CaseStore:
         pairs = []
         for mentions_file, answers_file in sources or SOURCES:
