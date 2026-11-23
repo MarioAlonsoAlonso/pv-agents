@@ -911,3 +911,29 @@ corte de los resúmenes y el de la propia medida). La herramienta de casos en Bl
 con fármacos vigilados, contar casos es una consulta a la base de menciones clasificadas. Detalle
 en [`crawler/README.md`](crawler/README.md).
 
+### 2026-11-23 · Proyecto final · Coordinador: banco v2 (105 peticiones), mejoras y examen
+
+**Qué queríamos saber.** Con un banco más grande y con las fuentes que necesita cada petición
+anotadas, si el coordinador elige bien a dónde ir, en qué falla cada agente y qué aporta cada
+pieza, sobre un examen que no se miró para mejorar el sistema.
+
+**Qué hicimos.** `coordinator/bench/v2.py`: 105 peticiones (ficha técnica y normativa del conjunto
+dorado del RAG, FAERS en vivo, recuentos de casos, notificaciones MedDRA del test de la fase 1,
+literatura, combinadas, sin herramientas, imposibles e ICSR), 46 de desarrollo y 59 de examen.
+Antes de medir se juntó la herramienta de literatura de Mario (`buscar_literatura`, PubMed).
+Desarrollo: línea base, mejoras guiadas por sus fallos y nueva ronda. Examen: una vez, completo y
+tres ablaciones.
+
+**Qué pasó.** Desarrollo: 42/46 → 43/46; fuentes necesarias del 89 % al 100 %. Las mejoras
+salieron de fallos concretos: el coordinador afirmó que no había casos de calor o sudores (hay
+18) porque `listar_casos` no buscaba por reacción; sin fármaco en la pregunta probaba nombres
+hasta agotar los pasos; y las notificaciones pegadas por correo las codificaba el 27B sin las
+reglas (o se negaba). Examen: completo 54/59 (92 %), sin RAG 30/59 (p < 0,0001), sin MedDRA
+52/59 (p = 0,69), sin literatura 51/59 (p = 0,45). Detalle, fallos y correcciones de la medida en
+`coordinator/README.md`.
+
+**Qué concluimos.** El RAG es la pieza imprescindible del coordinador. El modelo de razonamiento y
+la literatura aportan en sus categorías, con pocas peticiones para que sea significativo. El fallo
+más serio no lo mide ninguna ablación: ante un fármaco que no existe, el coordinador lo sustituye
+por uno parecido y da una señal falsa. Y otra vez, varios errores eran de la medida y no del
+sistema; solo leyendo las trazas se distinguen.

@@ -188,6 +188,46 @@ solo el ICSR pendiente, y en dos ejecuciones el 27B se negó con un buen motivo 
 tres antidepresivos: no hay un sospechoso claro), así que ahora acepta las dos cosas; y la
 primera ablación sin MedDRA no valía porque `ver_caso` enseñaba la codificación guardada.
 
+**Banco v2** (105 peticiones con fuentes esperadas; ver «Evaluación»). Desarrollo (46): línea
+base 42/46 → 43/46 tras las mejoras (búsqueda de casos por reacción y filtros, `listar_casos` sin
+fármaco, `codificar_notificacion`), con las fuentes necesarias consultadas en el 100 % de las
+peticiones (antes 89 %) y fuentes de más en el 15 % (antes 28 %).
+
+**Examen** (59 peticiones, medido una vez con el sistema cerrado en desarrollo, 2026-11-23):
+
+| Variante | Aciertos | Ficha | Normativa | MedDRA | Literatura | Fuentes necesarias | Números sin respaldo | s/petición |
+|---|---|---|---|---|---|---|---|---|
+| **Completo** | **54/59 (92 %)** | 13/14 | 4/4 | 5/6 | 4/4 | 98 % | 1 | 44 |
+| Sin RAG | 30/59 (51 %) | 0/14 | 0/4 | 3/6 | 4/4 | 58 % | 6 | 34 |
+| Sin modelo MedDRA | 52/59 (88 %) | 13/14 | 4/4 | 3/6 | 4/4 | 88 % | 3 | 14 |
+| Sin literatura | 51/59 (86 %) | 13/14 | 4/4 | 4/6 | 2/4 | 95 % | 1 | 55 |
+
+McNemar de la variante completa frente a cada ablación: sin RAG, 24 peticiones solo las acierta
+la completa y 0 al revés (p < 0,0001); sin MedDRA, 4 frente a 2 (p = 0,69); sin literatura, 5
+frente a 2 (p = 0,45). **El RAG es imprescindible**: sin él falla toda la ficha técnica y la
+normativa y aparecen cifras sin respaldo en 6 respuestas. El modelo MedDRA y la literatura
+aportan justo en sus categorías (MedDRA 5/6 frente a 3/6; literatura 4/4 frente a 2/4), pero
+con tan pocas peticiones de cada una la diferencia no es significativa. Sin el modelo MedDRA el
+coordinador es tres veces más rápido.
+
+**Corrección de la medida después del examen** (las mismas para las cuatro variantes; las
+respuestas se leyeron a mano): dos comprobaciones demasiado literales rechazaban respuestas
+correctas (f14 decía «contraindicación expresa» y se pedía «contraindicad»; g02 decía «resumen
+de características del producto» y se pedía «resumen de las características»), y el detector de
+números juntaba los de una lista JSON («14.979, 16.234») y marcaba como inventado un intervalo
+copiado de la herramienta. Sin corregir, la variante completa daba 52/59 (88 %).
+
+**Fallos del coordinador en el examen** (variante completa):
+- **x05, grave:** «¿Hay señal de hepatotoxicidad con la xelofrina?» (no existe). FAERS no la
+  conoce; el coordinador decidió que era el celecoxib y respondió «sí, hay señal» con el PRR del
+  celecoxib. Igual en las cuatro variantes: sustituye un nombre desconocido por uno parecido sin
+  base. Haría falta una garantía en código (no aceptar un fármaco distinto del pedido sin
+  confirmación del técnico).
+- **f07:** la sobredosis de ciprofloxacino la buscó en nuestros casos y no en la ficha técnica.
+- **k09 y o04:** sin filtro de edad conocida, y sin forma de ver las reacciones de los 159 casos
+  a la vez, recorrió los casos por fechas hasta agotar los 20 pasos.
+- **m04:** «Lack of appetite» en lugar del PT «Decreased appetite» (el sinónimo frente al término
+  preferente; un MedDRA completo con licencia lo traduciría).
 ## Piezas
 
 ```

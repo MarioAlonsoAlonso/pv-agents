@@ -213,7 +213,11 @@ def unsupported_numbers(answer: str, task: str, response: dict) -> list[float]:
     """Numbers in the answer that no observation (nor the request) contains. Case and
     fragment ids are removed first: their digits are not claims."""
     seen = " ".join(s.get("observation") or "" for s in response.get("steps", [])) + " " + task
-    support = set(numbers_in(CASE_ID.sub(" ", seen)))
+    # Token by token: the loose pattern of numbers_in joined a JSON list ("14.979, 16.234") into
+    # one number, so a confidence interval copied from the PRR tool looked invented (2026-11-23).
+    support = {
+        n for token in WRITTEN_NUMBER.findall(CASE_ID.sub(" ", seen)) for n in numbers_in(token)
+    }
     clean = CHUNK_ID.sub(" ", CASE_ID.sub(" ", answer))
     whole = {int(x) for x in support if x == int(x) and x < 1e8}
     # Simple arithmetic on observed numbers is not an invention: "the other 157" (159 - 2).

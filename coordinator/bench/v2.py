@@ -98,9 +98,10 @@ FICHA = [
         rx(r"(?i)corto plazo|corta duraci"),
     ),
     ("t045", "¿A partir de qué edad se puede tomar tramadol?", num(12)),
-    ("t049", "¿Puede tomar alprazolam alguien con apnea del sueño?", rx(r"(?i)contraindicad")),
+    # "contraindic": a right answer said "contraindicación expresa" (test, 2026-11-23)
+    ("t049", "¿Puede tomar alprazolam alguien con apnea del sueño?", rx(r"(?i)contraindic")),
     ("t052", "¿Se puede combinar escitalopram con un IMAO?", rx(r"(?i)serotonin")),
-    ("t056", "¿Se puede tomar simvastatina con itraconazol?", rx(r"(?i)contraindicad")),
+    ("t056", "¿Se puede tomar simvastatina con itraconazol?", rx(r"(?i)contraindic")),
     ("t058", "Dejé un IMAO hace una semana, ¿puedo empezar con tramadol?", num(14)),
     (
         "t062",
@@ -140,7 +141,9 @@ NORMATIVA = [
     (
         "t084",
         "¿Cuándo se considera inesperada una reacción adversa?",
-        rx(r"(?i)ficha t[eé]cnica|resumen de las caracter|no concuerda|no (es|est[aá]) recogid"),
+        # "resumen de (las )?caracter": a right answer said "resumen de características del
+        # producto" (test, 2026-11-23)
+        rx(r"(?i)ficha t[eé]cnica|resumen de (las )?caracter|no concuerda|no (es|est[aá]) recogid"),
     ),
     ("t085", "¿Qué es una señal en farmacovigilancia?", rx(r"(?i)nuev|asociaci[oó]n")),
     (
