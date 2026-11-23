@@ -141,6 +141,13 @@ triage-dev: ## Triaje: desarrollo completo, 287 menciones (DGX, reanudable)
 triage-examen: ## Triaje: el examen, UNA vez y con la versión final (DGX)
 	$(UV) run python -m triage.run --version v2 --brain 27b --por mencion --examen
 
+# Coordinador (proyecto final): el 27B con todo el sistema como herramientas. coordinator/README.md
+coordinador-casos: ## Coordinador: resumen de los casos (rastreador + triaje), sin modelo
+	$(UV) run python -m coordinator.demo --casos
+
+coordinador-eval: ## Coordinador: banco de 13 peticiones y ablaciones (DGX con GPU, reanudable)
+	$(UV) run python -m coordinator.evaluate
+
 api: ## Levanta la API en local con recarga automática
 	$(UV) run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
 
@@ -165,4 +172,4 @@ docker-api: ## API dentro del contenedor
 shell: ## Shell interactiva con GPU dentro del contenedor
 	docker compose run --rm train
 
-.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar triage-base triage-prueba triage-dev triage-examen api enunciado build docker-check-gpu docker-smoke docker-api shell
+.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval api enunciado build docker-check-gpu docker-smoke docker-api shell
