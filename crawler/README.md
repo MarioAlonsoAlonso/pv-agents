@@ -142,7 +142,14 @@ hay. El rastreador aporta dos cosas más, cada una como herramienta aparte:
 | `buscar_literatura(farmaco, pregunta)` | La reacción no está en la ficha, o para valorar plausibilidad y grupos de riesgo | `resumen` con PMID, `articulos`, `referencias_sin_respaldo` (PMID citados que ninguna búsqueda devolvió: no citarlos) |
 | `buscar_mas_casos(farmaco, reaccion)` | La señal viene de redes y la reacción es algo que el paciente nota y cuenta (no un análisis) | `resumen` y `casos`: los posts guardados, con su texto real |
 
-Se registran en el analista con `registry.register(buscar_literatura, buscar_mas_casos)`.
+**Decisión (2026-11-23): `buscar_mas_casos` queda aparcada.** El sistema solo vigila fármacos de la
+lista, y para ellos los casos ya están en la base de menciones que recoge el vigilante y clasifica
+el triaje: contar cuántos hay de una reacción es una consulta a esa base, que hace el analista,
+no una búsqueda nueva con un agente (buscar palabras en las menciones recogidas ya encuentra el
+84 % de los casos). Sigue implementada y con su evaluación preparada por si se vigilan fármacos
+nuevos o hace falta buscar antes del inicio de la vigilancia, pero no se ha medido.
+
+Se registra en el analista con `registry.register(buscar_literatura)`.
 Desde Python: `investigar_literatura(pregunta, farmaco)` y `buscar_casos(farmaco, reaccion,
 fuente, marcas)`.
 
