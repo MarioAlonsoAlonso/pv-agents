@@ -76,6 +76,21 @@ rlm-ablations: ## Fase 1: GRPO sin recompensa de dominio y con crédito parcial,
 	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --adapters grpo_partial=$(RLM_W)/grpo_partial \
 		--out reports/phase1_eval_ablation_partial_1.7b.json
 
+# Fase 1 v2: el 27B como profesor (reports/phase1_eval_27b.json: codifica mejor que el 1,7B si se
+# lee su respuesta sin etiquetas). Mismo alumno y misma receta; solo cambia el profesor.
+rlm-distill-27b: ## Fase 1 v2: trazas del 27B (razonamiento) verificadas, en sft_traces_27b.jsonl (sin GPU, ~2-3 h)
+	$(UV) run python -u -m rlm.distill_remote --output rlm/data/sft_traces_27b.jsonl
+
+rlm-sft-27b: ## Fase 1 v2: SFT con LoRA sobre las trazas del 27B (GPU)
+	$(UV) run python -u -m rlm.train_sft --data rlm/data/sft_traces_27b.jsonl --model $(RLM_MODEL) 		--output $(RLM_W)/sft_lora_27b
+
+rlm-grpo-27b: ## Fase 1 v2: GRPO desde el SFT del 27B, misma configuración que la v1 (GPU)
+	$(UV) run python -u -m rlm.train_grpo --data rlm/data/train.jsonl --model $(RLM_MODEL) 		--init-adapter $(RLM_W)/sft_lora_27b --steps 100 --max-completion-length 1024 		--batch-size 1 --save-steps 25 --output $(RLM_W)/final_rlm_lora_27b
+
+rlm-eval-27b: ## Fase 1 v2: test y OOD del alumno del 27B frente al de la v1 (GPU)
+	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --out reports/phase1_eval_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b grpo27=$(RLM_W)/final_rlm_lora_27b
+	$(UV) run python -u -m rlm.evaluate --data rlm/data/test_ood.jsonl --model $(RLM_MODEL) 		--max-new-tokens 2048 --n-examples 100 --out reports/phase1_eval_ood_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b grpo27=$(RLM_W)/final_rlm_lora_27b
+
 # Fase 2: herramientas
 tools-eval: ## Fase 2: banco de 30 casos con y sin herramientas (GPU)
 	$(UV) run python -m tool_use.evaluate --out reports/phase2_eval.json
@@ -172,4 +187,4 @@ docker-api: ## API dentro del contenedor
 shell: ## Shell interactiva con GPU dentro del contenedor
 	docker compose run --rm train
 
-.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval api enunciado build docker-check-gpu docker-smoke docker-api shell
+.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-distill-27b rlm-sft-27b rlm-grpo-27b rlm-eval-27b rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval api enunciado build docker-check-gpu docker-smoke docker-api shell
