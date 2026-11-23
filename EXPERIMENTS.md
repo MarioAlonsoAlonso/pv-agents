@@ -831,3 +831,49 @@ que le dicen las herramientas: un mensaje ambiguo («no reconocido») cambió qu
 investigaba. Igual que en el rastreador y el triaje, lo que más pesa es lo que se garantiza en
 el código. El cuello de botella de tiempo es el modelo de razonamiento (~2,5 min por caso).
 Pendiente: las ablaciones sin RAG, sin el modelo MedDRA y sin el sub-agente.
+
+### 2026-11-23 · Proyecto final · Coordinador: peticiones abiertas y ablaciones
+
+**Qué queríamos saber.** Dos cosas. Si el coordinador sabe decidir los pasos cuando la
+petición no los dice (las dirigidas, «codifica…», «calcula el PRR…», le dictaban el flujo), y qué
+aporta cada pieza: el RAG, el modelo de razonamiento MedDRA y el sub-agente de evidencia.
+
+**Qué hicimos.** 5 peticiones abiertas como las diría un técnico («¿Qué tengo pendiente hoy?»,
+«¿Hay algo que tenga que notificar ya?», «Lo de la manía, ¿es nuevo?», «Prepara lo que haya que
+mandar a la AEMPS», «¿Estamos viendo algo raro?») además de las 13 dirigidas, y las cuatro
+variantes sobre las 18. Antes de la cola de confirmación, el código comprueba ahora que el ICSR
+sería válido: los dos casos graves no tienen edad ni sexo, y un borrador que nunca se podría
+registrar no debe quedar «pendiente».
+
+**Qué pasó.**
+
+| Variante | Dirigidas | Abiertas | Total |
+|---|---|---|---|
+| Completo | 13/13 | 4/5 | 17/18 |
+| Sin RAG | 10/13 | 3/5 | 13/18 |
+| Sin modelo MedDRA | 13/13 | 5/5 | 18/18 |
+| Sin sub-agente de evidencia | 11/13 | 5/5 | 16/18 |
+
+Ninguna respuesta de ninguna variante tiene números ni citas que no salgan de una observación.
+Sin RAG el coordinador se niega o contesta de memoria con errores de concepto («SUSAR» para un
+plazo de notificación; «ya se conocía» deducido de FAERS). Sin el sub-agente falla c12, y c06 por
+un fallo de openFDA (recuentos a la mitad, PRR 6,73 en lugar de 2,66). Sin el modelo MedDRA no
+falla nada: el 27B codifica él mismo de forma parecida y 50 veces más rápido. Con «Prepara lo que
+haya que mandar a la AEMPS», el coordinador encuentra el plazo de 15 días en la GVP, intenta los
+ICSR de los dos casos graves y explica por qué no se pueden registrar (sin edad ni sexo; «Mania»
+fuera del subconjunto de MedDRA del repositorio).
+
+Revisando las trazas aparecieron fallos del sistema y de la medida: la primera ablación sin
+MedDRA estaba contaminada (`ver_caso` enseñaba la codificación guardada); el detector de bucles
+cortaba al agente que reintentaba tras errores 500 de openFDA (ahora un error pasajero no cuenta
+como repetición y la herramienta reintenta los 5xx); c12 aceptaba una negativa que nombraba
+PubMed; c09 no aceptaba una negativa bien justificada; y el detector de citas tomaba una fecha
+(«abr-2025») por un fragmento.
+
+**Qué concluimos.** El RAG es la pieza que más aporta: sin él, lo que la ficha técnica responde
+se contesta de memoria y con errores sutiles. El modelo de razonamiento MedDRA no aporta calidad
+medible frente al 27B en este banco y es el cuello de botella de tiempo; su valor está en ser
+pequeño, local y con un acierto medido por un verificador. Para comparar de verdad las dos
+codificaciones haría falta el test verificable de la fase 1 con el 27B. Una ejecución por
+variante: diferencias de una petición son ruido. Y otra vez: lo que más cambió el comportamiento
+fue lo que dicen y garantizan las herramientas, no el prompt.

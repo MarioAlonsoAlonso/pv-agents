@@ -154,7 +154,39 @@ esos términos son válidos para FAERS.
    y no aceptaba restas evidentes («el resto, 157» = 159 − 2). Corregido y vuelto a puntuar sin
    llamar al modelo (`--solo-puntuar`).
 
-Ablaciones (`sin_rag`, `sin_meddra`, `sin_evidencia`): pendiente (DGX).
+**Ablaciones** (18 peticiones: 13 dirigidas y 5 abiertas; una ejecución por variante):
+
+| Variante | Dirigidas | Abiertas | Total | Números / citas sin respaldo | Tokens/petición | c07 (codifica 5 casos) |
+|---|---|---|---|---|---|---|
+| **Completo** | 13/13 | 4/5 | **17/18** | 0 / 0 | 26 800 | 13 min |
+| Sin RAG | 10/13 | 3/5 | **13/18** | 0 / 0 | 23 800 | 7 min |
+| Sin modelo MedDRA | 13/13 | 5/5 | **18/18** | 0 / 0 | 25 100 | 16 s |
+| Sin sub-agente de evidencia | 11/13 | 5/5 | 16/18 | 0 / 0 | 28 300 | 22 s |
+
+- **El RAG es lo que más aporta** (−4). Sin él, el coordinador o se niega («no dispongo de la
+  herramienta… prefiero no inventar») o contesta de memoria con errores de concepto: da bien el
+  plazo de 15 días pero lo llama «SUSAR» (un término de ensayos clínicos), o concluye que la
+  manía «ya se conocía» a partir de la señal de FAERS, que no dice nada de la ficha técnica.
+- **Sin el sub-agente** falla lo que lo necesita (c12). El otro fallo (c06) no es de la ablación:
+  openFDA devolvió la mitad de los recuentos de sertralina (111 098 en lugar de 222 019) y el
+  PRR salió 6,73 en lugar de 2,66. La comprobación lo detectó; el coordinador se lo creyó.
+- **Sin el modelo de razonamiento MedDRA no se pierde nada en el banco** y es unas 50 veces más
+  rápido: el 27B codifica él mismo y, en estos casos, de forma parecida («Mania», «Insomnia»,
+  «Suicidal ideation»). Ninguno de los dos acierta siempre el *Preferred Term* exacto (el 27B
+  escribe «Decreased libido» y el modelo pequeño «Lack of sexual desire»; el PT es «Libido
+  decreased»). El banco no demuestra que el modelo entrenado aporte calidad frente al 27B; su
+  ventaja es otra: es pequeño, corre en local y su acierto está medido con un verificador (56,5 %
+  en el test de la fase 1).
+- **Peticiones abiertas:** con todo activado acierta 4 de 5. La que falla («¿Estamos viendo algo
+  raro?») la contesta bien pero sin investigar: lista los casos y mira FAERS, sin ficha técnica
+  ni señal. En las tres ablaciones la misma petición sí pasa, con más pasos: con una ejecución
+  por variante, una petición de diferencia es ruido.
+
+**Cambios en las comprobaciones tras ver las trazas** (para leer las cifras con cuidado): c12
+aceptaba una negativa que nombraba «PubMed» (ahora exige un PMID o un id de post); c09 aceptaba
+solo el ICSR pendiente, y en dos ejecuciones el 27B se negó con un buen motivo (el post nombra
+tres antidepresivos: no hay un sospechoso claro), así que ahora acepta las dos cosas; y la
+primera ablación sin MedDRA no valía porque `ver_caso` enseñaba la codificación guardada.
 
 ## Piezas
 

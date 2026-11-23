@@ -1,0 +1,1870 @@
+{
+ "completo·27b": {
+  "tareas": 18,
+  "exito": 0.9444444444444444,
+  "herramientas_requeridas": 0.9444444444444444,
+  "respuestas_con_numeros_sin_respaldo": 0,
+  "respuestas_con_citas_sin_respaldo": 0,
+  "pasos_medios": 4.611111111111111,
+  "tokens_medios": 26789.277777777777,
+  "segundos_medios": 93.62777777777778,
+  "paradas": {
+   "final_answer": 18
+  },
+  "por_tipo": {
+   "dirigida": {
+    "tareas": 13,
+    "exito": 1.0,
+    "pasos_medios": 4.230769230769231
+   },
+   "abierta": {
+    "tareas": 5,
+    "exito": 0.8,
+    "pasos_medios": 5.6
+   }
+  },
+  "por_tarea": {
+   "c01": true,
+   "c02": true,
+   "c03": true,
+   "c04": true,
+   "c05": true,
+   "c06": true,
+   "c07": true,
+   "c08": true,
+   "c09": true,
+   "c10": true,
+   "c11": true,
+   "c12": true,
+   "c13": true,
+   "a01": true,
+   "a02": true,
+   "a03": true,
+   "a04": true,
+   "a05": false
+  },
+  "filas": [
+   {
+    "id": "c01",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 9551,
+    "parada": "final_answer",
+    "segundos": 3.4
+   },
+   {
+    "id": "c02",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 22093,
+    "parada": "final_answer",
+    "segundos": 8.2
+   },
+   {
+    "id": "c03",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7741,
+    "parada": "final_answer",
+    "segundos": 3.8
+   },
+   {
+    "id": "c04",
+    "tipo": "dirigida",
+    "categoria": "meddra",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "codificar_meddra",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7220,
+    "parada": "final_answer",
+    "segundos": 1.7
+   },
+   {
+    "id": "c05",
+    "tipo": "dirigida",
+    "categoria": "ficha",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 8193,
+    "parada": "final_answer",
+    "segundos": 4.5
+   },
+   {
+    "id": "c06",
+    "tipo": "dirigida",
+    "categoria": "senal",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 11254,
+    "parada": "final_answer",
+    "segundos": 10.9
+   },
+   {
+    "id": "c07",
+    "tipo": "dirigida",
+    "categoria": "meddra+senal",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "agrupar_por_meddra",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 10,
+    "tokens": 46698,
+    "parada": "final_answer",
+    "segundos": 788.8
+   },
+   {
+    "id": "c08",
+    "tipo": "dirigida",
+    "categoria": "normativa",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7961,
+    "parada": "final_answer",
+    "segundos": 2.9
+   },
+   {
+    "id": "c09",
+    "tipo": "dirigida",
+    "categoria": "icsr",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "create_icsr_report",
+     "create_icsr_report",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 16422,
+    "parada": "final_answer",
+    "segundos": 7.8
+   },
+   {
+    "id": "c10",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 8871,
+    "parada": "final_answer",
+    "segundos": 3.4
+   },
+   {
+    "id": "c11",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7149,
+    "parada": "final_answer",
+    "segundos": 1.9
+   },
+   {
+    "id": "c12",
+    "tipo": "dirigida",
+    "categoria": "evidencia",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "buscar_evidencia",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 9034,
+    "parada": "final_answer",
+    "segundos": 24.5
+   },
+   {
+    "id": "c13",
+    "tipo": "dirigida",
+    "categoria": "informe",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "agrupar_por_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "agrupar_por_meddra",
+     "faers_reaction_counts",
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 17,
+    "tokens": 158695,
+    "parada": "final_answer",
+    "segundos": 757.7
+   },
+   {
+    "id": "a01",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 20846,
+    "parada": "final_answer",
+    "segundos": 9.7
+   },
+   {
+    "id": "a02",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "ver_caso",
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 6,
+    "tokens": 30447,
+    "parada": "final_answer",
+    "segundos": 9.3
+   },
+   {
+    "id": "a03",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 27985,
+    "parada": "final_answer",
+    "segundos": 16.6
+   },
+   {
+    "id": "a04",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "search_knowledge_base",
+     "ver_caso",
+     "ver_caso",
+     "create_icsr_report",
+     "create_icsr_report",
+     "codificar_meddra",
+     "create_icsr_report",
+     "create_icsr_report",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 10,
+    "tokens": 67370,
+    "parada": "final_answer",
+    "segundos": 18.2
+   },
+   {
+    "id": "a05",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": false,
+    "comprobaciones": [
+     false,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "faers_reaction_counts",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 14677,
+    "parada": "final_answer",
+    "segundos": 12.0
+   }
+  ]
+ },
+ "sin_rag·27b": {
+  "tareas": 18,
+  "exito": 0.7222222222222222,
+  "herramientas_requeridas": 0.6666666666666666,
+  "respuestas_con_numeros_sin_respaldo": 0,
+  "respuestas_con_citas_sin_respaldo": 0,
+  "pasos_medios": 4.722222222222222,
+  "tokens_medios": 23836.88888888889,
+  "segundos_medios": 37.077777777777776,
+  "paradas": {
+   "final_answer": 18
+  },
+  "por_tipo": {
+   "dirigida": {
+    "tareas": 13,
+    "exito": 0.7692307692307693,
+    "pasos_medios": 4.153846153846154
+   },
+   "abierta": {
+    "tareas": 5,
+    "exito": 0.6,
+    "pasos_medios": 6.2
+   }
+  },
+  "por_tarea": {
+   "c01": true,
+   "c02": true,
+   "c03": true,
+   "c04": true,
+   "c05": false,
+   "c06": true,
+   "c07": true,
+   "c08": false,
+   "c09": true,
+   "c10": true,
+   "c11": true,
+   "c12": true,
+   "c13": false,
+   "a01": true,
+   "a02": false,
+   "a03": false,
+   "a04": true,
+   "a05": true
+  },
+  "filas": [
+   {
+    "id": "c01",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 9194,
+    "parada": "final_answer",
+    "segundos": 4.1
+   },
+   {
+    "id": "c02",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7294,
+    "parada": "final_answer",
+    "segundos": 4.5
+   },
+   {
+    "id": "c03",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7326,
+    "parada": "final_answer",
+    "segundos": 3.9
+   },
+   {
+    "id": "c04",
+    "tipo": "dirigida",
+    "categoria": "meddra",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "codificar_meddra",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 6800,
+    "parada": "final_answer",
+    "segundos": 1.6
+   },
+   {
+    "id": "c05",
+    "tipo": "dirigida",
+    "categoria": "ficha",
+    "correcta": false,
+    "comprobaciones": [
+     false,
+     false
+    ],
+    "herramientas_usadas": [
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 1,
+    "tokens": 3385,
+    "parada": "final_answer",
+    "segundos": 1.6
+   },
+   {
+    "id": "c06",
+    "tipo": "dirigida",
+    "categoria": "senal",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 10608,
+    "parada": "final_answer",
+    "segundos": 16.0
+   },
+   {
+    "id": "c07",
+    "tipo": "dirigida",
+    "categoria": "meddra+senal",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "agrupar_por_meddra",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 10,
+    "tokens": 44966,
+    "parada": "final_answer",
+    "segundos": 394.4
+   },
+   {
+    "id": "c08",
+    "tipo": "dirigida",
+    "categoria": "normativa",
+    "correcta": false,
+    "comprobaciones": [
+     true,
+     false
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7039,
+    "parada": "final_answer",
+    "segundos": 2.6
+   },
+   {
+    "id": "c09",
+    "tipo": "dirigida",
+    "categoria": "icsr",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "create_icsr_report",
+     "create_icsr_report",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 15596,
+    "parada": "final_answer",
+    "segundos": 8.3
+   },
+   {
+    "id": "c10",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 8444,
+    "parada": "final_answer",
+    "segundos": 3.8
+   },
+   {
+    "id": "c11",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 6735,
+    "parada": "final_answer",
+    "segundos": 2.1
+   },
+   {
+    "id": "c12",
+    "tipo": "dirigida",
+    "categoria": "evidencia",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "buscar_evidencia",
+     "buscar_evidencia",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 13192,
+    "parada": "final_answer",
+    "segundos": 65.1
+   },
+   {
+    "id": "c13",
+    "tipo": "dirigida",
+    "categoria": "informe",
+    "correcta": false,
+    "comprobaciones": [
+     false,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "agrupar_por_meddra",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 19,
+    "tokens": 122567,
+    "parada": "final_answer",
+    "segundos": 78.1
+   },
+   {
+    "id": "a01",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 8556,
+    "parada": "final_answer",
+    "segundos": 5.7
+   },
+   {
+    "id": "a02",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": false,
+    "comprobaciones": [
+     true,
+     true,
+     false
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 15513,
+    "parada": "final_answer",
+    "segundos": 5.2
+   },
+   {
+    "id": "a03",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": false,
+    "comprobaciones": [
+     true,
+     false
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 24788,
+    "parada": "final_answer",
+    "segundos": 12.1
+   },
+   {
+    "id": "a04",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "create_icsr_report",
+     "codificar_meddra",
+     "create_icsr_report",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 10,
+    "tokens": 60096,
+    "parada": "final_answer",
+    "segundos": 24.9
+   },
+   {
+    "id": "a05",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "agrupar_por_meddra",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 10,
+    "tokens": 56965,
+    "parada": "final_answer",
+    "segundos": 33.4
+   }
+  ]
+ },
+ "sin_meddra·27b": {
+  "tareas": 18,
+  "exito": 1.0,
+  "herramientas_requeridas": 0.7777777777777778,
+  "respuestas_con_numeros_sin_respaldo": 0,
+  "respuestas_con_citas_sin_respaldo": 0,
+  "pasos_medios": 4.444444444444445,
+  "tokens_medios": 25085.444444444445,
+  "segundos_medios": 11.727777777777778,
+  "paradas": {
+   "final_answer": 18
+  },
+  "por_tipo": {
+   "dirigida": {
+    "tareas": 13,
+    "exito": 1.0,
+    "pasos_medios": 3.8461538461538463
+   },
+   "abierta": {
+    "tareas": 5,
+    "exito": 1.0,
+    "pasos_medios": 6.0
+   }
+  },
+  "por_tarea": {
+   "c01": true,
+   "c02": true,
+   "c03": true,
+   "c04": true,
+   "c05": true,
+   "c06": true,
+   "c07": true,
+   "c08": true,
+   "c09": true,
+   "c10": true,
+   "c11": true,
+   "c12": true,
+   "c13": true,
+   "a01": true,
+   "a02": true,
+   "a03": true,
+   "a04": true,
+   "a05": true
+  },
+  "filas": [
+   {
+    "id": "c01",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 9079,
+    "parada": "final_answer",
+    "segundos": 3.8
+   },
+   {
+    "id": "c02",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7184,
+    "parada": "final_answer",
+    "segundos": 4.5
+   },
+   {
+    "id": "c03",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7187,
+    "parada": "final_answer",
+    "segundos": 3.7
+   },
+   {
+    "id": "c04",
+    "tipo": "dirigida",
+    "categoria": "meddra",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 6857,
+    "parada": "final_answer",
+    "segundos": 2.5
+   },
+   {
+    "id": "c05",
+    "tipo": "dirigida",
+    "categoria": "ficha",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7611,
+    "parada": "final_answer",
+    "segundos": 3.6
+   },
+   {
+    "id": "c06",
+    "tipo": "dirigida",
+    "categoria": "senal",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 10458,
+    "parada": "final_answer",
+    "segundos": 10.7
+   },
+   {
+    "id": "c07",
+    "tipo": "dirigida",
+    "categoria": "meddra+senal",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "ver_caso",
+     "ver_caso",
+     "ver_caso",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 9,
+    "tokens": 44566,
+    "parada": "final_answer",
+    "segundos": 15.8
+   },
+   {
+    "id": "c08",
+    "tipo": "dirigida",
+    "categoria": "normativa",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7422,
+    "parada": "final_answer",
+    "segundos": 2.8
+   },
+   {
+    "id": "c09",
+    "tipo": "dirigida",
+    "categoria": "icsr",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "create_icsr_report",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 11042,
+    "parada": "final_answer",
+    "segundos": 5.5
+   },
+   {
+    "id": "c10",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 9065,
+    "parada": "final_answer",
+    "segundos": 2.8
+   },
+   {
+    "id": "c11",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 6596,
+    "parada": "final_answer",
+    "segundos": 1.7
+   },
+   {
+    "id": "c12",
+    "tipo": "dirigida",
+    "categoria": "evidencia",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "buscar_evidencia",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 8678,
+    "parada": "final_answer",
+    "segundos": 23.8
+   },
+   {
+    "id": "c13",
+    "tipo": "dirigida",
+    "categoria": "informe",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "faers_reaction_counts",
+     "search_knowledge_base",
+     "ver_caso",
+     "ver_caso",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 17,
+    "tokens": 131799,
+    "parada": "final_answer",
+    "segundos": 60.6
+   },
+   {
+    "id": "a01",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 8659,
+    "parada": "final_answer",
+    "segundos": 7.0
+   },
+   {
+    "id": "a02",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "ver_caso",
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 6,
+    "tokens": 29477,
+    "parada": "final_answer",
+    "segundos": 7.5
+   },
+   {
+    "id": "a03",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 26566,
+    "parada": "final_answer",
+    "segundos": 13.3
+   },
+   {
+    "id": "a04",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "create_icsr_report",
+     "create_icsr_report",
+     "create_icsr_report",
+     "create_icsr_report",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 13,
+    "tokens": 99016,
+    "parada": "final_answer",
+    "segundos": 29.5
+   },
+   {
+    "id": "a05",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "faers_reaction_counts",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 20276,
+    "parada": "final_answer",
+    "segundos": 12.0
+   }
+  ]
+ },
+ "sin_evidencia·27b": {
+  "tareas": 18,
+  "exito": 0.8888888888888888,
+  "herramientas_requeridas": 0.8333333333333334,
+  "respuestas_con_numeros_sin_respaldo": 0,
+  "respuestas_con_citas_sin_respaldo": 0,
+  "pasos_medios": 4.888888888888889,
+  "tokens_medios": 28267.277777777777,
+  "segundos_medios": 14.094444444444443,
+  "paradas": {
+   "final_answer": 18
+  },
+  "por_tipo": {
+   "dirigida": {
+    "tareas": 13,
+    "exito": 0.8461538461538461,
+    "pasos_medios": 4.076923076923077
+   },
+   "abierta": {
+    "tareas": 5,
+    "exito": 1.0,
+    "pasos_medios": 7.0
+   }
+  },
+  "por_tarea": {
+   "c01": true,
+   "c02": true,
+   "c03": true,
+   "c04": true,
+   "c05": true,
+   "c06": false,
+   "c07": true,
+   "c08": true,
+   "c09": true,
+   "c10": true,
+   "c11": true,
+   "c12": false,
+   "c13": true,
+   "a01": true,
+   "a02": true,
+   "a03": true,
+   "a04": true,
+   "a05": true
+  },
+  "filas": [
+   {
+    "id": "c01",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 9239,
+    "parada": "final_answer",
+    "segundos": 3.9
+   },
+   {
+    "id": "c02",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7534,
+    "parada": "final_answer",
+    "segundos": 5.5
+   },
+   {
+    "id": "c03",
+    "tipo": "dirigida",
+    "categoria": "casos",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7384,
+    "parada": "final_answer",
+    "segundos": 4.5
+   },
+   {
+    "id": "c04",
+    "tipo": "dirigida",
+    "categoria": "meddra",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "codificar_meddra",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 6871,
+    "parada": "final_answer",
+    "segundos": 2.3
+   },
+   {
+    "id": "c05",
+    "tipo": "dirigida",
+    "categoria": "ficha",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7774,
+    "parada": "final_answer",
+    "segundos": 3.5
+   },
+   {
+    "id": "c06",
+    "tipo": "dirigida",
+    "categoria": "senal",
+    "correcta": false,
+    "comprobaciones": [
+     false
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 14250,
+    "parada": "final_answer",
+    "segundos": 48.7
+   },
+   {
+    "id": "c07",
+    "tipo": "dirigida",
+    "categoria": "meddra+senal",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "codificar_meddra",
+     "agrupar_por_meddra",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 10,
+    "tokens": 45081,
+    "parada": "final_answer",
+    "segundos": 22.2
+   },
+   {
+    "id": "c08",
+    "tipo": "dirigida",
+    "categoria": "normativa",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7730,
+    "parada": "final_answer",
+    "segundos": 3.0
+   },
+   {
+    "id": "c09",
+    "tipo": "dirigida",
+    "categoria": "icsr",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7293,
+    "parada": "final_answer",
+    "segundos": 4.2
+   },
+   {
+    "id": "c10",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 1,
+    "tokens": 3417,
+    "parada": "final_answer",
+    "segundos": 1.8
+   },
+   {
+    "id": "c11",
+    "tipo": "dirigida",
+    "categoria": "imposible",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 6749,
+    "parada": "final_answer",
+    "segundos": 1.7
+   },
+   {
+    "id": "c12",
+    "tipo": "dirigida",
+    "categoria": "evidencia",
+    "correcta": false,
+    "comprobaciones": [
+     false
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 8479,
+    "parada": "final_answer",
+    "segundos": 3.3
+   },
+   {
+    "id": "c13",
+    "tipo": "dirigida",
+    "categoria": "informe",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "agrupar_por_meddra",
+     "ver_caso",
+     "ver_caso",
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": false,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 20,
+    "tokens": 161260,
+    "parada": "final_answer",
+    "segundos": 75.6
+   },
+   {
+    "id": "a01",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "agrupar_por_meddra",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 26143,
+    "parada": "final_answer",
+    "segundos": 7.8
+   },
+   {
+    "id": "a02",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "search_knowledge_base",
+     "ver_caso",
+     "ver_caso",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 27372,
+    "parada": "final_answer",
+    "segundos": 7.0
+   },
+   {
+    "id": "a03",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 7777,
+    "parada": "final_answer",
+    "segundos": 4.2
+   },
+   {
+    "id": "a04",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "ver_caso",
+     "ver_caso",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "agrupar_por_meddra",
+     "create_icsr_report",
+     "create_icsr_report",
+     "create_icsr_report",
+     "create_icsr_report",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 11,
+    "tokens": 84628,
+    "parada": "final_answer",
+    "segundos": 21.0
+   },
+   {
+    "id": "a05",
+    "tipo": "abierta",
+    "categoria": "abierta",
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "codificar_meddra",
+     "codificar_meddra",
+     "agrupar_por_meddra",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 12,
+    "tokens": 69830,
+    "parada": "final_answer",
+    "segundos": 33.5
+   }
+  ]
+ }
+}
