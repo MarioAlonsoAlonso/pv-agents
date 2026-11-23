@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import re
 
-# "PMID: 12345678", "PMID 123", "(PMIDs 111, 222)" and bare 7-8 digit numbers (current PMIDs;
-# years have 4 digits and doses rarely 7).
-_PMID_TAGGED = re.compile(r"PMIDs?[\s:#]*((?:\d{1,9}(?:\s*(?:,|y|and|;|/)\s*)?)+)", re.I)
+# "PMID: 12345678", "PMID 123", "(PMIDs 11111, 22222 y 33333)" and bare 7-8 digit numbers
+# (current PMIDs; years have 4 digits and doses rarely 7). After the first number, a list only
+# continues with 5+ digits: "PMID 27722027, 2016" is a PMID and a year (exam, 2026-11-23).
+_PMID_TAGGED = re.compile(r"PMIDs?[\s:#]*(\d{1,9}(?:\s*(?:,|y|and|;|/)\s*\d{5,9}(?!\d))*)", re.I)
 _PMID_BARE = re.compile(r"(?<![\w.])\d{7,8}(?!\w|\.\d)")  # "…11965835." yes, "1234567.5" no
 _POST = re.compile(r"\bp[0-9a-f]{12}\b")
 
@@ -21,7 +22,7 @@ _POST = re.compile(r"\bp[0-9a-f]{12}\b")
 def cited_pmids(text: str) -> list[str]:
     found = []
     for group in _PMID_TAGGED.findall(text):
-        found += re.findall(r"\d{1,9}", group)
+        found += re.findall(r"\d+", group)
     found += _PMID_BARE.findall(text)
     return list(dict.fromkeys(found))  # unique, in order
 

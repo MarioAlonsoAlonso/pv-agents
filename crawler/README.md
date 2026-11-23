@@ -202,6 +202,31 @@ mecanismo general como "sin cita". Un fallo: en caídas con zolpidem devolvió u
 tras ver 17 artículos (la respuesta no cabía en 2048 tokens de salida). v3.1: 4096 tokens en
 modo literatura, y una respuesta final vacía vuelve al modelo como error en vez de terminar.
 
+**Examen (`literatura_test`, 2026-11-23, v3.1, una sola ejecución):**
+
+| | Búsqueda fija | `buscar_literatura` |
+|---|---|---|
+| PMID citados sin respaldo | — | **0 de 86** [0-4 %] |
+| Relevantes | 88 % de lo entregado [78-93] | **95 % de lo citado** [88-98] (86 % de lo visto) |
+| De referencia encontrados | 14 de 30 | 13 de 30 (11 citados) |
+| Controles | — | los dos: "no hay evidencia"; lo que cita lo presenta como otra cosa |
+| Coste por pregunta | 0 tokens | 15 200 tokens, 4,2 pasos, 25 s, 3,2 búsquedas |
+
+La primera puntuación dio 2 PMID sin respaldo: eran **años** ("PMID 27722027, 2016"), que la
+comprobación leía como una lista de PMID. Corregida la comprobación (`citas.py`), las mismas
+respuestas se puntuaron otra vez sin ejecutar el agente (`--recalcular`).
+
+**Fidelidad, a mano:** en tres respuestas del examen (hipoglucemia con tramadol, levotiroxina y
+hueso, lorazepam con opioides) se buscó cada cifra y dato atribuido a un PMID en su resumen
+original: **26 artículos, todo lo comprobado está en su artículo** (p. ej. 97 639 notificaciones y
+ROR 1,54; OR 1,52 y 2,61; 63 estudios, 31/23/9; HR 1,83 y 2,96). Además separa bien lo que es
+del grupo y no del fármaco ("no encontré estudios que aíslen el lorazepam; extrapolo a su clase")
+y marca lo que no tiene cita. Límites: 3 respuestas de 10, revisadas por Claude, no por un
+farmacólogo, y con la parte de mecanismo comprobada solo en sus cifras.
+
+**Conclusión:** encuentra lo mismo que una búsqueda simple, no inventa referencias y lo que añade
+es un resumen fiel y ordenado (evidencia, grupos de riesgo, mecanismo) por ~15 000 tokens.
+
 ### Evaluación de `buscar_mas_casos`
 
 Sobre la **muestra congelada de sertralina**, con la **hoja de soluciones del triaje** como

@@ -5,6 +5,7 @@
     uv run --extra crawler python -m crawler.eval_literatura --ids caidas_zolpidem --sistemas agente
     uv run --extra crawler python -m crawler.eval_literatura --brain 27b \
         --bench crawler/bench/literatura_test.jsonl
+    uv run python -m crawler.eval_literatura --recalcular   # saved answers, scored again
 
 Two benches, like a practice exam and a final one:
 
@@ -191,6 +192,14 @@ def run_agent(question: dict, brain: str, out_dir: Path) -> dict:
     return row
 
 
+def rescore(question: dict, saved: Path) -> dict:
+    """The same answer, scored again: what the agent did is not run a second time."""
+    data = json.loads(saved.read_text("utf-8"))
+    row = score_question(question, data["articulos"], data["respuesta"])
+    row["coste"] = data["puntuacion"]["coste"]
+    return row
+
+
 def print_summary(system: str, s: dict) -> None:
     print(f"\n== {system} ({s['preguntas']} preguntas + {len(s['controles'])} controles)")
     print(f"  artículos relevantes entregados: {fmt(s['relevancia_entregados'])}")
@@ -223,6 +232,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--ids", nargs="+", help="only these questions")
     parser.add_argument("--bench", type=Path, default=BENCH)
     parser.add_argument("--salida", type=Path, default=REPORT)
+    parser.add_argument(
+        "--recalcular",
+        action="store_true",
+        help="score the agent's saved answers again (after fixing the scoring), without "
+        "running it: the only way to correct an exam that must not be repeated",
+    )
     args = parser.parse_args(argv)
 
     bench = load_bench(args.bench)
@@ -236,6 +251,14 @@ def main(argv: list[str] | None = None) -> None:
         "bench": args.bench.name,
         "sistemas": {},
     }
+    if args.recalcular:
+        if args.salida.exists():  # keep the fixed search as it was run
+            report["sistemas"] = json.loads(args.salida.read_text("utf-8"))["sistemas"]
+        out_dir = DATA_DIR / "literatura" / f"{args.bench.stem}_{args.brain}"
+        rows = [rescore(q, out_dir / f"{q['id']}.json") for q in bench]
+        report["sistemas"][f"agente_{args.brain}"] = {"resumen": summarize(rows), "preguntas": rows}
+        report["recalculado"] = report["fecha"]
+        args.sistemas = []
     if "fija" in args.sistemas:
         rows = []
         for q in bench:

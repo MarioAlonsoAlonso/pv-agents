@@ -564,7 +564,7 @@ def test_mentions_carry_the_whole_reply_chain():
 
 
 def test_citations_without_backing_are_flagged():
-    from crawler.citas import check_citations
+    from crawler.citas import check_citations, cited_pmids
 
     answer = (
         "PubMed: hiponatremia descrita (PMID: 8681276, 22295265 y 99999999); "
@@ -578,6 +578,11 @@ def test_citations_without_backing_are_flagged():
     assert check["pmids_citados"] == ["8681276", "22295265", "99999999", "11965835"]
     assert check["pmids_sin_respaldo"] == ["99999999"]  # never returned by a search
     assert check["posts_sin_respaldo"] == ["pdd2984e9aa82"]  # never shown
+    # a year after a PMID is not a second PMID (the exam's two false alarms)
+    assert cited_pmids("caso (PMID 27722027, 2016) y otro (PMID 18420093, 2008)") == [
+        "27722027",
+        "18420093",
+    ]
 
 
 def test_literature_scoring_relevance_reference_and_controls():
@@ -634,6 +639,10 @@ def test_literature_run_searches_pubmed_and_reports_unbacked_pmids(monkeypatch, 
     assert row["pmids_sin_respaldo"] == ["31415926"] and row["clave_citados"] == 1
     saved = json.loads((tmp_path / "hiponatremia_sertralina.json").read_text("utf-8"))
     assert saved["respuesta"].startswith("Casos publicados")
+    from crawler.eval_literatura import rescore
+
+    again = rescore(q, tmp_path / "hiponatremia_sertralina.json")  # no model needed
+    assert again["pmids_sin_respaldo"] == ["31415926"] and again["coste"] == row["coste"]
 
 
 def test_cases_answer_key_and_agent_run(monkeypatch, source, tmp_path):
