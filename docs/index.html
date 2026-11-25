@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PV-Agents: sistema multiagente de farmacovigilancia en redes sociales. Proyecto final de Modelos Generativos Profundos.">
+<title>PV-Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: una sola columna de lectura, numerada como las secciones de una ficha técnica;
+   la arquitectura y los resultados se abren a todo el ancho del contenedor. */
+:root {
+  --bg: #F4F7F6;
+  --surface: #FFFFFF;
+  --ink: #13232A;
+  --muted: #52646B;
+  --line: #D8E1E0;
+  --accent: #008C7A;
+  --accent-ink: #006A5D;
+  --accent-soft: #DDF1EC;
+  --hl: #F7DC7B;          /* la "tarjeta amarilla" de notificación */
+  --hl-soft: #FDF3CF;
+  --bar-alt: #B0B9BD;
+  --code-bg: #E9EFEE;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1619; --surface: #162125; --ink: #E5EEEC; --muted: #9DAEB1; --line: #273539;
+    --accent: #24A894; --accent-ink: #62D2BE; --accent-soft: #123430; --hl: #7A6113;
+    --hl-soft: #2E2A16; --bar-alt: #56616A; --code-bg: #1C292D; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1619; --surface: #162125; --ink: #E5EEEC; --muted: #9DAEB1; --line: #273539;
+  --accent: #24A894; --accent-ink: #62D2BE; --accent-soft: #123430; --hl: #7A6113;
+  --hl-soft: #2E2A16; --bar-alt: #56616A; --code-bg: #1C292D; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+img { max-width: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 1.0625rem; line-height: 1.6; }
+.wrap {
+  max-width: 68rem; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.read { max-width: 42rem; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.12; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.1rem, 5.4vw, 3.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); font-weight: 800; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent-ink); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+mark { color: inherit; background: linear-gradient(transparent 58%, var(--hl) 58%); padding: 0 .08em; }
+code, .mono { font-family: var(--mono); font-size: .82em; }
+.eyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* hero */
+.hero { padding-block: 4.5rem 3rem; border-bottom: 1px solid var(--line); }
+.hero .wrap { display: grid; gap: 1.4rem; }
+.hero .lead { font-size: 1.2rem; max-width: 40rem; color: var(--muted); }
+.hero .lead strong { color: var(--ink); font-weight: 600; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; max-width: 46rem; }
+.fact { border-top: 3px solid var(--ink); padding-top: .6rem; }
+.fact b { display: block; font-family: var(--display); font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.fact span { font-size: .92rem; color: var(--muted); }
+
+/* secciones */
+section { padding-block: 3.5rem; border-bottom: 1px solid var(--line); }
+.sec-head { display: grid; gap: .5rem; margin-bottom: 1.8rem; }
+.sec-num { font-family: var(--mono); font-size: .85rem; color: var(--accent-ink); }
+.sec-head p { color: var(--muted); max-width: 42rem; }
+
+/* problema */
+.problem { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+.problem div { display: grid; gap: .4rem; align-content: start; }
+.problem .k { font-family: var(--display); font-weight: 800; font-size: 1.25rem; }
+.goal { margin-top: 2rem; padding: 1rem 1.2rem; background: var(--hl-soft); border-radius: 6px; max-width: 46rem; }
+
+/* arquitectura */
+.lane { display: grid; gap: .9rem; }
+.lane + .lane { margin-top: 2.2rem; }
+.lane-label { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.lane-label b { font-family: var(--display); font-size: 1.15rem; }
+.chain { display: grid; grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1fr) 2rem minmax(0, 1fr) 2rem minmax(0, 1fr); align-items: stretch; }
+.node { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .9rem 1rem; display: grid; gap: .3rem; align-content: start; min-width: 0; }
+.node.agent { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+.node .t { font-weight: 600; }
+.node .d { font-size: .92rem; color: var(--muted); }
+.tag { justify-self: start; font-family: var(--mono); font-size: .72rem; background: var(--code-bg); border-radius: 4px; padding: .1rem .4rem; color: var(--ink); }
+.node.agent .tag { background: var(--accent-soft); color: var(--accent-ink); }
+.arrow { position: relative; align-self: center; height: 2px; background: var(--muted); margin: 0 .3rem; }
+.arrow::after { content: ""; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left: 8px solid var(--muted); border-right: 0; }
+.chain2 { display: grid; grid-template-columns: minmax(0, .8fr) 2rem minmax(0, 1.1fr) 2rem minmax(0, 2.4fr); align-items: stretch; }
+.tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; min-width: 0; }
+.tools .node { padding: .7rem .85rem; }
+.tools .node .d { font-size: .86rem; }
+.guards { margin-top: 1.4rem; border: 1px dashed var(--accent); border-radius: 8px; padding: 1rem 1.2rem; display: grid; gap: .6rem; }
+.guards ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .25rem; }
+.who { margin-top: 2.2rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.who div { display: grid; gap: .2rem; }
+.who b { font-family: var(--display); }
+.who span { font-size: .92rem; color: var(--muted); }
+
+/* ejemplos */
+.examples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
+.ex { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.2rem; display: grid; gap: .9rem; align-content: start; min-width: 0; }
+.q { justify-self: end; max-width: 92%; background: var(--ink); color: var(--bg); border-radius: 14px 14px 4px 14px; padding: .6rem .9rem; font-weight: 500; }
+.did { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; font-size: .82rem; }
+.did .lbl { color: var(--muted); margin-right: .2rem; }
+.did .step { background: var(--code-bg); border-radius: 4px; padding: .12rem .45rem; }
+.did .step.stop { background: var(--hl-soft); }
+.a { border-left: 3px solid var(--accent); padding-left: .9rem; display: grid; gap: .5rem; font-size: .97rem; }
+.a ul { margin: 0; padding-left: 1.1rem; }
+.why { font-size: .9rem; color: var(--muted); }
+.time { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
+
+/* resultados */
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5rem; }
+.chart { display: grid; gap: 1.3rem; align-content: start; min-width: 0; }
+.chart h3 { font-size: 1.1rem; }
+.group { display: grid; gap: .45rem; }
+.group > p { font-weight: 600; font-size: .95rem; }
+.group > p span { font-weight: 400; color: var(--muted); }
+.row { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) 3.4rem; gap: .6rem; align-items: center; font-size: .88rem; }
+.row .n { color: var(--muted); }
+.row.win .n { color: var(--ink); font-weight: 600; }
+.track { height: 14px; position: relative; }
+.bar { height: 100%; background: var(--bar-alt); border-radius: 0 4px 4px 0; }
+.row.win .bar { background: var(--accent); }
+.row .v { font-variant-numeric: tabular-nums; text-align: right; }
+.row.win .v { font-weight: 600; }
+.axis { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) 3.4rem; gap: .6rem; font-size: .72rem; color: var(--muted); }
+.axis div { display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: .2rem; }
+.more { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.more div { border-top: 1px solid var(--line); padding-top: .6rem; display: grid; gap: .2rem; align-content: start; }
+.more b { font-family: var(--display); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.more span { font-size: .9rem; color: var(--muted); }
+
+/* aprendizajes y límites */
+.lessons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem 2.5rem; }
+.lessons div { display: grid; gap: .35rem; align-content: start; }
+.limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5rem; }
+.limits ul { margin: .6rem 0 0; padding-left: 1.1rem; display: grid; gap: .45rem; }
+
+footer { padding-block: 2.5rem 3.5rem; font-size: .92rem; color: var(--muted); }
+footer .wrap { display: grid; gap: .5rem; }
+
+@media (max-width: 860px) {
+  .problem, .who, .examples, .charts, .lessons, .limits { grid-template-columns: minmax(0, 1fr); }
+  .more { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chain, .chain2 { grid-template-columns: minmax(0, 1fr); }
+  .arrow { justify-self: center; width: 2px; height: 1.6rem; margin: .25rem 0; }
+  .arrow::after { right: -5px; top: auto; bottom: -2px; border: 6px solid transparent; border-top: 8px solid var(--muted); border-bottom: 0; }
+}
+@media (max-width: 520px) {
+  .facts { grid-template-columns: minmax(0, 1fr); }
+  .tools { grid-template-columns: minmax(0, 1fr); }
+  .row, .axis { grid-template-columns: 6.5rem minmax(0, 1fr) 3rem; }
+  .more { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Proyecto final · Modelos Generativos Profundos · Máster en IA, ICAI · 2026</p>
+    <h1>Lo que la gente cuenta en redes sobre sus medicamentos, <mark>listo para farmacovigilancia</mark></h1>
+    <p class="lead"><strong>PV-Agents</strong> es un equipo de agentes de IA. Lee lo que la gente publica sobre sus medicamentos, se queda con los <strong>efectos adversos</strong> y ayuda al técnico de farmacovigilancia a revisarlos con las mismas fuentes que usaría él. Las decisiones las toma siempre una persona.</p>
+    <div class="facts">
+      <div class="fact"><b>18 548</b><span>posts en español de Bluesky revisados</span></div>
+      <div class="fact"><b>159</b><span>casos de efectos adversos encontrados (sertralina)</span></div>
+      <div class="fact"><b>92 %</b><span>de las preguntas del examen final bien resueltas</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="problema">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">1.</span>
+        <h2>El problema</h2>
+      </div>
+      <div class="problem">
+        <div>
+          <p class="k">Los efectos adversos se notifican poco</p>
+          <p>Mucha gente no rellena la tarjeta amarilla para avisar de un efecto adverso, pero sí lo cuenta en redes: <em>«llevo una semana con sertralina y me da muchísimo sueño»</em>.</p>
+        </div>
+        <div>
+          <p class="k">Leerlo todo a mano es imposible</p>
+          <p>Entre los posts hay bromas, preguntas y opiniones. Y muchos ni nombran el medicamento: <em>«a mí también me pasó»</em>, respondiendo a otra persona.</p>
+        </div>
+        <div>
+          <p class="k">Cada caso pide varias consultas</p>
+          <p>Para valorar un caso, el técnico mira la ficha técnica, el diccionario médico MedDRA, la base de datos de notificaciones FAERS y artículos científicos. Hoy son muchas pestañas.</p>
+        </div>
+      </div>
+      <p class="goal"><strong>Nuestro objetivo:</strong> que los agentes hagan la parte pesada (buscar, filtrar, consultar y calcular) y que la persona solo tenga que revisar y decidir.</p>
+    </div>
+  </section>
+
+  <section id="arquitectura">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">2.</span>
+        <h2>Cómo funciona</h2>
+        <p>El sistema trabaja en dos momentos. Las cajas con borde verde son agentes de IA; las demás son código o datos.</p>
+      </div>
+
+      <div class="lane">
+        <div class="lane-label"><b>A. Cada día, sin que nadie pregunte</b><span class="muted">se buscan y se ordenan los casos</span></div>
+        <div class="chain">
+          <div class="node">
+            <span class="t">Bluesky</span>
+            <span class="d">Posts públicos en español. Se anonimizan.</span>
+          </div>
+          <span class="arrow" aria-hidden="true"></span>
+          <div class="node agent">
+            <span class="t">Rastreador</span>
+            <span class="d">Busca los posts que hablan del fármaco y lee las conversaciones para encontrar los que no lo nombran.</span>
+            <span class="tag">búsqueda + agente · Qwen3.8-27B</span>
+          </div>
+          <span class="arrow" aria-hidden="true"></span>
+          <div class="node agent">
+            <span class="t">Triaje</span>
+            <span class="d">Decide si el post cuenta un efecto adverso y apunta cuál, quién, si es grave y cómo acabó.</span>
+            <span class="tag">Qwen3.8-27B</span>
+          </div>
+          <span class="arrow" aria-hidden="true"></span>
+          <div class="node">
+            <span class="t">Casos</span>
+            <span class="d">725 menciones → 159 casos, los graves primero.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lane">
+        <div class="lane-label"><b>B. Cuando el técnico pregunta</b><span class="muted">en español, como se lo preguntaría a un compañero</span></div>
+        <div class="chain2">
+          <div class="node">
+            <span class="t">Técnico</span>
+            <span class="d">«¿Hay algo que tenga que notificar ya?»</span>
+          </div>
+          <span class="arrow" aria-hidden="true"></span>
+          <div class="node agent">
+            <span class="t">Coordinador</span>
+            <span class="d">Piensa qué necesita, llama a las herramientas una a una y redacta la respuesta citando de dónde sale cada dato.</span>
+            <span class="tag">Qwen3.8-27B · bucle ReAct</span>
+          </div>
+          <span class="arrow" aria-hidden="true"></span>
+          <div class="tools">
+            <div class="node"><span class="t">Nuestros casos</span><span class="d">Los de la parte A: buscar, contar, resumir.</span></div>
+            <div class="node"><span class="t">Fichas técnicas y guías</span><span class="d">Buscador (RAG) en 34 fichas de la AEMPS y 3 guías de la EMA.</span></div>
+            <div class="node agent"><span class="t">Codificador MedDRA</span><span class="d">Pasa «no pego ojo» a <span class="mono">Insomnia</span>.</span><span class="tag">Qwen3-1.7B entrenado por nosotros</span></div>
+            <div class="node"><span class="t">FAERS y señal</span><span class="d">Cuenta notificaciones en la base de EE. UU. y calcula si hay señal (PRR).</span></div>
+            <div class="node agent"><span class="t">Literatura</span><span class="d">Busca en PubMed qué se ha publicado.</span><span class="tag">sub-agente · Qwen3.8-27B</span></div>
+            <div class="node"><span class="t">Informe ICSR</span><span class="d">Prepara el borrador oficial. Nunca se envía solo.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="guards">
+        <h3>Reglas que comprueba el código, no el modelo</h3>
+        <ul>
+          <li>Cada número de la respuesta tiene que salir de una herramienta. Se comprueba al evaluar.</li>
+          <li>Si ha leído una ficha técnica, tiene que citar el fragmento exacto (por ejemplo <code>[d59d7cb7ea-0071]</code>).</li>
+          <li>Un nombre de fármaco que no existe no se cambia por uno parecido sin decirlo.</li>
+          <li>Un informe ICSR solo queda como borrador si se podría registrar, y siempre lo confirma una persona.</li>
+        </ul>
+      </div>
+
+      <div class="who">
+        <div><b>Mario</b><span>Rastreador y sub-agente de literatura</span></div>
+        <div><b>Matteo</b><span>Codificador MedDRA (modelo de razonamiento entrenado)</span></div>
+        <div><b>Pedro</b><span>Triaje, coordinador y evaluación del sistema</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ejemplos">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">3.</span>
+        <h2>Ejemplos reales</h2>
+        <p>Preguntas del examen final y lo que respondió el sistema. Las respuestas están recortadas, pero las cifras y las citas son las suyas.</p>
+      </div>
+      <div class="examples">
+        <article class="ex">
+          <p class="q">Dame una visión general de lo que tenemos.</p>
+          <div class="did"><span class="lbl">Lo que hizo:</span><span class="step">resumir nuestros casos</span></div>
+          <div class="a">
+            <p>Solo hay casos de sertralina: <strong>159</strong> confirmados por el triaje, <strong>2 graves</strong>. Lo que más se repite:</p>
+            <ul>
+              <li>insomnio o mal dormir: 25 casos</li>
+              <li>somnolencia o cansancio: 24</li>
+              <li>calor o sudores: 24</li>
+              <li>ánimo o ansiedad: 19</li>
+            </ul>
+          </div>
+          <p class="why">Agrupa las palabras de los pacientes por temas y no copia ningún post.</p>
+          <span class="time">9 s</span>
+        </article>
+
+        <article class="ex">
+          <p class="q">¿Hay señal de rotura de tendón con el ciprofloxacino?</p>
+          <div class="did"><span class="lbl">Lo que hizo:</span><span class="step">contar en FAERS</span><span class="step">calcular el PRR</span><span class="step">leer la ficha técnica</span></div>
+          <div class="a">
+            <p>Sí, hay señal clara: <strong>PRR 25,5</strong> (IC 95 % 24,1–27,0), con 1 317 notificaciones. Es coherente con la ficha técnica, que la recoge como reacción muy rara [d59d7cb7ea-0071]. Es una señal fuerte y ya conocida, no un hallazgo nuevo.</p>
+          </div>
+          <p class="why">Las cifras las calcula una herramienta con datos en vivo; el modelo solo las explica.</p>
+          <span class="time">13 s</span>
+        </article>
+
+        <article class="ex">
+          <p class="q">¿Qué dice la ficha técnica del pantoxazol sobre el embarazo?</p>
+          <div class="did"><span class="lbl">Lo que hizo:</span><span class="step">identificar el nombre</span><span class="step stop">no existe</span></div>
+          <div class="a">
+            <p>No reconozco «pantoxazol»: no está entre los fármacos del sistema. ¿Te refieres a <strong>pantoprazol</strong>? Si es así, te busco lo que dice su ficha técnica sobre el embarazo.</p>
+          </div>
+          <p class="why">Antes, ante un nombre inventado, el sistema daba los datos de un fármaco parecido. Ahora pregunta.</p>
+          <span class="time">2 s</span>
+        </article>
+
+        <article class="ex">
+          <p class="q">Envía ya a la AEMPS el ICSR del caso grave M-e2b0…</p>
+          <div class="did"><span class="lbl">Lo que hizo:</span><span class="step">leer el caso</span><span class="step">preparar el borrador</span><span class="step stop">el código lo rechaza</span></div>
+          <div class="a">
+            <p>No he podido crear el ICSR: el término «Mania» no está en nuestro diccionario MedDRA, y las reglas prohíben cambiar una reacción por otra para que pase. Te dejo los datos que sí están listos para que decida una persona.</p>
+          </div>
+          <p class="why">Aunque el borrador fuera válido, el sistema nunca envía nada: lo deja pendiente de confirmación.</p>
+          <span class="time">8 s</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultados">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">4.</span>
+        <h2>Resultados</h2>
+        <p>Cada pieza se midió una sola vez en un examen que no se usó para ajustarla. Se compara siempre con la alternativa sencilla.</p>
+      </div>
+
+      <div class="charts">
+        <div class="chart">
+          <h3>Cada agente frente a la opción sencilla</h3>
+
+          <div class="group">
+            <p>Rastreador <span>· menciones encontradas</span></p>
+            <div class="row" title="Búsqueda por palabras: 70 %"><span class="n">Búsqueda por palabras</span><div class="track"><div class="bar" style="width:70%"></div></div><span class="v">70 %</span></div>
+            <div class="row win" title="Búsqueda + agente: 97 %"><span class="n">Búsqueda + agente</span><div class="track"><div class="bar" style="width:97%"></div></div><span class="v">97 %</span></div>
+          </div>
+
+          <div class="group">
+            <p>Triaje <span>· efectos adversos detectados</span></p>
+            <div class="row" title="Palabras clave: 46 %"><span class="n">Palabras clave</span><div class="track"><div class="bar" style="width:46%"></div></div><span class="v">46 %</span></div>
+            <div class="row win" title="Agente (27B): 79 %"><span class="n">Agente (27B)</span><div class="track"><div class="bar" style="width:79%"></div></div><span class="v">79 %</span></div>
+          </div>
+
+          <div class="group">
+            <p>Codificador MedDRA <span>· términos exactos</span></p>
+            <div class="row" title="Qwen3-1.7B sin entrenar: 18,5 %"><span class="n">Pequeño sin entrenar</span><div class="track"><div class="bar" style="width:18.5%"></div></div><span class="v">18,5 %</span></div>
+            <div class="row" title="Qwen3.8-27B: 46 %"><span class="n">Grande (27B)</span><div class="track"><div class="bar" style="width:46%"></div></div><span class="v">46 %</span></div>
+            <div class="row win" title="Qwen3-1.7B entrenado (SFT + GRPO): 56,5 %"><span class="n">Pequeño entrenado</span><div class="track"><div class="bar" style="width:56.5%"></div></div><span class="v">56,5 %</span></div>
+          </div>
+
+          <div class="axis"><span></span><div><span>0</span><span>50</span><span>100 %</span></div><span></span></div>
+        </div>
+
+        <div class="chart">
+          <h3>¿Qué pasa si le quitamos una pieza al coordinador?</h3>
+          <div class="group">
+            <p>Preguntas bien resueltas <span>· de 59 del examen</span></p>
+            <div class="row win" title="Sistema completo: 54 de 59"><span class="n">Sistema completo</span><div class="track"><div class="bar" style="width:91.5%"></div></div><span class="v">54</span></div>
+            <div class="row" title="Sin el codificador MedDRA: 52 de 59"><span class="n">Sin MedDRA</span><div class="track"><div class="bar" style="width:88.1%"></div></div><span class="v">52</span></div>
+            <div class="row" title="Sin literatura: 51 de 59"><span class="n">Sin literatura</span><div class="track"><div class="bar" style="width:86.4%"></div></div><span class="v">51</span></div>
+            <div class="row" title="Sin fichas técnicas (RAG): 30 de 59"><span class="n">Sin fichas técnicas</span><div class="track"><div class="bar" style="width:50.8%"></div></div><span class="v">30</span></div>
+          </div>
+          <div class="axis"><span></span><div><span>0</span><span>59</span></div><span></span></div>
+          <p class="muted">Sin las fichas técnicas el coordinador contesta de memoria y se equivoca. Es la pieza imprescindible. Las otras dos ayudan en sus preguntas, pero con 59 preguntas la diferencia no es significativa.</p>
+        </div>
+      </div>
+
+      <div class="more">
+        <div><b>27 / 27</b><span>preguntas generales del examen final (fichas, casos, señales, notificaciones)</span></div>
+        <div><b>11 / 13</b><span>nombres raros y comparativas; 8 / 13 sin las herramientas de nombres</span></div>
+        <div><b>0 / 86</b><span>referencias de PubMed inventadas por el agente de literatura</span></div>
+        <div><b>7 s</b><span>tiempo típico por pregunta (unos 18 000 tokens). Codificar con MedDRA tarda unos 2 minutos.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="aprendizajes">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">5.</span>
+        <h2>Lo que aprendimos</h2>
+      </div>
+      <div class="lessons">
+        <div>
+          <h3>Las reglas en el código pesan más que el prompt</h3>
+          <p>Ante un fármaco inventado, el coordinador daba los datos de uno parecido. Escribirlo en el prompt no bastó; una comprobación en el código, sí.</p>
+        </div>
+        <div>
+          <h3>Un agente solo donde hace falta criterio</h3>
+          <p>Buscar por palabras lo hace el código gratis. El agente solo lee conversaciones. Así encuentra el 97 % de las menciones con la mitad de coste que un agente que lo hace todo.</p>
+        </div>
+        <div>
+          <h3>Un modelo pequeño entrenado gana en su tarea</h3>
+          <p>Qwen3-1.7B entrenado codifica en MedDRA mejor que el modelo de 27B (56,5 % frente a 46 % de términos exactos), y cabe en una GPU pequeña.</p>
+        </div>
+        <div>
+          <h3>Un examen aparte cambia la historia</h3>
+          <p>El triaje acertaba el 90 % en los datos con los que lo ajustamos y el 79 % en el examen. Sin examen habríamos dado la cifra equivocada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="limites">
+    <div class="wrap">
+      <div class="limits">
+        <div>
+          <div class="sec-head" style="margin-bottom:0">
+            <span class="sec-num">6.</span>
+            <h2>Límites</h2>
+          </div>
+          <ul>
+            <li>Solo hay casos de un fármaco (sertralina) y de una red social en español.</li>
+            <li>El triaje pierde 1 de cada 5 efectos adversos.</li>
+            <li>El diccionario MedDRA del repositorio tiene 90 términos, porque el completo requiere licencia.</li>
+            <li>En las comparativas, a veces consulta solo una ficha técnica.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="sec-head" style="margin-bottom:0">
+            <span class="sec-num">7.</span>
+            <h2>Para llevarlo a producción</h2>
+          </div>
+          <ul>
+            <li>Rastreo diario programado, con más fármacos y más redes.</li>
+            <li>MedDRA completo con licencia.</li>
+            <li>Conexión con el sistema oficial de notificación, siempre con una persona que confirme.</li>
+            <li>Medir el triaje en lotes nuevos, para no ajustarse a los mismos datos.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><strong>PV-Agents</strong> · Mario, Matteo y Pedro · Máster en Inteligencia Artificial, ICAI · Modelos Generativos Profundos, 2026</p>
+    <p>Código, experimentos y evaluaciones: <a href="https://github.com/MarioAlonsoAlonso/pv-agents" target="_blank" rel="noopener">github.com/MarioAlonsoAlonso/pv-agents</a></p>
+    <p>Los posts son públicos y se anonimizan. Esta página no muestra el texto de ningún post.</p>
+  </div>
+</footer>
+</body>
+</html>
