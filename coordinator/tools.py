@@ -336,8 +336,13 @@ def make_registry(
         groups = available(grupo, dict(cases))
         if not groups:
             groups = available(None, dict(cases))
-            return {"nota": f"no hay ningún grupo '{grupo}'; estos son todos", "grupos": groups}
-        return {"grupos": groups}
+            return {
+                "nota": f"no hay ningún grupo '{grupo}'; estos son todos",
+                "total_farmacos": sum(map(len, groups.values())),
+                "grupos": groups,
+            }
+        # The count by code: asked which drugs the system watches, the 27B said 36 (35).
+        return {"total_farmacos": sum(map(len, groups.values())), "grupos": groups}
 
     @tool
     def identificar_farmaco(

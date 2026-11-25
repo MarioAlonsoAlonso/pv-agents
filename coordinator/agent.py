@@ -51,6 +51,8 @@ ACKNOWLEDGES = re.compile(
     r"desconocid|no reconocid|te refieres|quieres decir|¿es posible que|asumo|supongo|"
     r"entiendo que|interpreto"
 )
+# The id of a fragment of the knowledge base, as search_knowledge_base gives it.
+FRAGMENT_ID = re.compile(r"\b[0-9a-f]{10}-s?\d{4}\b")
 
 
 def names_close_to_a_drug(text: str) -> set[str]:
@@ -87,9 +89,15 @@ class CoordinatorAgent(CrawlerAgent):
     _unresolved: set = field(default_factory=set)
     _substituted: dict = field(default_factory=dict)
     _bounced: bool = False
+    # Guard on citations (benchmark v4, development, 2026-11-25): asked general questions on a
+    # technical sheet, the coordinator read the fragments and answered "según la ficha, sección
+    # 4.7" without their ids (2 of 5), so nobody could check where the answer came from.
+    _fragments: list = field(default_factory=list)
+    _cite_bounced: bool = False
 
     def run(self, task: str, max_steps: int = 10, brain: str = "27b", **kwargs):
         self._unresolved, self._substituted, self._bounced = set(), {}, False
+        self._fragments, self._cite_bounced = [], False
         if self.guard_drug_names:
             self._unresolved = names_close_to_a_drug(task)
         return super().run(task, max_steps=max_steps, brain=brain, **kwargs)
@@ -126,6 +134,20 @@ class CoordinatorAgent(CrawlerAgent):
         return {fold_text(u) for u in self._unresolved}
 
     def final_answer_problem(self, answer: str) -> str | None:
+        """Checked in code before an answer is accepted; each problem is sent back once."""
+        return self._name_problem(answer) or self._citation_problem(answer)
+
+    def _citation_problem(self, answer: str) -> str | None:
+        if not self._fragments or self._cite_bounced or FRAGMENT_ID.search(answer):
+            return None
+        self._cite_bounced = True
+        return (
+            "has consultado las fichas técnicas o las guías, pero tu respuesta no cita ningún "
+            f"fragmento. Pon entre corchetes el id de los fragmentos en que te basas (p. ej. "
+            f"[{self._fragments[0]}]); si no te has basado en ninguno, dilo."
+        )
+
+    def _name_problem(self, answer: str) -> str | None:
         if not self.guard_drug_names or not self._substituted or self._bounced:
             return None
         if ACKNOWLEDGES.search(answer):
@@ -165,6 +187,10 @@ class CoordinatorAgent(CrawlerAgent):
             if problem:
                 return f"error: this ICSR could not be registered: {problem}"
         observation = super().observe(name, arguments, allow_actions, pending)
+        if name == "search_knowledge_base":
+            self._fragments += [
+                f for f in FRAGMENT_ID.findall(observation) if f not in self._fragments
+            ]
         if self.guard_drug_names and name in DRUG_ARGS:
             observation = self.guard(name, arguments, observation)
         return observation

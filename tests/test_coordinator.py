@@ -645,3 +645,36 @@ def test_the_v4_bench_is_well_formed():
 
     used = {k for t in tasks for k in kinds(t["comprobar"])}
     assert used <= known, used - known
+
+
+def test_an_answer_from_the_sheets_must_cite_its_fragments(tmp_path, monkeypatch):
+    """Development of v4: 'según la ficha, sección 4.7', without the fragment ids."""
+    import agent.react_agent as ra
+
+    monkeypatch.setattr(
+        ra.search_knowledge_base,
+        "fn",
+        lambda query, top_k=5: "[d265be0c42-0031] (Ficha técnica de zolpidem) Puede alterar…",
+    )
+    _, store = _store(tmp_path)
+    llm = _ScriptedLLM(
+        [
+            _call("search_knowledge_base", query="zolpidem conducir"),
+            _call("final_answer", answer="Según la ficha, sección 4.7, no se aconseja conducir."),
+            _call("final_answer", answer="No se aconseja conducir [d265be0c42-0031]."),
+        ]
+    )
+    r = coordinar(
+        "¿Se puede conducir con zolpidem?", store, brain="f", brains={"f": Brain(llm=llm)}
+    )
+    assert r.final_answer.endswith("[d265be0c42-0031].")
+    # Sent back once only: a second answer without ids is accepted.
+    llm = _ScriptedLLM(
+        [
+            _call("search_knowledge_base", query="zolpidem"),
+            _call("final_answer", answer="Sin citas."),
+            _call("final_answer", answer="Sigo sin citas."),
+        ]
+    )
+    r = coordinar("¿Zolpidem?", store, brain="f", brains={"f": Brain(llm=llm)})
+    assert r.final_answer == "Sigo sin citas."

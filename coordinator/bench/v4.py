@@ -13,7 +13,8 @@ Someone trying the system will mostly ask general things, and those must not fai
 * ``panorama``: the whole picture of our cases (what patients report most, who they are, how
   many over time), the questions the case tools answered worst in v2 (k09, o04);
 * ``conocido``: is what patients tell us already in the technical sheet (cases + RAG);
-* ``notificacion``: a notification as the technician gets it (a call), to code and judge;
+* ``notificacion``: a notification as the technician gets it (a call), to code (the MedDRA
+  model is a needed source only when coding is asked) or to judge (the sheet, the guidelines);
 * ``senal``: FAERS without being told the Preferred Term or the drug's English name;
 * ``alcance``: what the system has and has not, privacy, clinical advice, the ICSR that cannot
   be sent, English and a request written without accents.
@@ -140,7 +141,13 @@ PANORAMA = [
             uses(CASE_TOOLS),
             {
                 "type": "alguno",
-                "de": [n_cases(desde="2026-01-01"), n_cases(hasta="2025-12-31")],
+                # by year, or by quarter: the peak, 2025-Q2 (an answer by quarters failed the
+                # yearly check in development)
+                "de": [
+                    n_cases(desde="2026-01-01"),
+                    n_cases(hasta="2025-12-31"),
+                    n_cases(desde="2025-04-01", hasta="2025-06-30"),
+                ],
             },
         ],
         "abierta",
@@ -247,13 +254,13 @@ NOTIFICACION = [
     ),
     (
         "Un paciente con atorvastatina refiere dolores musculares fuertes y orina muy oscura. ¿Qué hago?",
-        ["meddra", "rag"],
+        ["rag"],
         [rx(r"(?i)rabdomi|Rhabdomyolysis"), rx(r"(?i)urgen|grave|CK|creatin")],
         "abierta",
     ),
     (
         "Una mujer de 82 años que toma lorazepam se cayó por la noche, se rompió la cadera y la ingresaron. ¿Es grave y en qué plazo se notifica?",
-        ["meddra", "rag"],
+        ["rag"],
         [rx(r"\bFall\b|ca[ií]da"), rx(r"(?i)\bgrave"), rx(r"15 d[ií]as")],
         "dirigida",
     ),
@@ -279,7 +286,7 @@ NOTIFICACION = [
     ),
     (
         "Una paciente que empezó con lamotrigina hace tres semanas tiene fiebre y una erupción con ampollas. ¿Qué hago?",
-        ["meddra", "rag"],
+        ["rag"],
         [
             rx(r"(?i)urgen|grave|inmediat|suspend|retir"),
             rx(r"(?i)Stevens|necr[oó]lisis|Rash|erupci"),

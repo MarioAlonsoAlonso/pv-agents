@@ -397,7 +397,7 @@ ABIERTAS = [
         [
             {
                 "type": "herramientas_distintas",
-                "de": ["listar_casos", "ver_caso", "search_knowledge_base"],
+                "de": ["listar_casos", "resumen_casos", "ver_caso", "search_knowledge_base"],
                 "min": 2,
             },
             CITA,
@@ -466,7 +466,7 @@ ABIERTAS = [
         [
             {
                 "type": "herramientas_distintas",
-                "de": ["listar_casos", "ver_caso"],
+                "de": ["listar_casos", "resumen_casos", "ver_caso"],
                 "min": 1,
             },
             CITA,
