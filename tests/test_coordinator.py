@@ -562,3 +562,26 @@ def test_v3_checks_and_bench():
     assert not check_one(docs, "[ee3f3fd9f0-0073] y [ee3f3fd9f0-0061]", {}, store)
     tasks = build()
     assert len(tasks) == 22 and {t["categoria"] for t in tasks} == {"comparativa", "nombres"}
+
+
+def test_a_misspelled_drug_in_the_request_must_be_acknowledged(tmp_path, monkeypatch):
+    """Development of v3: '¿señal con el tramadolex?' answered with tramadol's data, the
+    name corrected silently before any tool call."""
+    import tool_use.tools as tt
+    from coordinator.agent import names_close_to_a_drug
+
+    assert names_close_to_a_drug("¿Hay señal con el tramadolex? ¿Es seguro?") == {"tramadolex"}
+    assert names_close_to_a_drug("¿La sertralina y el Besitran?") == set()
+    monkeypatch.setattr(
+        tt.faers_reaction_counts, "fn", lambda drug, reaction=None, top=10: {"drug_searched": drug}
+    )
+    _, store = _store(tmp_path)
+    llm = _ScriptedLLM(
+        [
+            _call("faers_reaction_counts", drug="tramadol", reaction="Seizure"),
+            _call("final_answer", answer="Sí, hay señal de convulsiones con tramadol."),
+            _call("final_answer", answer="Entiendo que te refieres a tramadol: sí, hay señal."),
+        ]
+    )
+    r = coordinar("¿Señal con el tramadolex?", store, brain="f", brains={"f": Brain(llm=llm)})
+    assert "AVISO" in r.steps[0].observation and r.final_answer.startswith("Entiendo")

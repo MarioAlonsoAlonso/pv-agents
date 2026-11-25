@@ -52,6 +52,28 @@ ACKNOWLEDGES = re.compile(
 )
 
 
+def names_close_to_a_drug(text: str) -> set[str]:
+    """Words of the request that look like one of our drugs but are not one ("tramadolex",
+    "sertralna"). The 27B corrects them in its head before calling any tool, so the guard
+    never saw them (development of benchmark v3, 2026-11-25): it answered "tramadolex" with
+    tramadol's signal. Marked as not recognised from the start, the answer has to say which drug
+    it assumed, or ask."""
+    import difflib
+    import re as _re
+
+    from coordinator.drugs import _tables, resolve
+
+    spanish, english, _ = _tables()
+    actives = list(spanish) + list(english)  # not brands: "seguro" looks like "Segluromet"
+    out = set()
+    for word in _re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{6,}", text):
+        if resolve(word).active is None and difflib.get_close_matches(
+            fold_text(word), actives, n=1, cutoff=0.75
+        ):
+            out.add(word)
+    return out
+
+
 @dataclass
 class CoordinatorAgent(CrawlerAgent):
     mode: str = "coordinador"
@@ -67,6 +89,8 @@ class CoordinatorAgent(CrawlerAgent):
 
     def run(self, task: str, max_steps: int = 10, brain: str = "27b", **kwargs):
         self._unresolved, self._substituted, self._bounced = set(), {}, False
+        if self.guard_drug_names:
+            self._unresolved = names_close_to_a_drug(task)
         return super().run(task, max_steps=max_steps, brain=brain, **kwargs)
 
     def _names(self, name: str, arguments: dict) -> list[str]:

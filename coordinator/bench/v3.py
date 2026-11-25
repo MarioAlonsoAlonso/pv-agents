@@ -55,7 +55,7 @@ AE = ["lamotrigina", "levetiracetam", "topiramato", "ácido valproico", "valproi
 
 # (request, sources, checks, kind)
 COMPARATIVAS = [
-    ("¿Qué antidepresivo da menos insomnio?", ["rag"], [mentions(AD, 2), docs(2)], "abierta"),
+    ("¿Qué antidepresivo da menos insomnio?", ["rag"], [mentions(AD, 3), docs(3)], "abierta"),
     (
         "Entre sertralina, escitalopram y venlafaxina, ¿cuál tiene más señal de hiponatremia (Hyponatraemia) en FAERS?",
         ["faers"],
@@ -72,19 +72,19 @@ COMPARATIVAS = [
     (
         "¿Qué antiinflamatorio tiene menos riesgo de sangrado digestivo según las fichas técnicas?",
         ["rag"],
-        [mentions(AINE, 2), docs(2)],
+        [mentions(AINE, 3), docs(3)],
         "abierta",
     ),
     (
         "¿Qué benzodiacepina es más adecuada para una persona mayor?",
         ["rag"],
-        [mentions(BZD, 2), rx(r"(?i)ancian|mayor|edad avanzada"), docs(2)],
+        [mentions(BZD, 3), rx(r"(?i)ancian|mayor|edad avanzada"), docs(3)],
         "abierta",
     ),
     (
         "¿Cuál de las estatinas interacciona con la claritromicina?",
         ["rag"],
-        [mentions(EST, 2), docs(2)],
+        [mentions(EST, 3), docs(3)],
         "abierta",
     ),
     (
@@ -103,7 +103,7 @@ COMPARATIVAS = [
     (
         "¿Qué antiepiléptico es más seguro en el embarazo según las fichas?",
         ["rag"],
-        [mentions(AE, 2), rx(r"(?i)embaraz"), docs(2)],
+        [mentions(AE, 3), rx(r"(?i)embaraz"), docs(3)],
         "abierta",
     ),
     (
@@ -121,7 +121,7 @@ COMPARATIVAS = [
     (
         "¿Hay algún antidepresivo con menos problemas sexuales?",
         ["rag"],
-        [mentions(AD, 2), docs(2)],
+        [mentions(AD, 3), docs(3)],
         "abierta",
     ),
     (
