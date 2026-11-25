@@ -107,6 +107,31 @@ def make_registry(
     if variant not in VARIANTS:
         raise ValueError(f"unknown variant {variant!r}; use one of {VARIANTS}")
 
+    def case_drug(farmaco: str | None) -> tuple[str | None, dict | None]:
+        """The active ingredient whose cases are asked for, or the answer for a name the system
+        does not know. Benchmark v3, test (2026-11-25): asked "¿qué casos tenemos de la
+        xelofrina?" (an invented name), the coordinator answered "no tenemos casos de
+        xelofrina" as if it were a real drug; and a brand ("Besitran") or the English name
+        found none of sertraline's cases. Part of the drug-name tools (not in sin_nombres)."""
+        from coordinator.drugs import resolve
+
+        drug = (farmaco or "").strip().lower() or None
+        if drug is None or variant == "sin_nombres":
+            return drug, None
+        r = resolve(drug)
+        if r.active:
+            return r.active, None
+        return None, {
+            "farmaco": farmaco,
+            "principio_activo": None,
+            "reconocido_como": "no reconocido: no está entre los fármacos del sistema",
+            "parecidos": list(r.similar),
+            "farmacos_con_casos": dict(Counter(c.farmaco for c in store.cases.values())),
+            "nota": f"'{farmaco}' no es un fármaco que el sistema reconozca (ni principio "
+            "activo, ni nombre en inglés, ni marca). Díselo al técnico; si hay parecidos, "
+            "pregúntale si se refiere a alguno, sin dar sus datos como si fueran de ese nombre.",
+        }
+
     @tool
     def listar_casos(
         farmaco: Annotated[
@@ -159,7 +184,9 @@ def make_registry(
         count); only 'mostrados' of them are listed. Do not say a reaction is absent from our
         cases without searching for it with 'buscar'. For the whole picture of many cases, use
         resumen_casos instead of paging through them."""
-        drug = (farmaco or "").strip().lower() or None
+        drug, unknown = case_drug(farmaco)
+        if unknown:
+            return unknown
         words = [w.strip() for w in (buscar or "").split(",") if w.strip()]
         origin = {"nombra_el_farmaco": "busqueda_fija", "respuesta_en_conversacion": "agente"}
         cases = store.filter(
@@ -228,7 +255,9 @@ def make_registry(
         words; for MedDRA terms use codificar_meddra on the cases."""
         from coordinator.cases import overview
 
-        drug = (farmaco or "").strip().lower() or None
+        drug, unknown = case_drug(farmaco)
+        if unknown:
+            return unknown
         cases = store.filter(drug, grave=True if solo_graves else None, desde=desde, hasta=hasta)
         out = {
             "farmaco": drug or "todos",

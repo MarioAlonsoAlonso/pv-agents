@@ -599,6 +599,32 @@ def test_listar_casos_filters_by_known_age_and_points_elsewhere(tmp_path):
     assert "search_knowledge_base" in out["nota"]
 
 
+def test_the_case_tools_resolve_drug_names(tmp_path):
+    ms, store = _store(tmp_path)
+    reg = make_registry(store)
+    # a brand or the English name finds the cases of the active ingredient
+    for name in ("Besitran", "sertraline"):
+        assert reg.call("listar_casos", {"farmaco": name}).result["efectos_adversos"] == 4
+        assert reg.call("resumen_casos", {"farmaco": name}).result["casos"] == 4
+    # v3 test, w10: an invented name is not "a drug without cases"
+    for tool in ("listar_casos", "resumen_casos"):
+        out = reg.call(tool, {"farmaco": "xelofrina"}).result
+        assert out["principio_activo"] is None and "no es un fármaco" in out["nota"]
+    # the ablation without the name tools keeps the raw name
+    out = make_registry(store, "sin_nombres").call("listar_casos", {"farmaco": "xelofrina"})
+    assert out.result["efectos_adversos"] == 0
+
+
+def test_an_unknown_name_given_to_the_case_tools_must_be_acknowledged(tmp_path):
+    from coordinator.agent import CoordinatorAgent
+
+    _, store = _store(tmp_path)
+    agent = CoordinatorAgent(registry=make_registry(store))
+    agent._unresolved = set()
+    obs = agent.observe("listar_casos", {"farmaco": "xelofrina"}, False, [])
+    assert "xelofrina" in agent._unresolved and '"principio_activo": null' in obs
+
+
 def test_resumen_casos_gives_the_whole_picture(tmp_path):
     from coordinator.cases import theme_of
 

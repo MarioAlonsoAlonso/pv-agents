@@ -37,8 +37,11 @@ NO_SIGNAL_CLAIM = {
     "value": r"(?i)(^|[.:;!?]\s*)s[ií],? hay (una )?señal|\bsí,? hay (una )?señal|señal positiva|"
     r"cumple (el criterio|la regla)",
 }
+# "no es un nombre reconocido... es posible que sea una errata de zolpidem" (test, w07,
+# 2026-11-25): asking is as good as stating the assumption.
 ASSUMPTION = rx(
-    r"(?i)entiendo que|supongo|asumo|interpreto|te refieres|quieres decir|no (lo )?(reconozco|encuentro)"
+    r"(?i)entiendo que|supongo|asumo|interpreto|te refieres|quieres decir|"
+    r"no (lo )?(reconozco|encuentro)|no reconocid|errata"
 )
 
 

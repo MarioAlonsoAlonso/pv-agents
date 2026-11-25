@@ -42,6 +42,7 @@ DRUG_ARGS = {
     "faers_reaction_counts": "drug",
     "buscar_literatura": "farmaco",
     "listar_casos": "farmaco",
+    "resumen_casos": "farmaco",
     "identificar_farmaco": "nombre",
     "comparar_senal": "farmacos",
 }
