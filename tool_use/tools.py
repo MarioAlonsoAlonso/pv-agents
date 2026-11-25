@@ -227,8 +227,10 @@ def _openfda_total(search: str | None, retries: int = 3) -> int:
                 "openFDA rejected the query: the drug must be an active ingredient and the "
                 "reaction a MedDRA Preferred Term in English (translate Spanish terms first)"
             )
-        if response.status_code == 429 and attempt < retries - 1:
-            time.sleep(2 * (attempt + 1))  # 240 requests/minute without an API key
+        if (response.status_code == 429 or response.status_code >= 500) and attempt < retries - 1:
+            # 429: 240 requests/minute without an API key. 5xx: openFDA under load (on
+            # 2026-11-23 it answered 500 several times in a row, and once half the counts).
+            time.sleep(2 * (attempt + 1))
             continue
         response.raise_for_status()
         return int(response.json()["meta"]["results"]["total"])
@@ -279,8 +281,11 @@ def faers_reaction_counts(
     drug_reports = _openfda_total(drug_query)
     if drug_reports == 0:
         raise ValueError(
-            f"FAERS has no reports for {name!r}. Use the active ingredient (INN), not a brand."
-        )
+            f"FAERS has no reports for {name!r}. If it is a brand, use its active ingredient "
+            "(INN). If you do not recognise the name, say so to the user: never use another "
+            "drug's data in its place."
+        )  # the old message ("use the INN, not a brand") pushed the model to swap an unknown
+        # drug for a similar known one (2026-11-23: "xelofrina" answered as celecoxib)
     result: dict = {"drug_searched": name, "reports_with_drug": drug_reports}
     if reaction:
         reaction = faers_reaction_name(reaction)
@@ -457,6 +462,31 @@ def disproportionality_prr(
 # --------------------------------------------------------------- 4. action: ICSR file
 
 
+def icsr_problem(
+    reactions: list[str], patient_age: int | None, patient_sex: str, suspect_drug: str
+) -> str | None:
+    """Why these data cannot make a valid ICSR (the four minimum elements and our MedDRA
+    dictionary), or None. Used by ``create_icsr_report`` and, before queueing a draft for
+    confirmation, by the agents: a draft that could never be registered is not "pending"."""
+    from rlm.meddra import MedDRADictionary
+
+    dictionary = MedDRADictionary.default()
+    not_pts = [name for name in reactions if not dictionary.to_pt(name)]
+    if not_pts:
+        return (
+            f"not Preferred Terms of our MedDRA dictionary: {not_pts}. Do not substitute "
+            "another reaction: correct the term only if it is a spelling or language issue, "
+            "otherwise tell the user the report could not be created for these terms."
+        )
+    if not reactions:
+        return "an ICSR needs at least one suspected reaction"
+    if patient_age is None and patient_sex == "unknown":
+        return "the patient is not identifiable: give the age or the sex"
+    if not suspect_drug.strip():
+        return "an ICSR needs a suspect drug"
+    return None
+
+
 @tool(requires_confirmation=True)
 def create_icsr_report(
     reporter_type: Annotated[
@@ -502,22 +532,10 @@ def create_icsr_report(
     from rlm.meddra import MedDRADictionary
 
     dictionary = MedDRADictionary.default()
-    pts, not_pts = [], []
-    for name in reactions:
-        pt = dictionary.to_pt(name)
-        (pts.append(pt) if pt else not_pts.append(name))
-    if not_pts:
-        raise ValueError(
-            f"not Preferred Terms of our MedDRA dictionary: {not_pts}. Do not substitute "
-            "another reaction: correct the term only if it is a spelling or language issue, "
-            "otherwise tell the user the report could not be created for these terms."
-        )
-    if not pts:
-        raise ValueError("an ICSR needs at least one suspected reaction")
-    if patient_age is None and patient_sex == "unknown":
-        raise ValueError("the patient is not identifiable: give the age or the sex")
-    if not suspect_drug.strip():
-        raise ValueError("an ICSR needs a suspect drug")
+    problem = icsr_problem(reactions, patient_age, patient_sex, suspect_drug)
+    if problem:
+        raise ValueError(problem)
+    pts = [pt for name in reactions if (pt := dictionary.to_pt(name))]  # all valid: checked
 
     report = {
         "schema": "simplified-E2B (pv-agents)",

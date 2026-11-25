@@ -1,0 +1,22 @@
+{
+  "n_traces": 1000,
+  "n_verified": 497,
+  "acceptance": 0.497,
+  "problems_with_a_verified_trace": 0.497,
+  "acceptance_by_family": {
+    "death": 0.6259541984732825,
+    "diagnosis": 0.30416666666666664,
+    "lack_of_effect": 0.4824561403508772,
+    "multi": 0.39330543933054396,
+    "single": 0.6992753623188406
+  },
+  "rejection_reasons": {
+    "unparseable (no </think> or no final answer)": 214,
+    "missing": 191,
+    "reasoning longer than 800 words": 76,
+    "not in MedDRA": 13,
+    "extra": 9
+  },
+  "teacher": "qwen3.8-27b-fp8 (thinking)",
+  "max_think_words": 800
+}

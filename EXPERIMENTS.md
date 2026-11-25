@@ -678,6 +678,206 @@ pesaron más que el prompt o el modelo. Pendiente: validar la versión final en 
 otro fármaco, porque las cuatro versiones se ajustaron mirando los mismos 567 posts. Detalle en
 [`crawler/RESULTADOS.md`](crawler/RESULTADOS.md).
 
+### 2026-11-23 · Proyecto final · Triaje: ¿es un efecto adverso? Línea base, v0 y v1
+
+**Qué queríamos saber.** Si el 27B distingue en las menciones del rastreador las que describen
+un efecto adverso de la sertralina (22 % en el examen) de las bromas, preguntas, opiniones,
+experiencias sin nada malo y errores del rastreador, y si hace falta un modelo para eso.
+
+**Qué hicimos.** `triage/`: una petición al 27B por conversación (trozos de 8 menciones),
+validación en el código con los valores de la hoja de soluciones, una reparación si falta una
+respuesta o no es válida y, si sigue sin haberla, revisión humana como posible efecto adverso.
+Desarrollo: 287 menciones (72 efectos adversos) de `evaluacion_triaje`; el examen (438) no se ha
+tocado. Tres sistemas: una línea base por palabras clave (lista fija de síntomas, sin modelo),
+v0 (el prompt de la preanotación) y v1 (v0 + reglas para las trampas conocidas + ejemplos
+inventados).
+
+**Qué pasó.** (desarrollo, intervalos de Wilson al 95 %)
+
+| Sistema | Detección | Precisión | Descarta errores del rastreador | Tokens/mención |
+|---|---|---|---|---|
+| Palabras clave | 36 % [26–48] | 57 % [42–70] | 88 % | 0 |
+| v0 · 27B | **82 %** [72–89] | 75 % [64–83] | 84 % | 594 |
+| v1 · 27B | 75 % [64–84] | **86 %** [75–92] | **95 %** | 1 176 |
+
+v0 frente a v1 en el sí/no: 254 y 260 aciertos de 287, McNemar p = 0,34. v1 comete la mitad de
+falsas alarmas (sobre todo deja de atribuir a la sertralina efectos de otro antidepresivo del
+mismo hilo), pero pierde 9 casos que v0 encontraba: preguntas que cuentan un síntoma propio,
+quejas vagas ("sus efectos secundarios") que toma por opinión, posts que hablan de otro fármaco
+pero culpan a la sertralina de algo, y síntomas por olvidar tomas. Otros 9 casos los pierden las
+dos. 5 casos de v1 fueron a revisión humana solo porque el modelo dejó vacía la reacción.
+
+**Qué concluimos.** Hace falta un modelo: las palabras clave pierden dos de cada tres casos.
+Entre los prompts hay un *trade-off* entre detección y precisión, no una mejora global, y en
+farmacovigilancia pesa más la detección. v2 conserva las reglas de v1 que daban precisión y
+añade los casos que perdía, con el principio de que ante la duda decide una persona; el código
+acepta un «sí» sin reacción. Pendiente: medir v2 en desarrollo.
+
+### 2026-11-23 · Proyecto final · Triaje v2
+
+**Qué cambiamos.** v1 + los cuatro tipos de caso que v1 perdía (pregunta con síntoma propio,
+queja vaga atribuida al fármaco, otro fármaco en el post pero algo atribuido a la sertralina,
+tomas olvidadas o dejarla), el principio «lo que marques sí lo revisa una persona; lo que marques
+no se pierde», no suponer «hombre» sin una palabra con género y no confundir síntomas de la
+enfermedad con efectos del fármaco. En el código, un «sí» sin reacción se acepta como
+`[no especificada]` en lugar de ir a revisión.
+
+**Qué pasó.** (desarrollo, 287 menciones, 72 efectos adversos)
+
+| | Detección | Precisión | Acierto sí/no | Sexo | Tokens/mención |
+|---|---|---|---|---|---|
+| v0 | 82 % [72–89] | 75 % [64–83] | 89 % | 81 % | 594 |
+| v1 | 75 % [64–84] | 86 % [75–92] | 91 % | 76 % | 1 176 |
+| **v2** | **88 % [78–93]** | **88 % [78–93]** | **94 %** (κ 0,83) | 84 % | 1 372 |
+
+v2 frente a v0: 21 menciones solo las acierta v2 y 6 solo v0, McNemar p = 0,006: la primera
+diferencia significativa. Ninguna mención fue a revisión humana. Por origen: detección 92 % en
+las de la búsqueda fija y 79 % en las del agente del rastreador (respuestas indirectas).
+
+**Qué concluimos.** v2 rompe el *trade-off* de v0/v1: sube la detección sin perder precisión.
+Los 18 fallos que quedan (9 perdidos, 9 falsas alarmas) no tienen un patrón común: síntomas que
+pueden ser de la enfermedad o del fármaco, erratas, una toma equivocada y dos respuestas en un
+hilo sobre otro antidepresivo. Seguir ajustando el prompt a estos 287 casos sería ajustarse al
+conjunto de desarrollo, así que el prompt se cierra en v2. Coste: 2,3 veces el de v0, por el
+prompt más largo (~400 000 tokens y 7 minutos para 287 menciones con 2 peticiones simultáneas).
+
+### 2026-11-23 · Proyecto final · Triaje: variabilidad, razonamiento y una petición por post
+
+**Qué queríamos saber.** Con el prompt cerrado en v2, tres cosas antes del examen: cuánto varía
+el resultado entre ejecuciones (el 27B muestrea con temperatura 0,7), si el razonamiento
+(`enable_thinking`) ayuda, y si leer cada post por separado en lugar de la conversación entera
+evita que el modelo contagie el tema del hilo a las respuestas.
+
+**Qué pasó.** (desarrollo, 287 menciones, 72 efectos adversos; acierto = decisión sí/no)
+
+| v2 | Detección | Precisión | Acierto | Precisión, menciones del agente | Tokens/mención | Tiempo |
+|---|---|---|---|---|---|---|
+| por conversación | 88 % | 88 % | 269 | 83 % | 1 372 | 7 min |
+| por conversación (repetición) | 89 % | 86 % | 269 | 77 % | 1 399 | 7 min |
+| por conversación + razonamiento | 92 %\* | 61 %\* | 238\* | 45 %\* | 2 632 | 65 min |
+| **por post** | **90 %** | **92 %** | **274** | **95 %** | 2 384 | 6 min |
+
+- **Variabilidad:** las dos ejecuciones iguales coinciden en 281 de 287 decisiones (3 y 3
+  discordantes, p = 1): el ruido de muestreo es de ±1 punto.
+- **Razonamiento:** \*53 respuestas se cortaron por el límite de tokens (el razonamiento lo
+  consume) y fueron a revisión humana como «sí». En las 234 que contestó acierta 221, exactamente
+  lo mismo que v2 sin razonamiento en esas mismas menciones. No aporta y cuesta el doble de tokens
+  y 10 veces más tiempo.
+- **Por post:** frente a v2 por conversación, 5 menciones solo las acierta por post y 0 al revés
+  (p = 0,06); frente a la repetición, 7 y 2 (p = 0,18). Sube sobre todo la precisión en las
+  respuestas indirectas que encontró el agente del rastreador (83 % → 95 %) y el descarte de sus
+  errores (93 % → 98 %): leídas junto al hilo, el modelo les atribuía el tema de la conversación.
+  Frente a v0 por conversación: 274 frente a 254, p = 0,0002.
+
+**Qué concluimos.** Configuración final: **v2, una petición por post, sin razonamiento.** Es la
+mejor en detección, precisión y acierto; su ventaja sobre la lectura por conversación no es
+significativa con 287 menciones, pero va en la misma dirección en las dos ejecuciones y supera
+el ruido medido. Su precio es 1,7 veces más tokens (el prompt se repite en cada petición), con
+el mismo tiempo. Es la que se mide, una sola vez, en el examen.
+
+### 2026-11-23 · Proyecto final · Triaje: el examen
+
+**Qué hicimos.** Una sola ejecución de la configuración elegida en desarrollo (v2, una petición
+por post, 27B sin razonamiento) sobre las 438 menciones del examen (89 efectos adversos), sin
+cambiar nada después. Para comparar, la línea base por palabras clave sobre el mismo examen.
+
+**Qué pasó.**
+
+| | Detección | Precisión | Acierto sí/no | Precisión, menciones del agente |
+|---|---|---|---|---|
+| Palabras clave | 46 % [36–56] | 51 % [40–61] | 80 % | 29 % |
+| v2 por post · desarrollo | 90 % [81–95] | 92 % [83–96] | 95 % | 95 % |
+| **v2 por post · examen** | **79 % [69–86]** | **80 % [70–87]** | **92 %** | **54 %** |
+
+Coste: 1,05 M tokens (2 395 por mención), 10 minutos, ninguna reparación.
+
+**Qué concluimos.** La diferencia entre desarrollo y examen (unos 10 puntos en detección y
+precisión) es el ajuste a desarrollo: tres prompts y tres configuraciones elegidos mirando los
+mismos 287 casos. Sin el examen habríamos dado un 90 %. Lo que más cae es la precisión en las
+respuestas indirectas que encuentra el agente del rastreador (95 → 54 %): la ventaja de leer
+cada post por separado venía en buena parte de un par de hilos de desarrollo. Para el sistema,
+la cifra es la del examen: el triaje encuentra 4 de cada 5 efectos adversos y 4 de cada 5 de sus
+alarmas son reales, frente a menos de la mitad con palabras clave. Como el revisor humano ve todo
+lo que el triaje marca, el error caro es el 21 % de casos perdidos; con más tiempo, el siguiente
+paso sería medir la detección con un umbral más permisivo (por ejemplo, marcar «sí» toda mención
+con un síntoma aunque el modelo dude) en un lote nuevo.
+
+### 2026-11-23 · Proyecto final · Coordinador: el 27B con todo el sistema como herramientas
+
+**Qué queríamos saber.** Si el 27B, con un bucle ReAct y una herramienta por agente o componente
+(casos del rastreador + triaje, el modelo de razonamiento MedDRA de la fase 1, el RAG de fichas
+técnicas y guías de la EMA, FAERS y PRR, el sub-agente de búsqueda del rastreador y el ICSR con
+confirmación humana), responde bien a las peticiones de un técnico sin inventar datos.
+
+**Qué hicimos.** `coordinator/`: el rastreo y el triaje se hacen antes, por código (725
+menciones → 159 casos, ordenados con los graves primero); el coordinador trabaja sobre casos.
+Banco de 13 peticiones con comprobación automática (casos y prioridad, MedDRA, ficha técnica con
+cita, señal con el PRR calculado en vivo, normativa, ICSR pendiente, evidencia en Bluesky y
+PubMed, resumen para el comité y dos imposibles). Además del éxito, se cuentan los números y las
+citas de la respuesta que no aparecen en ninguna observación.
+
+**Qué pasó.** Variante completa: 13/13 correctas, 0 números y 0 citas sin respaldo, 24 700
+tokens y 4,2 pasos por petición de media. En la primera prueba con el 27B el coordinador solo
+consultó FAERS por el insomnio y no por la manía del caso grave: la herramienta MedDRA daba
+«Mania» por no reconocida (no está en el subconjunto de 90 PT del repositorio) y el 27B lo leyó
+como un descarte del modelo de razonamiento. Al decir la herramienta la verdad (término válido
+para FAERS, fuera del subconjunto por licencia), consultó la manía: PRR 5,85 [5,49–6,25], señal.
+Revisando las trazas aparecieron otros dos fallos: el modelo de razonamiento a veces no termina
+su respuesta y su razonamiento se guardaba como términos (arreglado: reintento y error), y el
+detector de números tenía falsos positivos (arreglado y vuelto a puntuar).
+
+**Qué concluimos.** El coordinador funciona y no inventa cifras, pero su calidad depende de lo
+que le dicen las herramientas: un mensaje ambiguo («no reconocido») cambió qué reacción
+investigaba. Igual que en el rastreador y el triaje, lo que más pesa es lo que se garantiza en
+el código. El cuello de botella de tiempo es el modelo de razonamiento (~2,5 min por caso).
+Pendiente: las ablaciones sin RAG, sin el modelo MedDRA y sin el sub-agente.
+
+### 2026-11-23 · Proyecto final · Coordinador: peticiones abiertas y ablaciones
+
+**Qué queríamos saber.** Dos cosas. Si el coordinador sabe decidir los pasos cuando la
+petición no los dice (las dirigidas, «codifica…», «calcula el PRR…», le dictaban el flujo), y qué
+aporta cada pieza: el RAG, el modelo de razonamiento MedDRA y el sub-agente de evidencia.
+
+**Qué hicimos.** 5 peticiones abiertas como las diría un técnico («¿Qué tengo pendiente hoy?»,
+«¿Hay algo que tenga que notificar ya?», «Lo de la manía, ¿es nuevo?», «Prepara lo que haya que
+mandar a la AEMPS», «¿Estamos viendo algo raro?») además de las 13 dirigidas, y las cuatro
+variantes sobre las 18. Antes de la cola de confirmación, el código comprueba ahora que el ICSR
+sería válido: los dos casos graves no tienen edad ni sexo, y un borrador que nunca se podría
+registrar no debe quedar «pendiente».
+
+**Qué pasó.**
+
+| Variante | Dirigidas | Abiertas | Total |
+|---|---|---|---|
+| Completo | 13/13 | 4/5 | 17/18 |
+| Sin RAG | 10/13 | 3/5 | 13/18 |
+| Sin modelo MedDRA | 13/13 | 5/5 | 18/18 |
+| Sin sub-agente de evidencia | 11/13 | 5/5 | 16/18 |
+
+Ninguna respuesta de ninguna variante tiene números ni citas que no salgan de una observación.
+Sin RAG el coordinador se niega o contesta de memoria con errores de concepto («SUSAR» para un
+plazo de notificación; «ya se conocía» deducido de FAERS). Sin el sub-agente falla c12, y c06 por
+un fallo de openFDA (recuentos a la mitad, PRR 6,73 en lugar de 2,66). Sin el modelo MedDRA no
+falla nada: el 27B codifica él mismo de forma parecida y 50 veces más rápido. Con «Prepara lo que
+haya que mandar a la AEMPS», el coordinador encuentra el plazo de 15 días en la GVP, intenta los
+ICSR de los dos casos graves y explica por qué no se pueden registrar (sin edad ni sexo; «Mania»
+fuera del subconjunto de MedDRA del repositorio).
+
+Revisando las trazas aparecieron fallos del sistema y de la medida: la primera ablación sin
+MedDRA estaba contaminada (`ver_caso` enseñaba la codificación guardada); el detector de bucles
+cortaba al agente que reintentaba tras errores 500 de openFDA (ahora un error pasajero no cuenta
+como repetición y la herramienta reintenta los 5xx); c12 aceptaba una negativa que nombraba
+PubMed; c09 no aceptaba una negativa bien justificada; y el detector de citas tomaba una fecha
+(«abr-2025») por un fragmento.
+
+**Qué concluimos.** El RAG es la pieza que más aporta: sin él, lo que la ficha técnica responde
+se contesta de memoria y con errores sutiles. El modelo de razonamiento MedDRA no aporta calidad
+medible frente al 27B en este banco y es el cuello de botella de tiempo; su valor está en ser
+pequeño, local y con un acierto medido por un verificador. Para comparar de verdad las dos
+codificaciones haría falta el test verificable de la fase 1 con el 27B. Una ejecución por
+variante: diferencias de una petición son ruido. Y otra vez: lo que más cambió el comportamiento
+fue lo que dicen y garantizan las herramientas, no el prompt.
+
 ### 2026-11-23 · Proyecto final · Herramienta de literatura del analista (PubMed)
 
 **Pregunta.** El analista valida señales: ¿la reacción está descrita, es plausible, en quién? La
@@ -711,3 +911,29 @@ corte de los resúmenes y el de la propia medida). La herramienta de casos en Bl
 con fármacos vigilados, contar casos es una consulta a la base de menciones clasificadas. Detalle
 en [`crawler/README.md`](crawler/README.md).
 
+### 2026-11-23 · Proyecto final · Coordinador: banco v2 (105 peticiones), mejoras y examen
+
+**Qué queríamos saber.** Con un banco más grande y con las fuentes que necesita cada petición
+anotadas, si el coordinador elige bien a dónde ir, en qué falla cada agente y qué aporta cada
+pieza, sobre un examen que no se miró para mejorar el sistema.
+
+**Qué hicimos.** `coordinator/bench/v2.py`: 105 peticiones (ficha técnica y normativa del conjunto
+dorado del RAG, FAERS en vivo, recuentos de casos, notificaciones MedDRA del test de la fase 1,
+literatura, combinadas, sin herramientas, imposibles e ICSR), 46 de desarrollo y 59 de examen.
+Antes de medir se juntó la herramienta de literatura de Mario (`buscar_literatura`, PubMed).
+Desarrollo: línea base, mejoras guiadas por sus fallos y nueva ronda. Examen: una vez, completo y
+tres ablaciones.
+
+**Qué pasó.** Desarrollo: 42/46 → 43/46; fuentes necesarias del 89 % al 100 %. Las mejoras
+salieron de fallos concretos: el coordinador afirmó que no había casos de calor o sudores (hay
+18) porque `listar_casos` no buscaba por reacción; sin fármaco en la pregunta probaba nombres
+hasta agotar los pasos; y las notificaciones pegadas por correo las codificaba el 27B sin las
+reglas (o se negaba). Examen: completo 54/59 (92 %), sin RAG 30/59 (p < 0,0001), sin MedDRA
+52/59 (p = 0,69), sin literatura 51/59 (p = 0,45). Detalle, fallos y correcciones de la medida en
+`coordinator/README.md`.
+
+**Qué concluimos.** El RAG es la pieza imprescindible del coordinador. El modelo de razonamiento y
+la literatura aportan en sus categorías, con pocas peticiones para que sea significativo. El fallo
+más serio no lo mide ninguna ablación: ante un fármaco que no existe, el coordinador lo sustituye
+por uno parecido y da una señal falsa. Y otra vez, varios errores eran de la medida y no del
+sistema; solo leyendo las trazas se distinguen.
