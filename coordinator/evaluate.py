@@ -287,6 +287,7 @@ def unsupported_citations(answer: str, response: dict) -> list[str]:
 # Which source each tool consults: the routing of a request is the set of sources it used.
 SOURCE_OF = {
     "listar_casos": ("casos",),
+    "resumen_casos": ("casos",),
     "ver_caso": ("casos",),
     "codificar_meddra": ("meddra",),
     "codificar_notificacion": ("meddra",),

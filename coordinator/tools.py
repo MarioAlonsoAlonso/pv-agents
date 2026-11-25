@@ -3,6 +3,7 @@
 | Tool | What is behind it |
 |---|---|
 | ``listar_casos``, ``ver_caso`` | The crawler + triage output (``coordinator/cases.py``) |
+| ``resumen_casos`` | The same cases at once: counts and reactions by theme (``overview``) |
 | ``codificar_meddra`` | The phase-1 reasoning model (Qwen3-1.7B + LoRA, SFT + GRPO) |
 | ``codificar_notificacion`` | The same model, on a text the technician pastes (not a case) |
 | ``agrupar_por_meddra`` | Equivalent cases: how many cases share each Preferred Term |
@@ -142,17 +143,22 @@ def make_registry(
                 "(found by the crawler's agent reading the thread)."
             ),
         ] = None,
+        con_edad: Annotated[
+            bool | None,
+            Field(description="True: only the cases whose age is known; False: age unknown."),
+        ] = None,
         desde: Annotated[str | None, Field(description="From this date, YYYY-MM-DD.")] = None,
         hasta: Annotated[str | None, Field(description="Until this date, YYYY-MM-DD.")] = None,
         limite: Annotated[int, Field(ge=1, le=50, description="How many cases to show.")] = 15,
     ) -> dict:
         """List the adverse event cases that the crawler found in social media and the triage
         confirmed, most urgent first (serious, then most complete, then newest), optionally
-        filtered: by words in the reactions, sex, patient, outcome, origin or dates. Each case has
-        its id (M-…), date, seriousness, the reactions in the patient's own words, patient, sex,
-        age and outcome. 'coinciden' is how many cases match the filters (use it to count); only
-        'mostrados' of them are listed. Do not say a reaction is absent from our cases without
-        searching for it with 'buscar'."""
+        filtered: by words in the reactions, sex, patient, outcome, origin, known age or dates.
+        Each case has its id (M-…), date, seriousness, the reactions in the patient's own words,
+        patient, sex, age and outcome. 'coinciden' is how many cases match the filters (use it to
+        count); only 'mostrados' of them are listed. Do not say a reaction is absent from our
+        cases without searching for it with 'buscar'. For the whole picture of many cases, use
+        resumen_casos instead of paging through them."""
         drug = (farmaco or "").strip().lower() or None
         words = [w.strip() for w in (buscar or "").split(",") if w.strip()]
         origin = {"nombra_el_farmaco": "busqueda_fija", "respuesta_en_conversacion": "agente"}
@@ -164,6 +170,7 @@ def make_registry(
             desenlace=desenlace,
             origen=origin.get(origen or ""),
             grave=True if solo_graves else None,
+            con_edad=con_edad,
             desde=desde,
             hasta=hasta,
         )
@@ -192,6 +199,44 @@ def make_registry(
                 f"ningún caso tiene {words} en las reacciones: prueba sinónimos o raíces "
                 "('sud' encuentra sudor, sudores, sudoración)"
             )
+        if drug and not all_cases:
+            # v2 exam, f07 (2026-11-23): "the overdose case of 16 g of ciprofloxacin" is a case
+            # described in the technical sheet; the coordinator only looked here and gave up.
+            out["nota"] = (
+                f"no tenemos casos de redes sociales de '{drug}'. Si preguntan por un caso "
+                "concreto (una sobredosis, un caso clínico), puede estar descrito en la ficha "
+                "técnica (search_knowledge_base) o en la literatura (buscar_literatura)."
+            )
+        return out
+
+    @tool
+    def resumen_casos(
+        farmaco: Annotated[
+            str | None,
+            Field(description="Active ingredient in Spanish; empty for every watched drug."),
+        ] = None,
+        solo_graves: Annotated[bool, Field(description="Only the serious cases.")] = False,
+        desde: Annotated[str | None, Field(description="From this date, YYYY-MM-DD.")] = None,
+        hasta: Annotated[str | None, Field(description="Until this date, YYYY-MM-DD.")] = None,
+    ) -> dict:
+        """The whole picture of our cases in one call, counted by code: how many, which are
+        serious, sex, age, outcome, origin, cases per quarter, and the reactions grouped by
+        theme (sleep, heat and sweating, digestive, sexual, mood…) with how many cases mention
+        each and some ids. Use it for general questions ("what do patients report?", "which
+        reactions are most frequent?", "which of our reactions are not in the technical
+        sheet?") instead of listing the cases page by page. The themes group the patients' own
+        words; for MedDRA terms use codificar_meddra on the cases."""
+        from coordinator.cases import overview
+
+        drug = (farmaco or "").strip().lower() or None
+        cases = store.filter(drug, grave=True if solo_graves else None, desde=desde, hasta=hasta)
+        out = {
+            "farmaco": drug or "todos",
+            "farmacos_con_casos": dict(Counter(c.farmaco for c in store.cases.values())),
+            **overview(cases, store.meddra if variant != "sin_meddra" else None),
+            "nota": "temas aproximados por palabras clave sobre lo que escribieron los "
+            "pacientes; para ver los casos de un tema, listar_casos con 'buscar'",
+        }
         return out
 
     @tool
@@ -393,6 +438,7 @@ def make_registry(
 
     registry = ToolRegistry().register(
         listar_casos,
+        resumen_casos,
         ver_caso,
         faers_reaction_counts,
         disproportionality_prr,

@@ -99,6 +99,134 @@ class Case:
         return text
 
 
+# Themes of the reactions as the patients wrote them, for an overview of many cases at once
+# (``overview``). Written by reading the 223 distinct reactions of the 159 sertraline cases
+# (2026-11-25), on accent-free lower case. Each reaction goes to its first matching theme; what
+# matches none is shown apart, never hidden. An approximation to read the whole picture: the
+# MedDRA terms are the reasoning model's (codificar_meddra).
+THEMES = [
+    (
+        "insomnio o mal dormir",
+        r"insomni|no (me )?(dejaba|dejaban) dormir|no (pude|puedo|consigo) dormir|no dormi|"
+        r"no duermo|no he dormido|duermo fatal|dormi (mal|como)|pegar un ojo|quitaba el sueno|"
+        r"dejado de dar sueno|despert|mas alla de 3 horas",
+    ),
+    (
+        "somnolencia, cansancio o falta de energía",
+        r"cansa|agotad|somnolen|sueno|dormido|dormirme|dormir mucho|cerraban los ojos|zombie|"
+        r"sedacion|bostez|poquisima energia|planchad|\bplana\b|arrastrandome|levantarme|\brote\b|"
+        r"colapsar|esfuerzo|tirada sin hacer",
+    ),
+    (
+        "calor, sudoración o termorregulación",
+        r"calor|\bsud[oa]|sofoc|termic|termorreg|temperatura|termostato|deshidrat|calipo|verano|"
+        r"\bfrio\b|asfixi",
+    ),
+    (
+        "digestivo (náuseas, estómago, diarrea)",
+        r"nause|vomit|gomit|estomag|diarre|intestin|caca|panza|esofago|gastric|acido|asco|"
+        r"pata pa abajo",
+    ),
+    ("apetito, peso o colesterol", r"hambre|comer|engord|peso\b|pesarme|colesterol"),
+    ("temblor", r"tembl"),
+    ("bruxismo o mandíbula", r"bruxis|mandibul|aprieto"),
+    ("mareo, vértigo o desmayo", r"mare|vertig|borrach|desmay"),
+    (
+        "sexual (libido, orgasmo)",
+        r"libido|sexual|assexual|tesao|complica acabar|pau duro|sequedad",
+    ),
+    ("dolor de cabeza o migraña", r"cabeza|migra|cefal|pesadez arriba"),
+    ("piernas inquietas o movimientos", r"piernas inquietas|espasmo|psicomotri"),
+    ("manía, alucinaciones o activación", r"mania|alucinac|paranoia|mucha energia|no paro"),
+    (
+        "ánimo, ansiedad o embotamiento emocional",
+        r"ansiedad|irritab|depresiv|bajon|plof de animo|gris\b|llorar|lagrimas|apatic|bloque|"
+        r"emocional|nao sinto nada|vale vrg|ambicion|suicid|bateria social|amargura",
+    ),
+    (
+        "falta de eficacia",
+        r"de hac\w* efecto|dejado de hacerme efecto|no funciono|olvidaba el efecto",
+    ),
+    (
+        "retirada, olvido o cambio de dosis",
+        r"olvid|sin tomarla|al no tomarla|suspension|bajar la dosis|pantallazos|toques",
+    ),
+    ("corazón (taquicardia, palpitaciones)", r"taquicard|palpit"),
+    ("menstruación", r"regla\b|menstru"),
+    ("gusto o boca", r"gusto|metalic|\bboca\b"),
+]
+
+
+def theme_of(reaction: str) -> str | None:
+    import re
+
+    from crawler.text import fold
+
+    text = fold(reaction.strip(" []"))
+    for name, pattern in THEMES:
+        if re.search(pattern, text):
+            return name
+    return None
+
+
+def overview(cases: list[Case], meddra: dict[str, list[str]] | None = None) -> dict:
+    """Many cases at once, counted by code: seriousness, patient, sex, age, outcome, origin,
+    quarter, and the reactions grouped by theme (cases per theme, with some ids). The reactions
+    that fit no theme are listed apart (usually vague: "efectos secundarios", "horrible")."""
+    from collections import Counter
+
+    def count(values):
+        return dict(Counter(values).most_common())
+
+    themes: dict[str, list[str]] = {}
+    loose: Counter = Counter()
+    for c in cases:
+        for r in c.triaje.get("reacciones", "").split("|"):
+            if not r.strip():
+                continue
+            name = theme_of(r)
+            if name is None:
+                loose[r.strip(" []")] += 1
+            elif c.id not in themes.setdefault(name, []):
+                themes[name].append(c.id)
+    ages = [c.triaje.get("edad", "") for c in cases]
+    known_ages = [a for a in ages if a not in ("", "desconocido")]
+    out = {
+        "casos": len(cases),
+        "graves": [
+            {"id": c.id, "criterio": c.triaje.get("criterio_gravedad", "")}
+            for c in cases
+            if c.grave
+        ],
+        "por_sexo": count(c.triaje.get("sexo", "desconocido") for c in cases),
+        "por_desenlace": count(c.triaje.get("desenlace", "desconocido") for c in cases),
+        "por_paciente": count(c.triaje.get("paciente", "desconocido") for c in cases),
+        "edad": {"conocida": len(known_ages), "valores": count(known_ages)},
+        "por_origen": count(
+            "respuesta en una conversación" if c.encontrado_por == "agente" else "nombra el fármaco"
+            for c in cases
+        ),
+        "por_trimestre": dict(
+            sorted(
+                Counter(f"{c.fecha[:4]}-T{(int(c.fecha[5:7]) - 1) // 3 + 1}" for c in cases).items()
+            )
+        ),
+        "reacciones_por_tema": [
+            {"tema": name, "casos": len(ids), "ids": ids[:5]}
+            for name, ids in sorted(themes.items(), key=lambda kv: -len(kv[1]))
+        ],
+        "reacciones_sin_tema": {
+            "reacciones": sum(loose.values()),
+            "ejemplos": [r for r, _ in loose.most_common(12)],
+        },
+    }
+    coded = [c for c in cases if meddra and c.id in meddra]
+    if coded:
+        terms = Counter(t for c in coded for t in meddra[c.id])
+        out["meddra"] = {"codificados": len(coded), "terminos": dict(terms.most_common(15))}
+    return out
+
+
 def _neg_date(iso: str) -> str:
     """Newest first with an ascending sort: invert the digits of the date."""
     return "".join(str(9 - int(c)) if c.isdigit() else c for c in iso)

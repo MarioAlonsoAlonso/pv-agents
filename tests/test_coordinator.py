@@ -585,3 +585,63 @@ def test_a_misspelled_drug_in_the_request_must_be_acknowledged(tmp_path, monkeyp
     )
     r = coordinar("¿Señal con el tramadolex?", store, brain="f", brains={"f": Brain(llm=llm)})
     assert "AVISO" in r.steps[0].observation and r.final_answer.startswith("Entiendo")
+
+
+def test_listar_casos_filters_by_known_age_and_points_elsewhere(tmp_path):
+    ms, store = _store(tmp_path)
+    store.cases[ms[0].id].triaje["edad"] = "41"
+    reg = make_registry(store)
+    out = reg.call("listar_casos", {"con_edad": True}).result
+    assert out["coinciden"] == 1 and out["casos"][0]["id"] == ms[0].id
+    assert reg.call("listar_casos", {"con_edad": False}).result["coinciden"] == 3
+    # v2 f07: a case of a drug without our cases may be in the technical sheet
+    out = reg.call("listar_casos", {"farmaco": "ciprofloxacino", "buscar": "sobredosis"}).result
+    assert "search_knowledge_base" in out["nota"]
+
+
+def test_resumen_casos_gives_the_whole_picture(tmp_path):
+    from coordinator.cases import theme_of
+
+    assert theme_of("no me dejaba dormir") == "insomnio o mal dormir"
+    assert theme_of("[sudores]").startswith("calor")
+    assert theme_of("Mi libido se fue") == "sexual (libido, orgasmo)"
+    assert theme_of("efectos secundarios") is None
+    ms, store = _store(tmp_path)
+    store.cases[ms[4].id].triaje["reacciones"] = "mareada | efectos secundarios"
+    out = make_registry(store).call("resumen_casos", {"farmaco": "sertralina"}).result
+    assert out["casos"] == 4 and [g["id"] for g in out["graves"]] == [ms[1].id]
+    themes = {t["tema"]: t["casos"] for t in out["reacciones_por_tema"]}
+    assert themes["somnolencia, cansancio o falta de energía"] == 2  # "muchísimo sueño"
+    assert themes["digestivo (náuseas, estómago, diarrea)"] == 1
+    assert themes["mareo, vértigo o desmayo"] == 1
+    assert out["reacciones_sin_tema"] == {"reacciones": 1, "ejemplos": ["efectos secundarios"]}
+    assert out["por_sexo"] == {"desconocido": 3, "mujer": 1}
+    assert "resumen_casos" in make_registry(store, "sin_rag").tools
+
+
+def test_the_v4_bench_is_well_formed():
+    import inspect
+
+    import agent.evaluate
+    import coordinator.evaluate
+    from coordinator.bench.v4 import build
+
+    tasks = build()
+    assert len(tasks) >= 40 and len({t["id"] for t in tasks}) == len(tasks)
+    assert {t["conjunto"] for t in tasks} == {"dev", "test"}
+    known = set(
+        __import__("re").findall(
+            r'kind == "(\w+)"',
+            inspect.getsource(coordinator.evaluate.check_one)
+            + inspect.getsource(agent.evaluate._check_one),
+        )
+    )
+
+    def kinds(checks):
+        for c in checks:
+            yield c["type"]
+            if c["type"] == "alguno":
+                yield from kinds(c["de"])
+
+    used = {k for t in tasks for k in kinds(t["comprobar"])}
+    assert used <= known, used - known
