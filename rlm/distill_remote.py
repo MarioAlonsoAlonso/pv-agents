@@ -114,6 +114,21 @@ def distill(
     return rows
 
 
+def refilter(rows: list[dict], max_words: int) -> list[dict]:
+    """The length filter again, with another maximum: a trace rejected only for being long was
+    verified correct, so it is accepted if it now fits (and an accepted one rejected if not)."""
+    out = []
+    for r in rows:
+        r = dict(r)
+        long_only = r["rejection"].startswith("reasoning longer than")
+        if r["verified"] or long_only:
+            fits = think_words(r["trace"]) <= max_words
+            r["verified"] = fits
+            r["rejection"] = "" if fits else f"reasoning longer than {max_words} words"
+        out.append(r)
+    return out
+
+
 def main(argv: list[str] | None = None) -> None:
     from dotenv import load_dotenv
 
@@ -131,7 +146,29 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--max-think-words", type=int, default=600)
     parser.add_argument("--hilos", type=int, default=3, help="simultaneous requests (5 total)")
     parser.add_argument("--output", type=Path, default=Path("rlm/data/sft_traces_27b.jsonl"))
+    parser.add_argument(
+        "--refiltrar",
+        type=int,
+        metavar="PALABRAS",
+        help="do not generate: re-apply the length filter to --output with this maximum and "
+        "write <output>_<N>w.jsonl (traces rejected only for length are kept in the file)",
+    )
     args = parser.parse_args(argv)
+
+    if args.refiltrar:
+        rows = [json.loads(x) for x in args.output.read_text("utf-8").splitlines() if x.strip()]
+        rows = refilter(rows, args.refiltrar)
+        out = args.output.with_name(f"{args.output.stem}_{args.refiltrar}w.jsonl")
+        out.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), "utf-8")
+        stats = {**acceptance_stats(rows), "teacher": TEACHER, "max_think_words": args.refiltrar}
+        out.with_suffix(".stats.json").write_text(
+            json.dumps(stats, ensure_ascii=False, indent=2), "utf-8"
+        )
+        print(f"{stats['n_verified']} trazas verificadas con ≤ {args.refiltrar} palabras → {out}")
+        print(
+            f"por familia: { {f: round(v, 2) for f, v in stats['acceptance_by_family'].items()} }"
+        )
+        return
 
     local = threading.local()
 

@@ -34,3 +34,18 @@ def test_traces_are_verified_filtered_and_resumed(tmp_path):
     assert "unparseable" in by_q["otra cosa"]["rejection"]
     again = distill(problems, lambda: _Teacher(), out, workers=1, progress=lambda s: None)
     assert len(again) == 3  # resumed: nothing generated twice
+
+
+def test_refilter_recovers_long_but_correct_traces():
+    from rlm.distill_remote import refilter
+
+    long_ok = {
+        "trace": "<think>\n" + " ".join(["x"] * 700) + "\n</think>\n<answer>A</answer>",
+        "verified": False,
+        "rejection": "reasoning longer than 600 words",
+        "family": "f",
+    }
+    wrong = {"trace": "t", "verified": False, "rejection": "missing: A", "family": "f"}
+    rows = refilter([long_ok, wrong], 800)
+    assert rows[0]["verified"] and not rows[1]["verified"]
+    assert not refilter([long_ok], 650)[0]["verified"]
