@@ -46,7 +46,8 @@ DRUG_ARGS = {
     "comparar_senal": "farmacos",
 }
 ACKNOWLEDGES = re.compile(
-    r"(?i)no (lo )?(reconozco|identifico|encuentro|he encontrado|existe|consta|figura|aparece)|"
+    r"(?i)no (lo )?(reconozco|reconoce|identifico|encuentro|he encontrado|existe|consta|figura|"
+    r"aparece)|"
     r"desconocid|no reconocid|te refieres|quieres decir|¿es posible que|asumo|supongo|"
     r"entiendo que|interpreto"
 )

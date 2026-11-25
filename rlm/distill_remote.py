@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -114,12 +115,32 @@ def distill(
     return rows
 
 
-def refilter(rows: list[dict], max_words: int) -> list[dict]:
+# MedDRA codes recited from memory: '"Dry eye" (10013774)', '(PT 10034464?) maybe'.
+CODE_IN_PARENS = re.compile(r"[ \t]*\([^()\n]*?\b[A-Z]?\d{6,}\b[^()\n]*\)")
+CODE = re.compile(r"[ \t]*\b[A-Z]?\d{6,}\b\??")
+
+
+def strip_codes(trace: str) -> str:
+    """Remove the MedDRA codes the 27B recites in its reasoning.
+
+    The 27B writes them from memory, and they are made up: four different codes for "Lack of
+    efficacy" across the traces. The answer is a list of PT names, so the codes add nothing.
+    They also broke the student. 103 of the 497 traces had them, against 11 of the 821 from
+    the 4B. The student trained on them (2026-11-25) learned to write a code it cannot
+    remember. In 59 of its 75 cut answers on the test it wrote '"Dry eye" (1000000000…' until
+    the token limit."""
+    return CODE.sub("", CODE_IN_PARENS.sub("", trace))
+
+
+def refilter(rows: list[dict], max_words: int, no_codes: bool = False) -> list[dict]:
     """The length filter again, with another maximum: a trace rejected only for being long was
-    verified correct, so it is accepted if it now fits (and an accepted one rejected if not)."""
+    verified correct, so it is accepted if it now fits (and an accepted one rejected if not).
+    ``no_codes`` also removes the recited MedDRA codes (``strip_codes``)."""
     out = []
     for r in rows:
         r = dict(r)
+        if no_codes:
+            r["trace"] = strip_codes(r["trace"])
         long_only = r["rejection"].startswith("reasoning longer than")
         if r["verified"] or long_only:
             fits = think_words(r["trace"]) <= max_words
@@ -153,14 +174,26 @@ def main(argv: list[str] | None = None) -> None:
         help="do not generate: re-apply the length filter to --output with this maximum and "
         "write <output>_<N>w.jsonl (traces rejected only for length are kept in the file)",
     )
+    parser.add_argument(
+        "--sin-codigos",
+        action="store_true",
+        help="with --refiltrar: also remove the MedDRA codes recited in the reasoning "
+        "(<output>_<N>w_sincodigos.jsonl)",
+    )
     args = parser.parse_args(argv)
 
     if args.refiltrar:
         rows = [json.loads(x) for x in args.output.read_text("utf-8").splitlines() if x.strip()]
-        rows = refilter(rows, args.refiltrar)
-        out = args.output.with_name(f"{args.output.stem}_{args.refiltrar}w.jsonl")
+        rows = refilter(rows, args.refiltrar, no_codes=args.sin_codigos)
+        suffix = "_sincodigos" if args.sin_codigos else ""
+        out = args.output.with_name(f"{args.output.stem}_{args.refiltrar}w{suffix}.jsonl")
         out.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), "utf-8")
-        stats = {**acceptance_stats(rows), "teacher": TEACHER, "max_think_words": args.refiltrar}
+        stats = {
+            **acceptance_stats(rows),
+            "teacher": TEACHER,
+            "max_think_words": args.refiltrar,
+            "codes_removed": args.sin_codigos,
+        }
         out.with_suffix(".stats.json").write_text(
             json.dumps(stats, ensure_ascii=False, indent=2), "utf-8"
         )

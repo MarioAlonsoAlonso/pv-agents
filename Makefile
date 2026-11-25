@@ -81,7 +81,7 @@ rlm-ablations: ## Fase 1: GRPO sin recompensa de dominio y con crédito parcial,
 rlm-distill-27b: ## Fase 1 v2: trazas del 27B (razonamiento) verificadas, en sft_traces_27b.jsonl (sin GPU, ~2-3 h)
 	$(UV) run python -u -m rlm.distill_remote --output rlm/data/sft_traces_27b.jsonl
 
-TRACES_27B ?= rlm/data/sft_traces_27b_800w.jsonl
+TRACES_27B ?= rlm/data/sft_traces_27b_800w_sincodigos.jsonl
 rlm-sft-27b: ## Fase 1 v2: SFT con LoRA sobre las trazas del 27B (GPU)
 	$(UV) run python -u -m rlm.train_sft --data $(TRACES_27B) --model $(RLM_MODEL) 		--output $(RLM_W)/sft_lora_27b
 
@@ -89,8 +89,8 @@ rlm-grpo-27b: ## Fase 1 v2: GRPO desde el SFT del 27B, misma configuración que 
 	$(UV) run python -u -m rlm.train_grpo --data rlm/data/train.jsonl --model $(RLM_MODEL) 		--init-adapter $(RLM_W)/sft_lora_27b --steps 100 --max-completion-length 1024 		--batch-size 1 --save-steps 25 --output $(RLM_W)/final_rlm_lora_27b
 
 rlm-eval-27b: ## Fase 1 v2: test y OOD del alumno del 27B frente al de la v1 (GPU)
-	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --out reports/phase1_eval_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b grpo27=$(RLM_W)/final_rlm_lora_27b
-	$(UV) run python -u -m rlm.evaluate --data rlm/data/test_ood.jsonl --model $(RLM_MODEL) 		--max-new-tokens 2048 --n-examples 100 --out reports/phase1_eval_ood_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b grpo27=$(RLM_W)/final_rlm_lora_27b
+	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --out reports/phase1_eval_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b
+	$(UV) run python -u -m rlm.evaluate --data rlm/data/test_ood.jsonl --model $(RLM_MODEL) 		--max-new-tokens 2048 --n-examples 100 --out reports/phase1_eval_ood_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b
 
 # Fase 2: herramientas
 tools-eval: ## Fase 2: banco de 30 casos con y sin herramientas (GPU)

@@ -9968,5 +9968,1165 @@
     "segundos": 14.7
    }
   ]
+ },
+ "completo·27b·tareas·v3·dev·arreglo": {
+  "tareas": 9,
+  "exito": 1.0,
+  "herramientas_requeridas": 1.0,
+  "respuestas_con_numeros_sin_respaldo": 0,
+  "respuestas_con_citas_sin_respaldo": 0,
+  "pasos_medios": 3.7777777777777777,
+  "tokens_medios": 24784.555555555555,
+  "segundos_medios": 14.133333333333333,
+  "paradas": {
+   "final_answer": 9
+  },
+  "por_tipo": {
+   "dirigida": {
+    "tareas": 5,
+    "exito": 1.0,
+    "pasos_medios": 2.8
+   },
+   "abierta": {
+    "tareas": 4,
+    "exito": 1.0,
+    "pasos_medios": 5.0
+   }
+  },
+  "por_categoria": {
+   "comparativa": {
+    "tareas": 5,
+    "exito": 1.0
+   },
+   "nombres": {
+    "tareas": 4,
+    "exito": 1.0
+   }
+  },
+  "rutas": {
+   "todas_las_fuentes_necesarias": 1.0,
+   "alguna_fuente_de_mas": 0.5555555555555556,
+   "por_fuente": {
+    "casos": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 2
+    },
+    "meddra": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    },
+    "rag": {
+     "necesaria": 4,
+     "usada_cuando_necesaria": 4,
+     "usada_sin_necesitarla": 1
+    },
+    "faers": {
+     "necesaria": 2,
+     "usada_cuando_necesaria": 2,
+     "usada_sin_necesitarla": 4
+    },
+    "literatura": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    },
+    "redes": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    }
+   }
+  },
+  "por_tarea": {
+   "v01": true,
+   "v03": true,
+   "v06": true,
+   "v08": true,
+   "v11": true,
+   "w01": true,
+   "w03": true,
+   "w06": true,
+   "w08": true
+  },
+  "filas": [
+   {
+    "id": "v01",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "casos",
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "casos",
+     "faers"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "farmacos_disponibles",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "comparar_senal",
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 6,
+    "tokens": 45699,
+    "parada": "final_answer",
+    "segundos": 31.0
+   },
+   {
+    "id": "v03",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "farmacos_disponibles",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 35558,
+    "parada": "final_answer",
+    "segundos": 11.2
+   },
+   {
+    "id": "v06",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "faers"
+    ],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "comparar_senal",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 10946,
+    "parada": "final_answer",
+    "segundos": 22.5
+   },
+   {
+    "id": "v08",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "comparar_senal",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 26196,
+    "parada": "final_answer",
+    "segundos": 20.8
+   },
+   {
+    "id": "v11",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "faers"
+    ],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "comparar_senal",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 10802,
+    "parada": "final_answer",
+    "segundos": 14.4
+   },
+   {
+    "id": "w01",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "identificar_farmaco",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 15723,
+    "parada": "final_answer",
+    "segundos": 3.4
+   },
+   {
+    "id": "w03",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "nombres",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "casos",
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "casos",
+     "faers"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "listar_casos",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 32719,
+    "parada": "final_answer",
+    "segundos": 15.3
+   },
+   {
+    "id": "w06",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "identificar_farmaco",
+     "farmacos_disponibles",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 17136,
+    "parada": "final_answer",
+    "segundos": 2.9
+   },
+   {
+    "id": "w08",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "rag"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "farmacos_disponibles",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 28282,
+    "parada": "final_answer",
+    "segundos": 5.7
+   }
+  ]
+ },
+ "completo·27b·tareas·v3·dev": {
+  "tareas": 9,
+  "exito": 0.7777777777777778,
+  "herramientas_requeridas": 1.0,
+  "respuestas_con_numeros_sin_respaldo": 0,
+  "respuestas_con_citas_sin_respaldo": 0,
+  "pasos_medios": 4.666666666666667,
+  "tokens_medios": 32998.11111111111,
+  "segundos_medios": 17.555555555555557,
+  "paradas": {
+   "final_answer": 9
+  },
+  "por_tipo": {
+   "dirigida": {
+    "tareas": 5,
+    "exito": 0.8,
+    "pasos_medios": 4.2
+   },
+   "abierta": {
+    "tareas": 4,
+    "exito": 0.75,
+    "pasos_medios": 5.25
+   }
+  },
+  "por_categoria": {
+   "comparativa": {
+    "tareas": 5,
+    "exito": 1.0
+   },
+   "nombres": {
+    "tareas": 4,
+    "exito": 0.5
+   }
+  },
+  "rutas": {
+   "todas_las_fuentes_necesarias": 1.0,
+   "alguna_fuente_de_mas": 0.5555555555555556,
+   "por_fuente": {
+    "casos": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    },
+    "meddra": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    },
+    "rag": {
+     "necesaria": 4,
+     "usada_cuando_necesaria": 4,
+     "usada_sin_necesitarla": 1
+    },
+    "faers": {
+     "necesaria": 2,
+     "usada_cuando_necesaria": 2,
+     "usada_sin_necesitarla": 4
+    },
+    "literatura": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    },
+    "redes": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    }
+   }
+  },
+  "por_tarea": {
+   "v01": true,
+   "v03": true,
+   "v06": true,
+   "v08": true,
+   "v11": true,
+   "w01": true,
+   "w03": false,
+   "w06": false,
+   "w08": true
+  },
+  "filas": [
+   {
+    "id": "v01",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "farmacos_disponibles",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "comparar_senal",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 6,
+    "tokens": 41716,
+    "parada": "final_answer",
+    "segundos": 30.9
+   },
+   {
+    "id": "v03",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "farmacos_disponibles",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 7,
+    "tokens": 51751,
+    "parada": "final_answer",
+    "segundos": 13.1
+   },
+   {
+    "id": "v06",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "faers"
+    ],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "comparar_senal",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 10875,
+    "parada": "final_answer",
+    "segundos": 25.9
+   },
+   {
+    "id": "v08",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "comparar_senal",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 25008,
+    "parada": "final_answer",
+    "segundos": 19.7
+   },
+   {
+    "id": "v11",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "faers"
+    ],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "comparar_senal",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 10815,
+    "parada": "final_answer",
+    "segundos": 15.6
+   },
+   {
+    "id": "w01",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "identificar_farmaco",
+     "farmacos_disponibles",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 3,
+    "tokens": 17157,
+    "parada": "final_answer",
+    "segundos": 3.1
+   },
+   {
+    "id": "w03",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "nombres",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers"
+    ],
+    "correcta": false,
+    "comprobaciones": [
+     true,
+     false
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 4,
+    "tokens": 24151,
+    "parada": "final_answer",
+    "segundos": 11.7
+   },
+   {
+    "id": "w06",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers"
+    ],
+    "correcta": false,
+    "comprobaciones": [
+     false,
+     false
+    ],
+    "herramientas_usadas": [
+     "identificar_farmaco",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 6,
+    "tokens": 32369,
+    "parada": "final_answer",
+    "segundos": 25.2
+   },
+   {
+    "id": "w08",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "rag"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "farmacos_disponibles",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 8,
+    "tokens": 83141,
+    "parada": "final_answer",
+    "segundos": 12.8
+   }
+  ]
+ },
+ "sin_nombres·27b·tareas·v3·dev": {
+  "tareas": 9,
+  "exito": 0.5555555555555556,
+  "herramientas_requeridas": 1.0,
+  "respuestas_con_numeros_sin_respaldo": 0,
+  "respuestas_con_citas_sin_respaldo": 0,
+  "pasos_medios": 6.444444444444445,
+  "tokens_medios": 49990.77777777778,
+  "segundos_medios": 20.288888888888888,
+  "paradas": {
+   "final_answer": 8,
+   "loop_detected": 1
+  },
+  "por_tipo": {
+   "dirigida": {
+    "tareas": 5,
+    "exito": 0.6,
+    "pasos_medios": 6.4
+   },
+   "abierta": {
+    "tareas": 4,
+    "exito": 0.5,
+    "pasos_medios": 6.5
+   }
+  },
+  "por_categoria": {
+   "comparativa": {
+    "tareas": 5,
+    "exito": 0.8
+   },
+   "nombres": {
+    "tareas": 4,
+    "exito": 0.25
+   }
+  },
+  "rutas": {
+   "todas_las_fuentes_necesarias": 1.0,
+   "alguna_fuente_de_mas": 0.5555555555555556,
+   "por_fuente": {
+    "casos": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 1
+    },
+    "meddra": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    },
+    "rag": {
+     "necesaria": 4,
+     "usada_cuando_necesaria": 4,
+     "usada_sin_necesitarla": 3
+    },
+    "faers": {
+     "necesaria": 2,
+     "usada_cuando_necesaria": 2,
+     "usada_sin_necesitarla": 4
+    },
+    "literatura": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    },
+    "redes": {
+     "necesaria": 0,
+     "usada_cuando_necesaria": 0,
+     "usada_sin_necesitarla": 0
+    }
+   }
+  },
+  "por_tarea": {
+   "v01": false,
+   "v03": true,
+   "v06": true,
+   "v08": true,
+   "v11": true,
+   "w01": true,
+   "w03": false,
+   "w06": false,
+   "w08": false
+  },
+  "filas": [
+   {
+    "id": "v01",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "casos",
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "casos",
+     "faers"
+    ],
+    "correcta": false,
+    "comprobaciones": [
+     false,
+     false
+    ],
+    "herramientas_usadas": [
+     "listar_casos",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 11,
+    "tokens": 121988,
+    "parada": "final_answer",
+    "segundos": 37.2
+   },
+   {
+    "id": "v03",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 6,
+    "tokens": 51246,
+    "parada": "final_answer",
+    "segundos": 13.7
+   },
+   {
+    "id": "v06",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "faers"
+    ],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 7,
+    "tokens": 36083,
+    "parada": "final_answer",
+    "segundos": 34.4
+   },
+   {
+    "id": "v08",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 7,
+    "tokens": 46818,
+    "parada": "final_answer",
+    "segundos": 25.1
+   },
+   {
+    "id": "v11",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "comparativa",
+    "fuentes_esperadas": [
+     "faers"
+    ],
+    "fuentes_usadas": [
+     "faers"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": true,
+    "comprobaciones": [
+     true
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "disproportionality_prr",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 25042,
+    "parada": "final_answer",
+    "segundos": 18.1
+   },
+   {
+    "id": "w01",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers",
+     "rag"
+    ],
+    "correcta": true,
+    "comprobaciones": [
+     true,
+     true
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "search_knowledge_base",
+     "faers_reaction_counts",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 5,
+    "tokens": 26317,
+    "parada": "final_answer",
+    "segundos": 8.0
+   },
+   {
+    "id": "w03",
+    "conjunto": "dev",
+    "tipo": "abierta",
+    "categoria": "nombres",
+    "fuentes_esperadas": [
+     "rag"
+    ],
+    "fuentes_usadas": [
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [],
+    "correcta": false,
+    "comprobaciones": [
+     true,
+     false
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 2,
+    "tokens": 10315,
+    "parada": "final_answer",
+    "segundos": 3.7
+   },
+   {
+    "id": "w06",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [
+     "faers",
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "faers",
+     "rag"
+    ],
+    "correcta": false,
+    "comprobaciones": [
+     false,
+     false
+    ],
+    "herramientas_usadas": [
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "faers_reaction_counts",
+     "disproportionality_prr",
+     "search_knowledge_base",
+     "final_answer"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 6,
+    "tokens": 30635,
+    "parada": "final_answer",
+    "segundos": 31.2
+   },
+   {
+    "id": "w08",
+    "conjunto": "dev",
+    "tipo": "dirigida",
+    "categoria": "nombres",
+    "fuentes_esperadas": [],
+    "fuentes_usadas": [
+     "rag"
+    ],
+    "fuentes_faltan": [],
+    "fuentes_de_mas": [
+     "rag"
+    ],
+    "correcta": false,
+    "comprobaciones": [
+     false
+    ],
+    "herramientas_usadas": [
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base",
+     "search_knowledge_base"
+    ],
+    "herramientas_requeridas": true,
+    "numeros_sin_respaldo": [],
+    "citas_sin_respaldo": [],
+    "pasos": 9,
+    "tokens": 101473,
+    "parada": "loop_detected",
+    "segundos": 11.2
+   }
+  ]
  }
 }

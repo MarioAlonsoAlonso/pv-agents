@@ -49,3 +49,16 @@ def test_refilter_recovers_long_but_correct_traces():
     rows = refilter([long_ok, wrong], 800)
     assert rows[0]["verified"] and not rows[1]["verified"]
     assert not refilter([long_ok], 650)[0]["verified"]
+
+
+def test_strip_codes_removes_recited_meddra_codes():
+    from rlm.distill_remote import strip_codes
+
+    text = (
+        'PT "Dry eye" (10013774). "Lack of efficacy" (PT 10034464?) maybe. '
+        "Hair loss (MMSO? 10019629) and code 10019629? here. Age 45 (years)."
+    )
+    out = strip_codes(text)
+    assert not any(c.isdigit() for c in out.replace("45", ""))
+    assert 'PT "Dry eye". "Lack of efficacy" maybe.' in out
+    assert "Age 45 (years)." in out  # short numbers and other brackets stay

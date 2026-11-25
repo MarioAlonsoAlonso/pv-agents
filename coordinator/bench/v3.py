@@ -27,12 +27,15 @@ from coordinator.bench.v2 import rx, split
 
 OUT = Path(__file__).parent / "tareas_v3.jsonl"
 UNKNOWN = rx(
-    r"(?i)no (lo )?(reconozco|identifico|encuentro|he encontrado|existe|consta|figura|aparece|tengo)|"
-    r"desconocid|no reconocid|no est[aá] (entre|en)|no dispongo"
+    r"(?i)no (lo )?(reconozco|reconoce|identifico|identifica|encuentro|he encontrado|existe|consta|"
+    r"figura|aparece|tengo)|desconocid|no reconocid|no est[aá] (entre|en)|no dispongo"
 )
+# "Sí, hay señal", not "para ver si hay señal" (a dorfelina answer that asked for the real name,
+# development, 2026-11-25).
 NO_SIGNAL_CLAIM = {
     "type": "regex_ausente",
-    "value": r"(?i)\bs[ií],? hay (una )?señal|señal positiva|cumple (el criterio|la regla)",
+    "value": r"(?i)(^|[.:;!?]\s*)s[ií],? hay (una )?señal|\bsí,? hay (una )?señal|señal positiva|"
+    r"cumple (el criterio|la regla)",
 }
 ASSUMPTION = rx(
     r"(?i)entiendo que|supongo|asumo|interpreto|te refieres|quieres decir|no (lo )?(reconozco|encuentro)"
