@@ -7,6 +7,10 @@
 >
 > **Equipo:** cómo trabajar con ramas, *pull requests* y datos privados en
 > [`COLABORAR.md`](COLABORAR.md).
+>
+> **Landing page:** [`docs/index.html`](docs/index.html), un solo fichero HTML sin dependencias
+> (se abre con doble clic). Con GitHub Pages activado sobre `main` y la carpeta `/docs`, queda
+> publicada en la web del repositorio.
 
 ## Punto de partida: ARCA · Agente de farmacovigilancia
 
