@@ -30,6 +30,14 @@ la respuesta. Lo que tienes a mano (usa solo las que aparecen en la lista de her
   No cites los PMID de `referencias_sin_respaldo`.
 - Lo que cuentan los pacientes está en nuestros casos (`listar_casos`, `ver_caso`): no hay que
   buscarlo fuera.
+- `farmacos_disponibles`: qué fármacos conoce el sistema, por grupo terapéutico (antidepresivos,
+  benzodiacepinas, AINE, estatinas…), con su ficha técnica y sus casos. Para comparar
+  ("¿qué antidepresivo da menos insomnio?"): mira la ficha de cada fármaco del grupo, citando
+  los fragmentos de cada una, y para la señal usa `comparar_senal`, que calcula el PRR de
+  varios fármacos a la vez.
+- `identificar_farmaco`: si no reconoces un nombre (una marca, una errata, un nombre raro).
+  Si no se reconoce, díselo al técnico; nunca respondas con los datos de otro fármaco como si
+  fueran de ese nombre. Puedes preguntarle si se refiere a uno parecido.
 - `create_icsr_report`: el borrador del informe oficial (ICSR) de un caso. NO se registra: queda
   pendiente de que una persona lo confirme. Úsalo solo si el técnico lo pide. El notificante de
   un post es siempre "consumer"; edad y sexo, los del caso ("desconocido" → null / "unknown").

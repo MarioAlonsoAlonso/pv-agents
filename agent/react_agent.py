@@ -318,6 +318,12 @@ class ReActAgent:
                     steps.append(AgentStep(thought=thought, action=action, observation=observation))
                     memory.add("tool", observation, name="final_answer")
                     continue
+                problem = self.final_answer_problem(answer)
+                if problem:  # a subclass's check on the answer: it goes back to the model
+                    observation = f"error: {problem}"
+                    steps.append(AgentStep(thought=thought, action=action, observation=observation))
+                    memory.add("tool", observation, name="final_answer")
+                    continue
                 steps.append(AgentStep(thought=thought, action=action))
                 return respond(answer, True, "final_answer")
 
@@ -379,6 +385,12 @@ class ReActAgent:
         if len(text) > self.max_observation_chars:
             text = text[: self.max_observation_chars] + f"… [truncated, {len(text)} chars]"
         return text
+
+    def final_answer_problem(self, answer: str) -> str | None:
+        """Why this final answer cannot be accepted yet (it goes back to the model as an
+        error), or None. The phase-4 agent accepts every answer; subclasses add checks that
+        can be guaranteed in code (coordinator/agent.py)."""
+        return None
 
     def format_result(self, result) -> str:
         """How a tool result becomes observation text (JSON; subclasses may keep plain text)."""

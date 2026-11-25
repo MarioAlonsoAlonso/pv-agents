@@ -281,8 +281,11 @@ def faers_reaction_counts(
     drug_reports = _openfda_total(drug_query)
     if drug_reports == 0:
         raise ValueError(
-            f"FAERS has no reports for {name!r}. Use the active ingredient (INN), not a brand."
-        )
+            f"FAERS has no reports for {name!r}. If it is a brand, use its active ingredient "
+            "(INN). If you do not recognise the name, say so to the user: never use another "
+            "drug's data in its place."
+        )  # the old message ("use the INN, not a brand") pushed the model to swap an unknown
+        # drug for a similar known one (2026-11-23: "xelofrina" answered as celecoxib)
     result: dict = {"drug_searched": name, "reports_with_drug": drug_reports}
     if reaction:
         reaction = faers_reaction_name(reaction)

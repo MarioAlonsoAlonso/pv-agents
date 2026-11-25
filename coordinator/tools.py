@@ -10,6 +10,9 @@
 | ``faers_reaction_counts``, ``disproportionality_prr`` | Phase-2 tools: FAERS and the signal |
 | ``buscar_literatura`` | The crawler's literature sub-agent (PubMed): is it described, is it new |
 | ``create_icsr_report`` | The ICSR draft, held for human confirmation |
+| ``farmacos_disponibles`` | ``coordinator/drugs.py``: the drugs by group, and their sources |
+| ``identificar_farmaco`` | ``coordinator/drugs.py``: active ingredient, English name, brand |
+| ``comparar_senal`` | FAERS + PRR for several drugs at once (comparisons) |
 
 Naranjo (``naranjo_causality``) is left out on purpose: its ten questions (rechallenge,
 placebo, drug levels…) cannot be answered from a social-media post, and the model would fill
@@ -34,7 +37,10 @@ from pydantic import Field
 from coordinator.cases import CaseStore
 from tool_use.registry import ToolRegistry, tool
 
-VARIANTS = ("completo", "sin_rag", "sin_meddra", "sin_literatura", "sin_evidencia")
+VARIANTS = ("completo", "sin_rag", "sin_meddra", "sin_literatura", "sin_evidencia", "sin_nombres")
+# Tools of the drug names and comparisons (2026-11-25); ``sin_nombres`` removes them and the
+# guard on substituted drugs, i.e. the coordinator as it was before.
+NAME_TOOLS = ("farmacos_disponibles", "identificar_farmaco", "comparar_senal")
 
 
 class CodingFailed(RuntimeError):
@@ -266,6 +272,97 @@ def make_registry(
         }
 
     @tool
+    def farmacos_disponibles(
+        grupo: Annotated[
+            str | None,
+            Field(
+                description="Therapeutic group in Spanish, e.g. 'antidepresivo', "
+                "'benzodiacepina', 'AINE', 'estatina'. Empty for every group."
+            ),
+        ] = None,
+    ) -> dict:
+        """The drugs the system knows, by therapeutic group: which have a technical sheet in
+        the knowledge base, their FAERS name and how many cases we have from social media. Use
+        it to compare drugs ("which antidepressant gives less insomnia?"): look at the sheet of
+        each one and, for the signal, comparar_senal."""
+        from coordinator.drugs import available
+
+        cases = Counter(c.farmaco for c in store.cases.values())
+        groups = available(grupo, dict(cases))
+        if not groups:
+            groups = available(None, dict(cases))
+            return {"nota": f"no hay ningún grupo '{grupo}'; estos son todos", "grupos": groups}
+        return {"grupos": groups}
+
+    @tool
+    def identificar_farmaco(
+        nombre: Annotated[str, Field(description="The drug name as the technician wrote it.")],
+    ) -> dict:
+        """Whether a drug name is one of the system's drugs: an active ingredient, its English
+        name or a Spanish brand (CIMA). If it is not recognised, similar names are listed only
+        to ASK the technician ("¿te refieres a…?"): never answer with another drug's data as if
+        it were this one."""
+        from coordinator.drugs import resolve
+
+        r = resolve(nombre)
+        if r.active:
+            return {"nombre": nombre, "principio_activo": r.active, "reconocido_como": r.how}
+        return {
+            "nombre": nombre,
+            "principio_activo": None,
+            "reconocido_como": "no reconocido: no está entre los fármacos del sistema",
+            "parecidos": list(r.similar),
+            "nota": "No lo sustituyas por un parecido: dile al técnico que no lo reconoces y, "
+            "si hay parecidos, pregúntale si se refiere a alguno.",
+        }
+
+    @tool
+    def comparar_senal(
+        farmacos: Annotated[
+            list[str], Field(description="Active ingredients to compare, in Spanish or English.")
+        ],
+        reaccion: Annotated[
+            str, Field(description="MedDRA Preferred Term in English, e.g. 'Insomnia'.")
+        ],
+    ) -> dict:
+        """The FAERS signal (PRR with its 95% CI, Evans rule) of one reaction for several drugs
+        at once, highest PRR first. Counts and PRR are computed by code from openFDA."""
+        from tool_use.tools import disproportionality_prr, faers_reaction_counts
+
+        rows, errors = [], {}
+        for drug in farmacos[:8]:
+            try:
+                counts = faers_reaction_counts(drug=drug, reaction=reaccion)
+                prr = disproportionality_prr(
+                    reports_with_drug_and_reaction=counts["reports_with_drug_and_reaction"],
+                    reports_with_drug=counts["reports_with_drug"],
+                    reports_with_reaction=counts["reports_with_reaction"],
+                    total_reports=counts["total_reports"],
+                )
+                rows.append(
+                    {
+                        "farmaco": drug,
+                        "nombre_faers": counts["drug_searched"],
+                        "notificaciones_con_la_reaccion": counts["reports_with_drug_and_reaction"],
+                        "notificaciones_del_farmaco": counts["reports_with_drug"],
+                        "prr": prr["prr"],
+                        "ic95": prr["ci95"],
+                        "senal": prr["signal"],
+                    }
+                )
+            except Exception as exc:  # noqa: BLE001 - one drug failing must not lose the rest
+                errors[drug] = str(exc)
+        rows.sort(key=lambda r: -r["prr"])
+        return {
+            "reaccion": reaccion,
+            "por_farmaco": rows,
+            **({"errores": errors} if errors else {}),
+            "regla": "señal si PRR >= 2, a >= 3 y límite inferior del IC > 1 (Evans)",
+            "nota": "notificaciones espontáneas no validadas: el PRR compara proporciones de "
+            "notificación, no riesgos reales entre fármacos",
+        }
+
+    @tool
     def agrupar_por_meddra(
         farmaco: Annotated[str, Field(description="Active ingredient in Spanish.")],
     ) -> dict:
@@ -308,4 +405,6 @@ def make_registry(
         registry.register(search_knowledge_base)
     if variant not in ("sin_literatura", "sin_evidencia"):
         registry.register(buscar_literatura)
+    if variant != "sin_nombres":
+        registry.register(farmacos_disponibles, identificar_farmaco, comparar_senal)
     return registry

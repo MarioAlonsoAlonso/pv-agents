@@ -192,6 +192,21 @@ def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> boo
             if ids
             else (re.search(r"(?i)ningún|ninguno|no hay", answer) is not None)
         )
+    if kind == "menciona_farmacos":
+        from crawler.text import fold
+
+        low = fold(answer)
+        return sum(fold(d) in low for d in check["farmacos"]) >= check.get("min", 1)
+    if kind == "citas_docs":  # fragments of at least `min` different documents (sheets)
+        return len({c.split("-")[0] for c in CHUNK_ID.findall(answer)}) >= check.get("min", 2)
+    if kind == "prr_live_todos":
+        nums = numbers_in(answer)
+        for drug in check["drugs"]:
+            target = live_prr(drug, check["reaction"])
+            tolerance = check.get("tolerance_rel", 0.03) * target
+            if not any(abs(n - target) <= tolerance for n in nums):
+                return False
+        return True
     if kind == "regex_ausente":
         return re.search(check["value"], answer) is None
     if kind == "cita_fragmento":
@@ -279,6 +294,7 @@ SOURCE_OF = {
     "search_knowledge_base": ("rag",),
     "faers_reaction_counts": ("faers",),
     "disproportionality_prr": ("faers",),
+    "comparar_senal": ("faers",),
     "buscar_literatura": ("literatura",),
     "buscar_evidencia": ("literatura", "redes"),  # the old sub-agent searched both
     "buscar_mas_casos": ("redes",),

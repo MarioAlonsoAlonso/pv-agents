@@ -468,3 +468,97 @@ def test_meddra_check_reads_what_is_coded():
     assert check_one(both, "1. Anaphylactic reaction\n2. Headache", {}, store)
     lack = {"type": "meddra_notif", "esperados": ["Drug ineffective"]}
     assert check_one(lack, "- **Drug ineffective** (no le hizo efecto)", {}, store)
+
+
+def test_an_unknown_drug_cannot_be_answered_with_another_drugs_data(tmp_path, monkeypatch):
+    """The x05 failure: 'xelofrina' (does not exist) answered with celecoxib's signal."""
+    import tool_use.tools as tt
+
+    def fake_faers(drug, reaction=None, top=10):
+        if tt.faers_drug_name(drug) != "celecoxib":
+            raise ValueError(f"FAERS has no reports for {drug!r}.")
+        return {"drug_searched": "celecoxib", "reports_with_drug": 132410}
+
+    monkeypatch.setattr(tt.faers_reaction_counts, "fn", fake_faers)
+    _, store = _store(tmp_path)
+    llm = _ScriptedLLM(
+        [
+            _call("faers_reaction_counts", drug="xelofrina", reaction="Hepatotoxicity"),
+            _call("faers_reaction_counts", drug="celecoxib", reaction="Hepatotoxicity"),
+            _call("final_answer", answer="Sí, hay señal de hepatotoxicidad con xelofrina."),
+            _call("final_answer", answer="No reconozco 'xelofrina'. ¿Te refieres a celecoxib?"),
+        ]
+    )
+    response = coordinar("¿Señal con la xelofrina?", store, brain="f", brains={"f": Brain(llm=llm)})
+    assert "AVISO" in response.steps[1].observation and "celecoxib" in response.steps[1].observation
+    assert response.steps[2].observation.startswith("error")  # the first answer went back
+    assert response.final_answer.startswith("No reconozco")
+    # the old behaviour, for the ablation
+    llm2 = _ScriptedLLM(
+        [
+            _call("faers_reaction_counts", drug="xelofrina", reaction="Hepatotoxicity"),
+            _call("faers_reaction_counts", drug="celecoxib", reaction="Hepatotoxicity"),
+            _call("final_answer", answer="Sí, hay señal con xelofrina."),
+        ]
+    )
+    old = coordinar(
+        "¿Señal con la xelofrina?", store, "f", "sin_nombres", brains={"f": Brain(llm=llm2)}
+    )
+    assert old.final_answer.startswith("Sí") and "AVISO" not in old.steps[1].observation
+
+
+def test_comparisons_are_free_when_every_name_is_known(tmp_path, monkeypatch):
+    import tool_use.tools as tt
+
+    data = {"sertraline": 7351, "escitalopram": 3000}
+
+    def fake_faers(drug, reaction=None, top=10):
+        name = tt.faers_drug_name(drug)
+        return {
+            "drug_searched": name,
+            "reports_with_drug": 200000,
+            "reports_with_drug_and_reaction": data[name],
+            "reports_with_reaction": 266615,
+            "total_reports": 21054159,
+        }
+
+    monkeypatch.setattr(tt.faers_reaction_counts, "fn", fake_faers)
+    _, store = _store(tmp_path)
+    reg = make_registry(store)
+    out = reg.call(
+        "comparar_senal", {"farmacos": ["escitalopram", "sertralina"], "reaccion": "Insomnia"}
+    ).result
+    assert [r["farmaco"] for r in out["por_farmaco"]] == ["sertralina", "escitalopram"]
+    groups = reg.call("farmacos_disponibles", {"grupo": "antidepresivo"}).result["grupos"]
+    assert [d["farmaco"] for d in groups["antidepresivo"]] == [
+        "sertralina",
+        "escitalopram",
+        "venlafaxina",
+    ]
+    assert groups["antidepresivo"][0]["casos_en_redes"] == 4
+    who = reg.call("identificar_farmaco", {"nombre": "Besitran"}).result
+    assert who["principio_activo"] == "sertralina" and who["reconocido_como"] == "marca (CIMA)"
+    typo = reg.call("identificar_farmaco", {"nombre": "sertralna"}).result
+    assert typo["principio_activo"] is None and typo["parecidos"] == ["sertralina"]
+    llm = _ScriptedLLM(
+        [
+            _call("comparar_senal", farmacos=["sertralina", "escitalopram"], reaccion="Insomnia"),
+            _call("final_answer", answer="La sertralina tiene más señal de insomnio."),
+        ]
+    )
+    response = coordinar("¿Qué antidepresivo...?", store, brain="f", brains={"f": Brain(llm=llm)})
+    assert response.stop_reason == "final_answer" and "AVISO" not in response.steps[0].observation
+
+
+def test_v3_checks_and_bench():
+    from coordinator.bench.v3 import build
+
+    _, store = _store()
+    two = {"type": "menciona_farmacos", "farmacos": ["sertralina", "escitalopram"], "min": 2}
+    assert check_one(two, "La Sertralina y el escitalopram…", {}, store)
+    assert not check_one(two, "La sertralina…", {}, store)
+    docs = {"type": "citas_docs", "min": 2}
+    assert check_one(docs, "[ee3f3fd9f0-0073] y [1d381329ee-0023]", {}, store)
+    assert not check_one(docs, "[ee3f3fd9f0-0073] y [ee3f3fd9f0-0061]", {}, store)
+    tasks = build()
+    assert len(tasks) == 22 and {t["categoria"] for t in tasks} == {"comparativa", "nombres"}
