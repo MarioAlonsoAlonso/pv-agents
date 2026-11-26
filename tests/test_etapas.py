@@ -225,10 +225,14 @@ def test_a_big_search_waits_for_the_technician_then_runs(live, tmp_path):
     # without the agent the crawl is free; the estimate still says what triaging will cost
     assert "sin el agente (gratis)" in describe(conv.pendientes[0], store)
     assert not monitor.files()["menciones"].exists()  # nothing ran before the "yes"
-    second = conv.confirmar(0)
+    job = conv.confirmar(0)  # a crawl runs in the background: the chat is free meanwhile
+    job.hilo.join(timeout=30)
+    assert job.terminado and conv.terminados() == [job] and "menciones_nuevas" in job.resultado
+    second = conv.informar(job)  # the coordinator is told, and goes on with the triage
     assert second.session_id == first.session_id  # the same conversation
     assert len(store.mentions) == 3 and len(store.cases) == 1  # crawled, then triaged
     assert "Rastreado" in second.final_answer and conv.pendientes == []
+    assert conv.terminados() == []  # told once
 
 
 def test_in_an_exam_even_a_small_search_is_only_proposed(live, tmp_path):
@@ -339,3 +343,18 @@ def test_a_closed_period_and_reading_a_whole_mention(live, tmp_path):
     whole = reg.call("ver_mencion", {"mencion_id": mid}).result
     assert whole["texto"].startswith("Llevo un mes") and whole["triaje"] == "sin_triar"
     assert not reg.call("ver_mencion", {"mencion_id": "M-nope"}).ok
+
+
+def test_the_icsr_still_runs_at_once_and_jobs_can_be_foreground(live, tmp_path):
+    store = _store(tmp_path)
+    llm = _ScriptedLLM(
+        [
+            _call("rastrear", farmaco="sertralina", desde="2025-01-01", con_agente=False),
+            _call("final_answer", answer="¿Lo lanzo?"),
+            _call("final_answer", answer="Hecho."),
+        ]
+    )
+    conv = Conversacion(store, brain="fake", brains={"fake": Brain(llm=llm)}, coder=str)
+    conv.preguntar("Busca la sertralina desde 2025")
+    done = conv.confirmar(0, segundo_plano=False)  # in the foreground: the answer comes back
+    assert done.final_answer == "Hecho." and conv.trabajos == [] and len(store.mentions) == 3

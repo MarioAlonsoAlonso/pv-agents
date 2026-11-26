@@ -13,7 +13,11 @@ shown with what it will do and its cost, and you answer:
     sí / confirmo      run it (the first pending one; "sí 2" for the second)
     no                 do not run it
     pendientes         show what is waiting
+    trabajos           searches and triages running in the background
     salir
+
+A confirmed search or triage runs in the background: you can keep asking, and when it finishes
+the coordinator tells you with your next message (press Enter to check).
 
 The conversation is saved in ``data/coordinador/chat/`` (it may paraphrase posts: out of git).
 """
@@ -62,13 +66,15 @@ def command(text: str) -> tuple[str, int]:
         return "salir", 0
     if head == "pendientes":
         return "pendientes", 0
+    if head == "trabajos":
+        return "trabajos", 0
     return "pregunta", 0
 
 
 def main(argv: list[str] | None = None) -> None:
     from dotenv import load_dotenv
 
-    from coordinator.agent import Conversacion, warm_up
+    from coordinator.agent import Conversacion, Trabajo, warm_up
     from coordinator.cases import FOLDER, CaseStore
     from coordinator.tools import VARIANTS
     from crawler.text import utf8_stdout
@@ -107,7 +113,23 @@ def main(argv: list[str] | None = None) -> None:
     log = FOLDER / "chat" / f"{datetime.now():%Y%m%d-%H%M%S}.jsonl"
     log.parent.mkdir(parents=True, exist_ok=True)
     print("Escribe tu pregunta («salir» para terminar).\n")
+
+    def log_turn(text, response):
+        with open(log, "a", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {"tecnico": text, **response.model_dump()}, ensure_ascii=False, default=str
+                )
+                + "\n"
+            )
+
     while True:
+        for job in conv.terminados():  # what finished in the background while you were asking
+            print(f"\n  ✓ terminado en segundo plano: {job.describir()}")
+            response = conv.informar(job)
+            show(response, args.traza)
+            show_pending(conv)
+            log_turn("[trabajo terminado]", response)
         try:
             text = input("técnico> ").strip()
         except (EOFError, KeyboardInterrupt):
@@ -116,6 +138,12 @@ def main(argv: list[str] | None = None) -> None:
         if kind == "salir":
             break
         if kind == "":
+            continue
+        if kind == "trabajos":
+            for job in conv.trabajos:
+                print(f"  · {job.describir()}")
+            if not conv.trabajos:
+                print("  ningún trabajo en segundo plano")
             continue
         if kind == "pendientes":
             show_pending(conv) if conv.pendientes else print("  nada pendiente")
@@ -126,21 +154,23 @@ def main(argv: list[str] | None = None) -> None:
             print(f"  no hay un pendiente {index + 1}")
             continue
         if kind == "si":
-            print("  lanzado; puede tardar…")
             response = conv.confirmar(index)
+            if isinstance(response, Trabajo):
+                print(
+                    f"  lanzado en segundo plano: {response.describir()}\n"
+                    "  Puedes seguir preguntando; cuando termine te lo diré (o escribe «trabajos»)."
+                )
+                show_pending(conv)
+                continue
         elif kind == "no":
             response = conv.rechazar(index)
         else:
             response = conv.preguntar(text)
         show(response, args.traza)
         show_pending(conv)
-        with open(log, "a", encoding="utf-8") as f:
-            f.write(
-                json.dumps(
-                    {"tecnico": text, **response.model_dump()}, ensure_ascii=False, default=str
-                )
-                + "\n"
-            )
+        log_turn(text, response)
+    if conv.en_marcha():
+        print("  aviso: hay trabajos en marcha; al salir se cortan (vuelve a lanzarlos luego)")
     print(f"conversación guardada en {log}")
 
 

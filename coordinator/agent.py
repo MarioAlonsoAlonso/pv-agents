@@ -21,6 +21,7 @@ errors as observations, loop detection, memory, human confirmation for the ICSR)
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
@@ -319,6 +320,25 @@ def describe(action: AgentAction, store: CaseStore | None = None) -> str:
     return f"{action.name}({a})"
 
 
+BACKGROUND = ("rastrear", "triar")  # long jobs: once confirmed, they run in the background
+
+
+@dataclass
+class Trabajo:
+    """A confirmed crawl or triage running in the background while the conversation goes on."""
+
+    accion: AgentAction
+    empezado: str
+    terminado: bool = False
+    informado: bool = False
+    resultado: str = ""
+    hilo: threading.Thread | None = field(default=None, repr=False)
+
+    def describir(self) -> str:
+        estado = "terminado" if self.terminado else "en marcha"
+        return f"{self.accion.name}({self.accion.arguments}) · {estado} · desde {self.empezado}"
+
+
 @dataclass
 class Conversacion:
     """A conversation with the coordinator: the same memory across turns (the harness's
@@ -334,8 +354,12 @@ class Conversacion:
     brains: dict | None = None
     pendientes: list = field(default_factory=list)
     session_id: str | None = None
+    trabajos: list = field(default_factory=list)
 
     def __post_init__(self):
+        # One turn at a time: the chat, a finished background job and the web page may all want
+        # to talk to the coordinator; its memory is one conversation.
+        self._turn = threading.Lock()
         self.agent = CoordinatorAgent(
             registry=make_registry(self.store, self.variant, self.coder),
             brains=self.brains if self.brains is not None else {},
@@ -344,22 +368,63 @@ class Conversacion:
         )
 
     def preguntar(self, texto: str) -> AgentResponse:
-        response = self.agent.run(
-            texto, max_steps=self.max_steps, brain=self.brain, session_id=self.session_id
-        )
-        self.session_id = response.session_id
-        self.pendientes = list(response.pending_actions)
-        return response
+        with self._turn:
+            response = self.agent.run(
+                texto, max_steps=self.max_steps, brain=self.brain, session_id=self.session_id
+            )
+            self.session_id = response.session_id
+            self.pendientes = list(response.pending_actions)
+            return response
 
-    def confirmar(self, i: int = 0) -> AgentResponse:
-        """Run the i-th queued action and tell the coordinator what came out."""
-        action = self.pendientes.pop(i)
+    def _run(self, action: AgentAction) -> str:
         record = self.agent.registry.call(action.name, action.arguments)
-        result = self.agent.format_result(record.result) if record.ok else f"error: {record.error}"
+        return self.agent.format_result(record.result) if record.ok else f"error: {record.error}"
+
+    def confirmar(self, i: int = 0, segundo_plano: bool = True) -> AgentResponse | Trabajo:
+        """Run the i-th queued action. A crawl or a triage runs in the background (it can take
+        an hour) and a ``Trabajo`` comes back at once: the technician keeps asking, and
+        ``informar`` tells the coordinator when it has finished. Anything else (the ICSR) runs
+        now and the coordinator answers with its result."""
+        from datetime import datetime
+
+        action = self.pendientes.pop(i)
+        if segundo_plano and action.name in BACKGROUND:
+            job = Trabajo(action, empezado=f"{datetime.now():%H:%M}")
+
+            def work():
+                try:
+                    job.resultado = self._run(action)
+                except Exception as exc:  # noqa: BLE001 - reported to the technician
+                    job.resultado = f"error: {exc}"
+                job.terminado = True
+
+            job.hilo = threading.Thread(target=work, daemon=True)
+            self.trabajos.append(job)
+            job.hilo.start()
+            return job
+        result = self._run(action)
         return self.preguntar(
             f"[Sistema] El técnico ha confirmado {action.name}({action.arguments}). "
             f"Resultado: {result[:5000]}\nDíselo al técnico y sigue con lo que pidió, si quedaba "
             "algo."
+        )
+
+    def en_marcha(self) -> list[Trabajo]:
+        return [j for j in self.trabajos if not j.terminado]
+
+    def terminados(self) -> list[Trabajo]:
+        """Finished background jobs the coordinator has not been told about yet."""
+        return [j for j in self.trabajos if j.terminado and not j.informado]
+
+    def informar(self, job: Trabajo) -> AgentResponse:
+        """Tell the coordinator that a background job has finished, so that it tells the
+        technician (and goes on: after a crawl, it may propose the triage)."""
+        job.informado = True
+        a = job.accion
+        return self.preguntar(
+            f"[Sistema] Ha terminado en segundo plano {a.name}({a.arguments}), que el técnico "
+            f"confirmó a las {job.empezado}. Resultado: {job.resultado[:5000]}\nDíselo al técnico "
+            "y sigue con lo que pidió, si quedaba algo."
         )
 
     def rechazar(self, i: int = 0) -> AgentResponse:
