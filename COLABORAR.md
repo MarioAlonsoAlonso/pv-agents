@@ -14,6 +14,8 @@ junta en `main` con un *pull request*.
 Las carpetas comunes (`common/`, `agent/`, `README.md`, `pyproject.toml`…) se pueden tocar, pero
 **avisad antes al resto**: si dos personas cambian las mismas líneas, git no sabe cuál quedarse.
 
+**Novedades y tareas pendientes (26-11):** [`docs/equipo/2026-11-26_novedades_y_tareas.md`](docs/equipo/2026-11-26_novedades_y_tareas.md).
+
 ## La primera vez
 
 1. Pedid acceso al repositorio a su dueño (GitHub → *Settings* → *Collaborators*).
