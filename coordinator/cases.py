@@ -419,7 +419,7 @@ class CaseStore:
         if case_id not in self.cases:
             raise KeyError(
                 f"no case with id '{case_id}': use the ids that listar_casos returns (M-…); "
-                "a mention that is not a case (not triaged, or discarded) opens with ver_mencion"
+                "ver_mencion opens any post, case or not"
             )
         return self.cases[case_id]
 

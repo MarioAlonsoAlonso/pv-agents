@@ -338,4 +338,4 @@ def test_a_closed_period_and_reading_a_whole_mention(live, tmp_path):
     mid = next(iter(store.mentions))
     whole = reg.call("ver_mencion", {"mencion_id": mid}).result
     assert whole["texto"].startswith("Llevo un mes") and whole["triaje"] == "sin_triar"
-    assert "error" in reg.call("ver_mencion", {"mencion_id": "M-nope"}).result
+    assert not reg.call("ver_mencion", {"mencion_id": "M-nope"}).ok

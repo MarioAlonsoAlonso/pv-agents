@@ -85,7 +85,7 @@ def test_tools_list_read_code_and_group(tmp_path):
     listed = reg.call("listar_casos", {"farmaco": "Sertralina", "limite": 2}).result
     assert listed["efectos_adversos"] == 4 and listed["graves"] == 1
     assert listed["menciones_triadas"] == 5 and len(listed["casos"]) == 2
-    seen = reg.call("ver_caso", {"caso_id": f"[{ms[2].id}]"}).result
+    seen = reg.call("ver_mencion", {"mencion_id": f"[{ms[2].id}]"}).result
     assert "náuseas" in seen["conversacion_anterior"]
     coded = reg.call("codificar_meddra", {"caso_id": ms[0].id}).result
     assert coded["terminos_meddra"] == ["Somnolence", "Sueño raro"]
@@ -99,7 +99,7 @@ def test_tools_list_read_code_and_group(tmp_path):
     grouped = reg.call("agrupar_por_meddra", {"farmaco": "sertralina"}).result
     assert grouped["codificados"] == 1
     assert {g["termino"] for g in grouped["por_termino"]} == {"Somnolence", "Sueño raro"}
-    assert not reg.call("ver_caso", {"caso_id": "M-zzz"}).ok
+    assert not reg.call("ver_mencion", {"mencion_id": "M-zzz"}).ok
 
 
 def test_variants_remove_components():
@@ -336,9 +336,9 @@ def test_an_icsr_that_could_never_be_registered_is_not_queued(tmp_path):
 def test_without_the_reasoning_model_the_cached_codes_do_not_leak(tmp_path):
     ms, store = _store(tmp_path)
     store.save_meddra(ms[0].id, ["Somnolence"])
-    seen = make_registry(store, "sin_meddra").call("ver_caso", {"caso_id": ms[0].id}).result
+    seen = make_registry(store, "sin_meddra").call("ver_mencion", {"mencion_id": ms[0].id}).result
     assert "meddra" not in seen
-    assert make_registry(store).call("ver_caso", {"caso_id": ms[0].id}).result["meddra"] == [
+    assert make_registry(store).call("ver_mencion", {"mencion_id": ms[0].id}).result["meddra"] == [
         "Somnolence"
     ]
 

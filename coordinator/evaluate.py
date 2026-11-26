@@ -132,6 +132,17 @@ def term_in(term: str, line: str) -> bool:
     return re.search(pattern, line, re.IGNORECASE) is not None
 
 
+# ver_caso and ver_mencion became one tool on 2026-11-26 (ver_mencion): for the benchmarks
+# written before, using ver_mencion counts as having used ver_caso, and the traces saved before
+# (with ver_caso) score as they did.
+ALIASES = {"ver_mencion": "ver_caso"}
+
+
+def used_tools(response: dict) -> set[str]:
+    used = {s["action"]["name"] for s in response.get("steps", []) if s.get("action")}
+    return used | {ALIASES[t] for t in used if t in ALIASES}
+
+
 def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> bool:
     kind = check.get("type")
     cases = store.of_drug(DRUG)
@@ -231,7 +242,7 @@ def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> boo
     if kind == "sin_pendientes":
         return not response.get("pending_actions")
     if kind == "herramientas_distintas":
-        used = {s["action"]["name"] for s in response.get("steps", []) if s.get("action")}
+        used = used_tools(response)
         return len(used & set(check["de"])) >= check.get("min", 1)
     from agent.evaluate import _check_one
 
@@ -303,6 +314,7 @@ SOURCE_OF = {
     "listar_casos": ("casos",),
     "resumen_casos": ("casos",),
     "ver_caso": ("casos",),
+    "ver_mencion": ("casos",),
     "codificar_meddra": ("meddra",),
     "codificar_notificacion": ("meddra",),
     "agrupar_por_meddra": ("meddra",),
@@ -354,7 +366,7 @@ def score_task(task: dict, response: dict, store: CaseStore) -> dict:
             results.append(check_one(c, answer, response, store))
         except Exception:  # noqa: BLE001 - a live check that fails counts as not passed
             results.append(False)
-    used = [s["action"]["name"] for s in response.get("steps", []) if s.get("action")]
+    used = sorted(used_tools(response))
     return {
         "id": task["id"],
         "conjunto": task.get("conjunto", ""),

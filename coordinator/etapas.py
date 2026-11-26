@@ -284,5 +284,5 @@ def triage(store, drug: str) -> dict:
         "farmaco": drug,
         **done,
         "casos_ahora": len(store.of_drug(drug)),
-        "nota": "los efectos adversos ya son casos: listar_casos, ver_caso, codificar_meddra…",
+        "nota": "los efectos adversos ya son casos: listar_casos, ver_mencion, codificar_meddra…",
     }

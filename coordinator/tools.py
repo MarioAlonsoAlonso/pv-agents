@@ -2,7 +2,7 @@
 
 | Tool | What is behind it |
 |---|---|
-| ``listar_casos``, ``ver_caso`` | The crawler + triage output (``coordinator/cases.py``) |
+| ``listar_casos``, ``ver_mencion`` | The crawler + triage output; any post, case or not |
 | ``resumen_casos`` | The same cases at once: counts and reactions by theme (``overview``) |
 | ``codificar_meddra`` | The phase-1 reasoning model (Qwen3-1.7B + LoRA, SFT + GRPO) |
 | ``codificar_notificacion`` | The same model, on a text the technician pastes (not a case) |
@@ -18,6 +18,9 @@
 | ``listar_menciones`` | What the crawler found, i.e. what it hands to the triage |
 | ``listar_descartes`` | What the triage said was not an adverse event, and why |
 | ``rastrear``, ``triar`` | Launch the crawler (since a date), the triage; big jobs wait |
+
+``ver_mencion`` replaced ``ver_caso`` on 2026-11-26 (one tool to read a post, case or not;
+``coordinator/evaluate.py`` counts it as ``ver_caso`` for the benchmarks written before).
 
 Naranjo (``naranjo_causality``) is left out on purpose: its ten questions (rechallenge,
 placebo, drug levels…) cannot be answered from a social-media post, and the model would fill
@@ -55,7 +58,6 @@ VARIANTS = (
 STAGE_TOOLS = (
     "estado_del_sistema",
     "listar_menciones",
-    "ver_mencion",
     "listar_descartes",
     "rastrear",
     "triar",
@@ -294,28 +296,6 @@ def make_registry(
             "pacientes; para ver los casos de un tema, listar_casos con 'buscar'",
         }
         return out
-
-    @tool
-    def ver_caso(
-        caso_id: Annotated[str, Field(description="Case id as listar_casos gives it (M-…).")],
-    ) -> dict:
-        """Read one case in full: the post (anonymised), the earlier messages of its
-        conversation, everything the triage extracted and its MedDRA terms if already coded."""
-        case = store.get(caso_id)
-        return {
-            **case.summary(),
-            "texto": case.texto,
-            "conversacion_anterior": case.conversacion or "(es el primer post)",
-            "negadas": case.triaje.get("negadas", ""),
-            # Without the reasoning model (ablation), the codes it left in the cache must not
-            # leak through here: in the first sin_meddra run they did ("ya estaba codificado").
-            **(
-                {"meddra": store.meddra.get(case.id, "sin codificar: usa codificar_meddra")}
-                if variant != "sin_meddra"
-                else {}
-            ),
-            "fuente": "Bluesky, post público anonimizado; notificante: consumidor",
-        }
 
     @tool
     def codificar_meddra(
@@ -666,21 +646,24 @@ def make_registry(
     @tool
     def ver_mencion(
         mencion_id: Annotated[
-            str, Field(description="Mention id as listar_menciones gives it (M-…).")
+            str,
+            Field(description="Id of a mention or a case (M-…), as the listing tools give it."),
         ],
     ) -> dict:
-        """Read one mention in full, case or not: the whole post (anonymised) and the earlier
-        messages of its conversation, how the crawler found it and everything the triage said
-        about it (or that it has not been triaged). Use it when the technician wants to read a
-        post."""
+        """Read one post in full, case or not: the whole post (anonymised) and the earlier
+        messages of its conversation, how the crawler found it and what the triage said. For a
+        case (an adverse event), also everything the triage extracted (reactions, patient, sex,
+        age, seriousness, outcome, denied symptoms) and its MedDRA terms if already coded."""
         from crawler.store import conversation_text
 
-        m = store.mentions.get(mencion_id.strip().strip("[]"))
+        mention_id = mencion_id.strip().strip("[]")
+        m = store.mentions.get(mention_id)
         if m is None:
-            return {
-                "error": f"no hay ninguna mención '{mencion_id}': usa los ids de listar_menciones"
-            }
-        return {
+            raise KeyError(
+                f"no hay ninguna mención o caso '{mencion_id}': usa los ids que dan "
+                "listar_casos o listar_menciones (M-…)"
+            )
+        out = {
             "id": m.id,
             "farmaco": m.farmaco,
             "fecha": m.fecha[:10],
@@ -690,10 +673,20 @@ def make_registry(
             "texto": m.texto,
             "conversacion_anterior": conversation_text(m) or "(es el primer post)",
             "triaje": store.triage_state(m.id),
-            "respuesta_del_triaje": store.answers.get(m.id, "sin triar todavía"),
-            "nota": "post público de Bluesky, anonimizado (@usuario, [enlace]); "
-            "notificante: consumidor",
         }
+        case = store.cases.get(m.id)
+        if case is None:
+            out["respuesta_del_triaje"] = store.answers.get(m.id, "sin triar todavía")
+        else:
+            out |= {**case.summary(), "negadas": case.triaje.get("negadas", "")}
+            # Without the reasoning model (ablation), the codes it left in the cache must not
+            # leak through here: in the first sin_meddra run they did ("ya estaba codificado").
+            if variant != "sin_meddra":
+                out["meddra"] = store.meddra.get(case.id, "sin codificar: usa codificar_meddra")
+        out["nota"] = (
+            "post público de Bluesky, anonimizado (@usuario, [enlace]); notificante: consumidor"
+        )
+        return out
 
     @tool
     def triar(
@@ -720,7 +713,7 @@ def make_registry(
     registry = ToolRegistry().register(
         listar_casos,
         resumen_casos,
-        ver_caso,
+        ver_mencion,
         faers_reaction_counts,
         disproportionality_prr,
         create_icsr_report,
@@ -735,7 +728,5 @@ def make_registry(
     if variant != "sin_nombres":
         registry.register(farmacos_disponibles, identificar_farmaco, comparar_senal)
     if variant != "sin_etapas":
-        registry.register(
-            estado_del_sistema, listar_menciones, ver_mencion, listar_descartes, rastrear, triar
-        )
+        registry.register(estado_del_sistema, listar_menciones, listar_descartes, rastrear, triar)
     return registry
