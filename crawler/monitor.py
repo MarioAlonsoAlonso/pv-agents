@@ -4,6 +4,7 @@
     uv run --extra crawler python -m crawler.monitor --brain 27b           # with the agent (DGX)
     uv run --extra crawler python -m crawler.monitor --cada 6 --bucle      # every 6 hours
     uv run --extra crawler python -m crawler.monitor --farmacos lorazepam --desde 2026-01-01
+    uv run --extra crawler python -m crawler.monitor --brain 27b --triar   # + triage of the new
 
 The scheduler is code, not an agent: the same steps every time. Each run, for each drug:
 
@@ -21,9 +22,18 @@ fill a gap), whatever the last run was; the next runs carry on from now. Every t
 new, so the agent reads all of them: with months of posts, expect many agent runs (tokens).
 Each search term brings at most 2000 posts.
 
-State (``data/bluesky/monitor/estado.json``): last run per drug, watched threads (with their
-AT-URIs, needed to download them again) and discovered terms. New mentions are appended to
-``data/bluesky/monitor/menciones.jsonl``: that file is what triage reads.
+``--triar`` passes the new mentions through the triage (its final configuration: v2, one post
+per request) as soon as the run ends, so that they become cases for the coordinator.
+
+Files, in ``data/bluesky/monitor/`` (the system's store of live data; the coordinator reads them
+together with the frozen evaluation sample):
+
+* ``estado.json``: last run per drug, watched threads (with their AT-URIs, needed to download
+  them again) and discovered terms;
+* ``menciones.jsonl``: every mention found, appended run after run (what triage reads);
+* ``triaje_respuestas.jsonl``: the triage's answer for each of them (``--triar``);
+* ``en_marcha.lock``: while a run or a triage is going on. Two at once would write the same
+  files, so the second one stops with an error (a lock older than 12 hours is stale).
 """
 
 from __future__ import annotations
@@ -41,6 +51,62 @@ from crawler.store import MentionStore
 from crawler.systems import fixed_search, threads_of
 
 STATE_DIR = DATA_DIR / "monitor"
+TRIAGE_VERSION, TRIAGE_BY = "v2", "mencion"  # the triage's final configuration (triage/README)
+LOCK_HOURS = 12
+
+
+def files(folder: Path | None = None) -> dict[str, Path]:
+    folder = Path(folder or STATE_DIR)
+    return {
+        "estado": folder / "estado.json",
+        "menciones": folder / "menciones.jsonl",
+        "triaje": folder / "triaje_respuestas.jsonl",
+        "lock": folder / "en_marcha.lock",
+    }
+
+
+class Busy(RuntimeError):
+    """Another run or triage is writing the monitor's files."""
+
+
+def running(folder: Path | None = None) -> dict | None:
+    """What is running now (``{"que": ..., "desde": ...}``), or None. A stale lock is ignored."""
+    lock = files(folder)["lock"]
+    if not lock.exists():
+        return None
+    try:
+        info = json.loads(lock.read_text("utf-8"))
+        started = datetime.fromisoformat(info["desde"].replace("Z", "+00:00"))
+    except (ValueError, KeyError):
+        return None
+    if datetime.now(UTC) - started > timedelta(hours=LOCK_HOURS):
+        return None
+    return info
+
+
+class exclusive:  # noqa: N801 - used as ``with exclusive(...)``
+    """Only one writer of the monitor's files at a time (the periodic monitor, a search the
+    coordinator launched, a triage)."""
+
+    def __init__(self, what: str, folder: Path | None = None):
+        self.what, self.lock = what, files(folder)["lock"]
+
+    def __enter__(self):
+        busy = running(self.lock.parent)
+        if busy:
+            raise Busy(
+                f"ya hay algo en marcha desde {busy['desde']}: {busy['que']}. Espera a que "
+                "termine (o borra el fichero en_marcha.lock si se cortó)."
+            )
+        self.lock.parent.mkdir(parents=True, exist_ok=True)
+        self.lock.write_text(
+            json.dumps({"que": self.what, "desde": to_iso(datetime.now(UTC))}), "utf-8"
+        )
+        return self
+
+    def __exit__(self, *exc):
+        self.lock.unlink(missing_ok=True)
+        return False
 
 
 def load_state(path: Path) -> dict:
@@ -127,6 +193,91 @@ def run_once(
     return store, summary
 
 
+def crawl_and_save(
+    source,
+    drugs=WATCHLIST,
+    brain: str | None = None,
+    follow_days: int = 7,
+    first_lookback_hours: int = 24,
+    since: str | None = None,
+    now: datetime | None = None,
+    folder: Path | None = None,
+) -> dict:
+    """One run that keeps its result: the new mentions are appended to ``menciones.jsonl``
+    and the state is saved. What the command line and the coordinator's ``rastrear`` call."""
+    f = files(folder)
+    with exclusive(f"rastreo de {', '.join(drugs)}", f["lock"].parent):
+        state = load_state(f["estado"])
+        store, summary = run_once(
+            source, state, drugs, brain, follow_days, first_lookback_hours, now, since
+        )
+        known = MentionStore.load_ids(f["menciones"])
+        new = MentionStore()
+        for m in store.mentions.values():
+            if m.id not in known:
+                new.add(m)
+        f["menciones"].parent.mkdir(parents=True, exist_ok=True)
+        new.save(f["menciones"], append=True)
+        f["estado"].write_text(json.dumps(state, ensure_ascii=False, indent=1), "utf-8")
+    by_origin = {"busqueda_fija": 0, "agente": 0}
+    for m in new.mentions.values():
+        by_origin[m.encontrado_por] = by_origin.get(m.encontrado_por, 0) + 1
+    return {"nuevas": len(new), "por_origen": by_origin, "por_farmaco": summary}
+
+
+def pending_mentions(drugs=None, already: set[str] = frozenset(), folder: Path | None = None):
+    """Mentions of the monitor without a triage answer (``already``: ids triaged elsewhere,
+    e.g. in the evaluation sample, which are not triaged twice)."""
+    from crawler.store import read_mentions
+    from triage.agent import read_answers
+
+    f = files(folder)
+    if not f["menciones"].exists():
+        return []
+    done = set(read_answers(f["triaje"])) | set(already)
+    return [
+        m
+        for m in read_mentions(f["menciones"])
+        if m.id not in done and (drugs is None or m.farmaco in drugs)
+    ]
+
+
+def triage_pending(
+    drugs=None,
+    brain: str = "27b",
+    already: set[str] = frozenset(),
+    folder: Path | None = None,
+    llm_factory=None,
+    progress=print,
+) -> dict:
+    """Pass the monitor's mentions that have no answer yet through the triage (v2, one post per
+    request) and append the answers to ``triaje_respuestas.jsonl``."""
+    from triage.agent import run_triage
+
+    f = files(folder)
+    with exclusive(f"triaje de {', '.join(drugs or ['todos'])}", f["lock"].parent):
+        pending = pending_mentions(drugs, already, folder)
+        if not pending:
+            return {"triadas": 0, "efectos_adversos": 0, "graves": 0, "a_revision": 0}
+        run = run_triage(
+            pending,
+            brain=brain,
+            version=TRIAGE_VERSION,
+            por=TRIAGE_BY,
+            out=f["triaje"],
+            llm_factory=llm_factory,
+            progress=progress,
+        )
+    answers = [run.answers[m.id] for m in pending if m.id in run.answers]
+    return {
+        "triadas": len(answers),
+        "efectos_adversos": sum(a.get("es_efecto_adverso") == "si" for a in answers),
+        "graves": sum(a.get("grave") == "si" for a in answers),
+        "a_revision": sum(a.get("estado") == "sin_respuesta" for a in answers),
+        "tokens": run.cost.prompt_tokens + run.cost.completion_tokens,
+    }
+
+
 def main(argv: list[str] | None = None) -> None:
     from crawler.text import utf8_stdout
 
@@ -147,35 +298,27 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--desde", default=None, help="first run: everything since this date (YYYY-MM-DD)"
     )
+    parser.add_argument("--triar", action="store_true", help="triage the new mentions too")
     args = parser.parse_args(argv)
 
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    state_file, out = STATE_DIR / "estado.json", STATE_DIR / "menciones.jsonl"
     source = LiveSource()
     while True:
-        state = load_state(state_file)
         started = datetime.now(UTC)
-        store, summary = run_once(
+        result = crawl_and_save(
             source,
-            state,
             args.farmacos,
             brain=None if args.sin_agente else args.brain,
             follow_days=args.dias_seguimiento,
             first_lookback_hours=args.primera_vez_horas,
-            now=started,
             since=args.desde,
+            now=started,
         )
         args.desde = None  # only the first run of a loop: then from the last run on
-        known = MentionStore.load_ids(out)
-        new = MentionStore()
-        for m in store.mentions.values():
-            if m.id not in known:
-                new.add(m)
-        new.save(out, append=True)
-        state_file.write_text(json.dumps(state, ensure_ascii=False, indent=1), "utf-8")
-        print(f"[{to_iso(started)}] {len(new)} menciones nuevas → {out}")
-        for drug, s in summary.items():
+        print(f"[{to_iso(started)}] {result['nuevas']} menciones nuevas → {files()['menciones']}")
+        for drug, s in result["por_farmaco"].items():
             print(f"  {drug}: {s}")
+        if args.triar:
+            print(f"  triaje: {triage_pending(args.farmacos, brain=args.brain)}")
         if not args.bucle:
             break
         time.sleep(args.cada * 3600)

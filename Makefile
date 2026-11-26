@@ -142,6 +142,9 @@ crawler-eval: ## Rastreador: fija, fija+hilos, híbrido y agente sobre la muestr
 crawler-vigilar: ## Rastreador: una ejecución del vigilante periódico (añade --bucle para repetir)
 	$(UV) run --extra crawler python -m crawler.monitor --brain $(CRAWLER_BRAIN)
 
+crawler-vigilar-triar: ## Rastreador + triaje de lo nuevo: deja casos para el coordinador (DGX)
+	$(UV) run --extra crawler python -m crawler.monitor --brain $(CRAWLER_BRAIN) --triar
+
 # Triaje (proyecto final): ¿es un efecto adverso? Detalle en triage/README.md
 TRIAGE_VERSION ?= v1
 TRIAGE_BRAIN ?= 27b
@@ -163,6 +166,13 @@ coordinador-casos: ## Coordinador: resumen de los casos (rastreador + triaje), s
 
 coordinador-eval: ## Coordinador: banco de 13 peticiones y ablaciones (DGX con GPU, reanudable)
 	$(UV) run python -m coordinator.evaluate
+
+coordinador-chat: ## Coordinador: conversación en la terminal, con confirmación de acciones (DGX)
+	$(UV) run --extra crawler python -m coordinator.chat
+
+coordinador-eval-etapas: ## Coordinador: banco v5 de las etapas, completo frente a sin_etapas (DGX)
+	$(UV) run python -m coordinator.evaluate --bench coordinator/bench/tareas_v5.jsonl \
+		--variantes completo sin_etapas
 
 api: ## Levanta la API en local con recarga automática
 	$(UV) run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
@@ -188,4 +198,4 @@ docker-api: ## API dentro del contenedor
 shell: ## Shell interactiva con GPU dentro del contenedor
 	docker compose run --rm train
 
-.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-distill-27b rlm-sft-27b rlm-grpo-27b rlm-eval-27b rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval api enunciado build docker-check-gpu docker-smoke docker-api shell
+.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-distill-27b rlm-sft-27b rlm-grpo-27b rlm-eval-27b rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar crawler-vigilar-triar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval coordinador-chat coordinador-eval-etapas api enunciado build docker-check-gpu docker-smoke docker-api shell

@@ -14,6 +14,10 @@
 | ``farmacos_disponibles`` | ``coordinator/drugs.py``: the drugs by group, and their sources |
 | ``identificar_farmaco`` | ``coordinator/drugs.py``: active ingredient, English name, brand |
 | ``comparar_senal`` | FAERS + PRR for several drugs at once (comparisons) |
+| ``estado_del_sistema`` | What each stage has done per drug, and what is missing (``etapas.py``) |
+| ``listar_menciones`` | What the crawler found, i.e. what it hands to the triage |
+| ``listar_descartes`` | What the triage said was not an adverse event, and why |
+| ``rastrear``, ``triar`` | Launch the crawler (since a date), the triage; big jobs wait |
 
 Naranjo (``naranjo_causality``) is left out on purpose: its ten questions (rechallenge,
 placebo, drug levels…) cannot be answered from a social-media post, and the model would fill
@@ -38,7 +42,23 @@ from pydantic import Field
 from coordinator.cases import CaseStore
 from tool_use.registry import ToolRegistry, tool
 
-VARIANTS = ("completo", "sin_rag", "sin_meddra", "sin_literatura", "sin_evidencia", "sin_nombres")
+VARIANTS = (
+    "completo",
+    "sin_rag",
+    "sin_meddra",
+    "sin_literatura",
+    "sin_evidencia",
+    "sin_nombres",
+    "sin_etapas",
+)
+# The tools of the earlier stages (2026-11-26); ``sin_etapas`` is the coordinator before them.
+STAGE_TOOLS = ("estado_del_sistema", "listar_menciones", "listar_descartes", "rastrear", "triar")
+DISCARD_REASONS = {
+    "no_es_mencion": "no habla del fármaco (error del rastreador: un «gracias», otro fármaco…)",
+    "pregunta_o_consejo": "pregunta o consejo, sin una experiencia propia",
+    "broma_opinion_noticia": "broma, opinión o noticia",
+    "sin_reaccion": "lo toma y no cuenta ningún efecto adverso",
+}
 # Tools of the drug names and comparisons (2026-11-25); ``sin_nombres`` removes them and the
 # guard on substituted drugs, i.e. the coordinator as it was before.
 NAME_TOOLS = ("farmacos_disponibles", "identificar_farmaco", "comparar_senal")
@@ -462,6 +482,185 @@ def make_registry(
             ],
         }
 
+    @tool
+    def estado_del_sistema(
+        farmaco: Annotated[
+            str | None, Field(description="Active ingredient in Spanish; empty for all.")
+        ] = None,
+    ) -> dict:
+        """What each stage of the system has done for each watched drug: mentions the crawler
+        found (and since when; from the frozen evaluation sample or from the monitor), how many
+        the triage has seen and how many are waiting, cases, serious ones, MedDRA codings, and
+        'que_falta': what has to run before a question can be answered. Use it when a question
+        needs data that may not be there (another drug, a recent period) and to tell the
+        technician what is missing; then offer rastrear / triar."""
+        from coordinator import etapas
+
+        if farmaco:
+            drug, error = etapas.watched(farmaco)
+            if error:
+                return {"error": error}
+            return etapas.state(store, drug)
+        return etapas.state(store)
+
+    @tool
+    def listar_menciones(
+        farmaco: Annotated[
+            str | None, Field(description="Active ingredient in Spanish; empty for all.")
+        ] = None,
+        triaje: Annotated[
+            Literal["todas", "sin_triar", "efecto_adverso", "descartada"],
+            Field(description="What the triage said about them (or that it has not seen them)."),
+        ] = "todas",
+        origen: Annotated[
+            Literal["nombra_el_farmaco", "respuesta_en_conversacion"] | None,
+            Field(
+                description="'nombra_el_farmaco': found by the fixed search; "
+                "'respuesta_en_conversacion': replies found by the crawler's agent in a thread."
+            ),
+        ] = None,
+        buscar: Annotated[
+            str | None,
+            Field(description="Words in the post's text, comma-separated (any of them)."),
+        ] = None,
+        desde: Annotated[str | None, Field(description="From this date, YYYY-MM-DD.")] = None,
+        hasta: Annotated[str | None, Field(description="Until this date, YYYY-MM-DD.")] = None,
+        limite: Annotated[int, Field(ge=1, le=50, description="How many to show.")] = 15,
+    ) -> dict:
+        """The crawler's output: the posts it found about a drug, which is exactly what it
+        hands to the triage (each with its id, date, how it names the drug, whether the fixed
+        search or the agent found it, and what the triage decided). Not the cases: for adverse
+        events with their extracted data use listar_casos. 'coinciden' counts every match;
+        only 'mostrados' are listed, newest first."""
+        from crawler.text import fold
+
+        drug, unknown = case_drug(farmaco)
+        if unknown:
+            return unknown
+        words = [fold(w.strip()) for w in (buscar or "").split(",") if w.strip()]
+        found_by = {"nombra_el_farmaco": "busqueda_fija", "respuesta_en_conversacion": "agente"}
+        rows = []
+        for m in store.mentions_of(drug):
+            decision = store.triage_state(m.id)
+            if triaje != "todas" and decision != triaje:
+                continue
+            if origen and m.encontrado_por != found_by[origen]:
+                continue
+            if words and not any(w in fold(m.texto) for w in words):
+                continue
+            if (desde and m.fecha[:10] < desde) or (hasta and m.fecha[:10] > hasta):
+                continue
+            rows.append((m, decision))
+        return {
+            "farmaco": drug or "todos",
+            "menciones_del_farmaco": len(store.mentions_of(drug)),
+            "coinciden": len(rows),
+            "por_triaje": dict(Counter(d for _, d in rows)),
+            "por_origen": dict(
+                Counter(
+                    "respuesta en conversación" if m.encontrado_por == "agente" else "nombra"
+                    for m, _ in rows
+                )
+            ),
+            "mostrados": min(limite, len(rows)),
+            "menciones": [
+                {
+                    "id": m.id,
+                    "fecha": m.fecha[:10],
+                    "como_lo_nombra": m.tipo_mencion,
+                    "encontrada_por": m.encontrado_por,
+                    "fuente": store.origin.get(m.id, "muestra"),
+                    "triaje": d,
+                    "texto": m.texto[:240] + ("…" if len(m.texto) > 240 else ""),
+                }
+                for m, d in rows[:limite]
+            ],
+            "nota": "posts de personas reales (anonimizados): resume, no copies frases enteras",
+        }
+
+    @tool
+    def listar_descartes(
+        farmaco: Annotated[
+            str | None, Field(description="Active ingredient in Spanish; empty for all.")
+        ] = None,
+        motivo: Annotated[
+            Literal["no_es_mencion", "pregunta_o_consejo", "broma_opinion_noticia", "sin_reaccion"]
+            | None,
+            Field(description="Only this reason of the triage."),
+        ] = None,
+        limite: Annotated[int, Field(ge=0, le=50, description="How many examples.")] = 10,
+    ) -> dict:
+        """The triage's output for the mentions that are NOT adverse events: how many were
+        discarded for each reason (not about the drug, a question, a joke or opinion, takes it
+        with no reaction) and examples. Together with listar_casos, the whole output of the
+        triage."""
+        drug, unknown = case_drug(farmaco)
+        if unknown:
+            return unknown
+        discarded = [
+            (m, store.answers[m.id])
+            for m in store.mentions_of(drug)
+            if store.triage_state(m.id) == "descartada"
+        ]
+        chosen = [(m, a) for m, a in discarded if not motivo or a.get("motivo_no") == motivo]
+        return {
+            "farmaco": drug or "todos",
+            "triadas": sum(m.id in store.answers for m in store.mentions_of(drug)),
+            "descartadas": len(discarded),
+            "por_motivo": dict(Counter(a.get("motivo_no") or "sin motivo" for _, a in discarded)),
+            "que_significa": DISCARD_REASONS,
+            "coinciden": len(chosen),
+            "ejemplos": [
+                {
+                    "id": m.id,
+                    "fecha": m.fecha[:10],
+                    "motivo": a.get("motivo_no", ""),
+                    "texto": m.texto[:200] + ("…" if len(m.texto) > 200 else ""),
+                }
+                for m, a in chosen[:limite]
+            ],
+        }
+
+    @tool
+    def rastrear(
+        farmaco: Annotated[str, Field(description="Watched active ingredient in Spanish.")],
+        desde: Annotated[str, Field(description="Search everything since this date, YYYY-MM-DD.")],
+        con_agente: Annotated[
+            bool,
+            Field(
+                description="True: also the crawler's agent reading the threads (finds the "
+                "replies that do not name the drug; costs tokens). False: only the fixed search."
+            ),
+        ] = True,
+    ) -> dict:
+        """Run the crawler on live Bluesky: every post about a watched drug since a date. The
+        new mentions go to the store and wait for the triage (then call triar). A search of more
+        than a month is not run at once: it is queued, with its cost, for the technician to
+        confirm. Use it when estado_del_sistema says a drug or a period has not been crawled."""
+        from coordinator import etapas
+
+        drug, error = etapas.watched(farmaco)
+        if error:
+            return {"error": error}
+        day, error = etapas.parse_day(desde)
+        if error:
+            return {"error": error}
+        return etapas.crawl(store, drug, day.isoformat(), con_agente)
+
+    @tool
+    def triar(
+        farmaco: Annotated[str, Field(description="Watched active ingredient in Spanish.")],
+    ) -> dict:
+        """Run the triage on the mentions of a drug that are waiting for it: which are adverse
+        events, with the case extracted. The adverse events become cases (listar_casos). More
+        than 100 mentions are queued, with their cost, for the technician to confirm."""
+        from coordinator import etapas
+
+        drug, error = etapas.watched(farmaco)
+        if error:
+            return {"error": error}
+        return etapas.triage(store, drug)
+
     from agent.react_agent import final_answer, search_knowledge_base
     from crawler.agent import buscar_literatura
     from tool_use.tools import (
@@ -487,4 +686,6 @@ def make_registry(
         registry.register(buscar_literatura)
     if variant != "sin_nombres":
         registry.register(farmacos_disponibles, identificar_farmaco, comparar_senal)
+    if variant != "sin_etapas":
+        registry.register(estado_del_sistema, listar_menciones, listar_descartes, rastrear, triar)
     return registry

@@ -113,6 +113,12 @@ cp .env.example .env    # BSKY_HANDLE y BSKY_APP_PASSWORD (contraseña de aplica
 | 5. Evaluación | `make crawler-eval` | 27B (híbrido y agente) |
 | 6. Vigilancia periódica | `make crawler-vigilar` | 27B (o `--sin-agente`) |
 
+**Rastreo + triaje** (`make crawler-vigilar-triar`): con `--triar`, al terminar pasa lo nuevo por
+el triaje (v2, un post cada vez) y deja las respuestas en
+`data/bluesky/monitor/triaje_respuestas.jsonl`; el coordinador las lee y ya son casos. El
+coordinador también puede lanzar el vigilante (`rastrear`) y el triaje (`triar`) desde la
+conversación: [`coordinator/README.md`](../coordinator/README.md#todas-las-etapas-desde-la-conversación-2026-11-26).
+
 **Todo lo de un fármaco desde una fecha** (un fármaco nuevo en la lista, o rellenar un hueco):
 `uv run --extra crawler python -m crawler.monitor --farmacos lorazepam --desde 2026-01-01`. Es
 el vigilante con el inicio fijado: búsqueda fija desde esa fecha, sus hilos y el agente sobre

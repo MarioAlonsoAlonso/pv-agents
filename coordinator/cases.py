@@ -14,6 +14,14 @@ valid ICSR), then the most recent.
 The MedDRA codes are added later, one case at a time, by the reasoning model
 (``codificar_meddra``); they are kept in ``data/coordinador/meddra_terminos.json`` so that a case is
 coded only once.
+
+Two sources (2026-11-26): the frozen evaluation sample (sertraline, what every benchmark uses)
+and the live store of the monitor (``crawler/monitor.py``: ``menciones.jsonl`` and
+``triaje_respuestas.jsonl``), which grows when the monitor runs or the coordinator launches
+``rastrear`` / ``triar``. The store keeps every mention and every triage answer, not only the
+cases, so that the coordinator can answer about any stage: what the crawler found, what the
+triage discarded and why, what is still waiting for triage. ``include_monitor=False`` leaves the
+live data out (the benchmarks, so that their numbers do not change).
 """
 
 from __future__ import annotations
@@ -232,26 +240,54 @@ def _neg_date(iso: str) -> str:
     return "".join(str(9 - int(c)) if c.isdigit() else c for c in iso)
 
 
+def default_sources(include_monitor: bool = True) -> list[tuple[Path, Path, str]]:
+    """(mentions, triage answers, name of the source): the evaluation sample, then the monitor."""
+    out = [(m, a, "muestra") for m, a in SOURCES]
+    if include_monitor:
+        from crawler.monitor import files
+
+        live = files()
+        out.append((live["menciones"], live["triaje"], "vigilante"))
+    return out
+
+
 @dataclass
 class CaseStore:
     cases: dict[str, Case] = field(default_factory=dict)
     reviewed: dict[str, int] = field(default_factory=dict)  # mentions triaged, per drug
     meddra: dict[str, list[str]] = field(default_factory=dict)
     meddra_file: Path | None = None
+    # Every stage, not only the cases (2026-11-26): what the crawler found and what the triage
+    # said about each mention (also "no"), and where each mention comes from.
+    mentions: dict[str, RawMention] = field(default_factory=dict)
+    answers: dict[str, dict] = field(default_factory=dict)
+    origin: dict[str, str] = field(default_factory=dict)  # "muestra" | "vigilante"
+    sources: list | None = None  # what ``reload`` reads again
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @classmethod
     def build(
-        cls, pairs: list[tuple[list[RawMention], dict[str, dict]]], meddra_file: Path | None = None
+        cls,
+        pairs: list[tuple[list[RawMention], dict[str, dict]]],
+        meddra_file: Path | None = None,
+        names: list[str] | None = None,
     ) -> CaseStore:
         """From (mentions, triage answers by id) pairs. Only the adverse events become cases;
-        the rest is counted (``reviewed``) so the coordinator can say "N of M"."""
+        the rest is counted (``reviewed``) so the coordinator can say "N of M", and kept
+        (``mentions``, ``answers``) for the questions about the earlier stages. A mention that
+        appears in two sources (the monitor found a post of the sample again) counts once."""
         store = cls(meddra_file=meddra_file)
-        for mentions, answers in pairs:
+        for k, (mentions, answers) in enumerate(pairs):
+            name = names[k] if names else "muestra"
             for m in mentions:
+                if m.id in store.mentions:
+                    continue
+                store.mentions[m.id] = m
+                store.origin[m.id] = name
                 answer = answers.get(m.id)
                 if answer is None:
                     continue
+                store.answers[m.id] = answer
                 store.reviewed[m.farmaco] = store.reviewed.get(m.farmaco, 0) + 1
                 case = Case(
                     id=m.id,
@@ -278,22 +314,61 @@ class CaseStore:
 
     @classmethod
     def from_files(
-        cls, sources=None, meddra_file: Path | None = FOLDER / "meddra_terminos.json"
+        cls,
+        sources=None,
+        meddra_file: Path | None = FOLDER / "meddra_terminos.json",
+        include_monitor: bool = True,
     ) -> CaseStore:
-        pairs = []
-        for mentions_file, answers_file in sources or SOURCES:
-            if not (Path(mentions_file).exists() and Path(answers_file).exists()):
+        """``sources``: (mentions, answers[, name]) files; by default the evaluation sample and,
+        with ``include_monitor``, the monitor's live store. Mentions without an answer file are
+        kept too: they are what is waiting for the triage."""
+        sources = [
+            (s[0], s[1], s[2] if len(s) > 2 else "muestra")
+            for s in (sources or default_sources(include_monitor))
+        ]
+        pairs, names = [], []
+        for mentions_file, answers_file, name in sources:
+            if not Path(mentions_file).exists():
                 continue
-            with open(answers_file, encoding="utf-8") as f:
-                answers = {a["id"]: a for a in map(json.loads, filter(str.strip, f))}
+            answers = {}
+            if Path(answers_file).exists():
+                with open(answers_file, encoding="utf-8") as f:
+                    answers = {a["id"]: a for a in map(json.loads, filter(str.strip, f))}
             pairs.append((read_mentions(mentions_file), answers))
+            names.append(name)
         if not pairs:
             raise FileNotFoundError(
                 "No hay casos: faltan las menciones del rastreador o las respuestas del triaje "
-                f"en data/ ({', '.join(str(a) for a, _ in sources or SOURCES)}). Ver "
+                f"en data/ ({', '.join(str(s[0]) for s in sources)}). Ver "
                 "coordinator/README.md."
             )
-        return cls.build(pairs, meddra_file)
+        store = cls.build(pairs, meddra_file, names)
+        store.sources = sources
+        return store
+
+    def reload(self) -> None:
+        """Read the files again, in place (the tools keep this same object): after the
+        coordinator launched ``rastrear`` or ``triar``. The MedDRA codes are kept."""
+        if not self.sources:
+            return
+        fresh = CaseStore.from_files(self.sources, self.meddra_file)
+        meddra = {**fresh.meddra, **self.meddra}
+        with self._lock:
+            self.cases, self.reviewed = fresh.cases, fresh.reviewed
+            self.mentions, self.answers, self.origin = fresh.mentions, fresh.answers, fresh.origin
+            self.meddra = meddra
+
+    def mentions_of(self, drug: str | None = None) -> list[RawMention]:
+        """The crawler's mentions (= what the triage receives), newest first."""
+        out = [m for m in self.mentions.values() if drug is None or m.farmaco == drug]
+        return sorted(out, key=lambda m: m.fecha, reverse=True)
+
+    def triage_state(self, mention_id: str) -> str:
+        """``efecto_adverso``, ``descartada`` or ``sin_triar``."""
+        answer = self.answers.get(mention_id)
+        if answer is None:
+            return "sin_triar"
+        return "efecto_adverso" if answer.get("es_efecto_adverso") == "si" else "descartada"
 
     def of_drug(self, drug: str | None = None, serious_only: bool = False) -> list[Case]:
         out = [

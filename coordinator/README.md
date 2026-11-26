@@ -12,13 +12,13 @@ registra solo.
               COORDINADOR · Qwen3.8-27B · bucle ReAct
    ┌───────────┬────────────┬───────────┬────────────┬────────────┬─────────────┐
  listar_casos codificar_   search_     faers_       buscar_      create_icsr_
- ver_caso     meddra       knowledge_  reaction_    evidencia    report
+ ver_caso     meddra       knowledge_  reaction_    literatura   report
               agrupar_por_ base        counts +                  ⏸ confirmación
               meddra                   PRR                       humana
    │            │            │           │            │
  rastreador   modelo de    RAG: fichas  FAERS       sub-agente del
  + triaje     razonamiento técnicas de  (openFDA)   rastreador
- (casos ya    MedDRA 1,7B  CIMA y guías             (Bluesky + PubMed)
+ (casos ya    MedDRA 1,7B  CIMA y guías             (PubMed)
  filtrados)   (fase 1)     de la EMA
 ```
 
@@ -45,7 +45,11 @@ observación, detección de bucles, memoria y confirmación humana de las accion
 | `agrupar_por_meddra` | Código | Casos equivalentes: cuántos comparten cada término |
 | `search_knowledge_base` | **RAG** de la fase 3 (BM25 + denso sobre fichas de CIMA y guías de la EMA) | ¿Es conocida la reacción? ¿Con qué frecuencia? ¿Qué plazo marca la norma? |
 | `faers_reaction_counts`, `disproportionality_prr` | Herramientas de la fase 2 | Notificaciones en FAERS y señal (PRR, regla de Evans) |
-| `buscar_evidencia` | Sub-agente dirigido del rastreador | Más casos en Bluesky y PubMed |
+| `buscar_literatura` | Sub-agente del rastreador (PubMed) | ¿Está descrita la reacción? ¿Qué evidencia hay? |
+| `estado_del_sistema` | Las etapas ([`etapas.py`](etapas.py)) | Qué se ha rastreado y triado de cada fármaco, y qué falta |
+| `listar_menciones` | Rastreador | Lo que encontró, que es lo que recibe el triaje |
+| `listar_descartes` | Triaje | Lo que dijo que no es un efecto adverso, y por qué |
+| `rastrear`, `triar` | Rastreador (vigilante) y triaje | Lanzarlos desde la conversación; los trabajos grandes esperan la confirmación |
 | `create_icsr_report` | Herramienta de la fase 2, con `requires_confirmation` | Borrador del ICSR, pendiente de confirmar. Antes de dejarlo pendiente, el código comprueba que sería un ICSR válido (paciente identificable, términos del diccionario): un borrador que nunca se podría registrar no llega a la cola |
 
 **Fuera a propósito: Naranjo.** Sus diez preguntas (reexposición, placebo, niveles en sangre…)
@@ -228,18 +232,75 @@ copiado de la herramienta. Sin corregir, la variante completa daba 52/59 (88 %).
   a la vez, recorrió los casos por fechas hasta agotar los 20 pasos.
 - **m04:** «Lack of appetite» en lugar del PT «Decreased appetite» (el sinónimo frente al término
   preferente; un MedDRA completo con licencia lo traduciría).
+## Todas las etapas, desde la conversación (2026-11-26)
+
+Hasta aquí el coordinador solo veía los casos: no podía decir qué encontró el rastreador, qué
+descartó el triaje ni que un fármaco no se había rastreado nunca (respondía «no hay casos»).
+Ahora se le puede preguntar por cualquier etapa, y lanzar las dos primeras:
+
+| El técnico pide… | Herramienta |
+|---|---|
+| Lo que encontró el rastreador (= lo que recibe el triaje) | `listar_menciones` |
+| Lo que descartó el triaje y por qué | `listar_descartes` |
+| En qué punto está cada etapa y qué falta | `estado_del_sistema` |
+| Los casos, MedDRA, ficha, FAERS, literatura, ICSR | lo de antes |
+| Algo que necesita una etapa que no se ha hecho («casos de tramadol») | `estado_del_sistema` → explica qué falta y ofrece `rastrear` / `triar` |
+| «Busca todo lo del lorazepam desde enero» | `rastrear`, después `triar` |
+
+**El almacén.** [`cases.py`](cases.py) lee la muestra congelada de la evaluación y, además, el
+almacén del vigilante (`data/bluesky/monitor/menciones.jsonl` y `triaje_respuestas.jsonl`), y
+guarda todas las menciones y todas las respuestas del triaje, no solo los casos. Una mención que
+esté en los dos sitios cuenta una vez. Los bancos usan solo la muestra (`include_monitor=False`),
+para que sus cifras no cambien.
+
+**Lanzar etapas: lo que se cuida** ([`etapas.py`](etapas.py)):
+
+- **Coste y permiso.** El 27B es el servidor compartido del curso. Con lo medido en sertralina (una
+  mención al día, ~3 100 tokens por mención en el rastreo con agente y ~2 400 en el triaje), un
+  rastreo de más de **31 días** o un triaje de más de **100 menciones** no lo lanza el modelo: queda
+  pendiente, con su estimación, hasta que el técnico dice «sí» (el mismo mecanismo que el ICSR).
+  Los trabajos pequeños se hacen al momento.
+- **Tiempo.** Lo confirmado lo ejecuta el código fuera del bucle del modelo, sin su tiempo
+  máximo (meses de Bluesky pueden ser una hora); el resultado vuelve al coordinador como el turno
+  siguiente.
+- **Un solo escritor.** El vigilante periódico, un rastreo pedido en la conversación y un triaje
+  usan el mismo bloqueo (`en_marcha.lock`): el segundo se para con un error en vez de escribir a
+  la vez los mismos ficheros.
+- **Solo los fármacos vigilados**, y fechas desde que Bluesky tiene posts públicos.
+- **En los exámenes nunca se lanza nada** (`hold_stages`): `rastrear` y `triar` solo se proponen.
+
+**Conversación.** `Conversacion` ([`agent.py`](agent.py)) mantiene la memoria entre turnos y
+confirma o rechaza lo pendiente:
+
+```bash
+uv run --extra crawler python -m coordinator.chat          # make coordinador-chat
+técnico> ¿Hay casos graves de tramadol?
+  → nunca se ha rastreado; ¿busco en Bluesky? ¿desde cuándo?
+técnico> Sí, desde enero de 2026
+  ⏸ [1] Rastrear tramadol en Bluesky desde 2026-01-01. Rastrear 329 días: unas 345 menciones…
+técnico> sí
+```
+
+**Evaluación:** banco v5 ([`bench/v5.py`](bench/v5.py), 24 peticiones: menciones, descartes,
+estado, etapa que falta y lanzar), `make coordinador-eval-etapas` (completo frente a
+`sin_etapas`). Pendiente de ejecutar en la DGX.
+
 ## Piezas
 
 ```
 coordinator/
-  cases.py      casos = menciones del rastreador + respuestas del triaje, por prioridad
+  cases.py      casos = menciones del rastreador + respuestas del triaje, por prioridad;
+                guarda también las menciones y los descartes (todas las etapas)
+  etapas.py     qué ha hecho cada etapa, coste de lanzarlas y cuándo piden permiso
   tools.py      las herramientas: cada agente del sistema
   prompts.py    el prompt del coordinador
   agent.py      el bucle (el del rastreador con otras herramientas y tiempos)
   evaluate.py   el banco, las comprobaciones y las ablaciones
-  demo.py       probarlo a mano y ver la traza
-  bench/        las 13 peticiones
+  demo.py       probarlo a mano y ver la traza (una pregunta)
+  chat.py       conversación en la terminal, con «sí» / «no» a lo pendiente
+  bench/        los bancos (v1–v5)
 ```
 
-Tests: [`tests/test_coordinator.py`](../tests/test_coordinator.py), con un cerebro simulado: sin
-red, GPU ni `data/`.
+Tests: [`tests/test_coordinator.py`](../tests/test_coordinator.py) y
+[`tests/test_etapas.py`](../tests/test_etapas.py), con un cerebro, un Bluesky y un triaje
+simulados: sin red, GPU ni `data/`.

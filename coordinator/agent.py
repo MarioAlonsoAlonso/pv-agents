@@ -10,7 +10,12 @@ errors as observations, loop detection, memory, human confirmation for the ICSR)
 * a larger memory budget: the 27B has 65k tokens of context;
 * two checks in code: an ICSR draft is only queued if it could be registered, and a drug name
   the technician gave that is not recognised cannot be silently answered with another drug's
-  data (``guard``, ``final_answer_problem``).
+  data (``guard``, ``final_answer_problem``);
+* the earlier stages (2026-11-26): ``rastrear`` and ``triar`` run at once when the job is small
+  and are queued for a person when it is big (``coordinator/etapas.py``: more than a month of
+  Bluesky or more than 100 mentions), with their estimated cost;
+* ``Conversacion``: several turns with the same memory, and the confirmation of what was queued
+  (the ICSR, a big search), which until then could only be shown.
 """
 
 from __future__ import annotations
@@ -21,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
 
-from api.schemas import AgentResponse, ToolCallRecord
+from api.schemas import AgentAction, AgentResponse, ToolCallRecord
 from coordinator.cases import CaseStore
 from coordinator.prompts import COORDINATOR_SYSTEM
 from coordinator.tools import make_registry, rlm_coder
@@ -35,6 +40,8 @@ TIMEOUTS = {
     "search_knowledge_base": 300.0,  # the first call loads the embedder and the index
     "faers_reaction_counts": 90.0,
     "buscar_literatura": 1200.0,  # a whole crawler run (PubMed)
+    "rastrear": 1800.0,  # small jobs only (a month at most): bigger ones wait for a person
+    "triar": 1800.0,
 }
 DEFAULT_TIMEOUT = 30.0
 # The drug argument of each tool that takes one: what the substitution guard watches.
@@ -95,6 +102,11 @@ class CoordinatorAgent(CrawlerAgent):
     # 4.7" without their ids (2 of 5), so nobody could check where the answer came from.
     _fragments: list = field(default_factory=list)
     _cite_bounced: bool = False
+    # The case store, for the plan of rastrear / triar (is it a big job?).
+    store: CaseStore | None = None
+    # Benchmarks: rastrear / triar are always queued, never run (a live crawl in the middle of an
+    # exam would change the data and spend the shared server).
+    hold_stages: bool = False
 
     def run(self, task: str, max_steps: int = 10, brain: str = "27b", **kwargs):
         self._unresolved, self._substituted, self._bounced = set(), {}, False
@@ -175,6 +187,10 @@ class CoordinatorAgent(CrawlerAgent):
         harness only checks the argument types): a draft that could never be registered
         (patient not identifiable, terms outside the dictionary) must not reach the queue as
         "pending". The two serious cases of the sample have neither age nor sex."""
+        if name in ("rastrear", "triar") and not allow_actions and self.store is not None:
+            held = self.hold_if_big(name, arguments, pending)
+            if held:
+                return held
         if name == "create_icsr_report" and not allow_actions:
             from tool_use.tools import icsr_problem
 
@@ -195,6 +211,29 @@ class CoordinatorAgent(CrawlerAgent):
         if self.guard_drug_names and name in DRUG_ARGS:
             observation = self.guard(name, arguments, observation)
         return observation
+
+    def hold_if_big(self, name: str, arguments: dict, pending: list) -> str | None:
+        """A big crawl or triage is not run by the model's decision: it is queued, with its
+        cost, for the technician (the shared 27B server: a month of Bluesky is millions of
+        tokens). Errors (a drug that is not watched, a bad date, something already running)
+        come back at once. None: small, run it now."""
+        from coordinator import etapas
+
+        try:
+            args = self.registry.tools[name].validate(arguments)
+        except Exception as exc:  # noqa: BLE001 - validation errors are observations
+            return f"error: invalid arguments: {exc}"
+        plan = etapas.plan(name, args, self.store)
+        if plan["error"]:
+            return f"error: {plan['error']}"
+        if not plan["grande"] and not self.hold_stages:
+            return None
+        pending.append(AgentAction(name=name, arguments=arguments))
+        return (
+            "no ejecutado todavía: es un trabajo grande y necesita la confirmación del técnico. "
+            f"{plan['estimacion']} Queda pendiente: díselo al técnico con esta estimación y "
+            "pregúntale si lo lanzas (puede pedir un periodo más corto)."
+        )
 
     def execute(self, name: str, arguments: dict) -> ToolCallRecord:
         timeout = self.timeouts.get(name, DEFAULT_TIMEOUT)
@@ -244,6 +283,7 @@ def coordinar(
     allow_actions: bool = False,
     coder: Callable[[str], str] = rlm_coder,
     brains: dict | None = None,
+    hold_stages: bool = False,
 ) -> AgentResponse:
     """Answer one request of the analyst. ``allow_actions`` stays False: the ICSR is only
     drafted and queued (``pending_actions``) for a person to confirm."""
@@ -251,5 +291,79 @@ def coordinar(
         registry=make_registry(store, variant, coder),
         brains=brains if brains is not None else {},
         guard_drug_names=variant != "sin_nombres",
+        store=store,
+        hold_stages=hold_stages,
     )
     return agent.run(question, max_steps=max_steps, brain=brain, allow_actions=allow_actions)
+
+
+def describe(action: AgentAction, store: CaseStore | None = None) -> str:
+    """What a queued action will do, in words, for the technician who has to confirm it."""
+    a = action.arguments
+    if action.name == "create_icsr_report":
+        return (
+            f"Registrar el ICSR de {a.get('suspect_drug')} con {', '.join(a.get('reactions', []))}"
+            " (borrador ya validado)."
+        )
+    if action.name in ("rastrear", "triar") and store is not None:
+        from coordinator import etapas
+
+        what = (
+            f"Rastrear {a.get('farmaco')} en Bluesky desde {a.get('desde')}"
+            + ("" if a.get("con_agente", True) else " (solo búsqueda fija)")
+            if action.name == "rastrear"
+            else f"Triar las menciones de {a.get('farmaco')} que esperan"
+        )
+        return f"{what}. {etapas.plan(action.name, a, store)['estimacion']}"
+    return f"{action.name}({a})"
+
+
+@dataclass
+class Conversacion:
+    """A conversation with the coordinator: the same memory across turns (the harness's
+    ``session_id``) and the actions it queued, which a person confirms or rejects. A confirmed
+    action is run by code, outside the model's loop and without its timeout (a crawl of months
+    can take an hour), and its result goes back to the coordinator as the next turn."""
+
+    store: CaseStore
+    brain: str = "27b"
+    variant: str = "completo"
+    max_steps: int = 20
+    coder: Callable[[str], str] = rlm_coder
+    brains: dict | None = None
+    pendientes: list = field(default_factory=list)
+    session_id: str | None = None
+
+    def __post_init__(self):
+        self.agent = CoordinatorAgent(
+            registry=make_registry(self.store, self.variant, self.coder),
+            brains=self.brains if self.brains is not None else {},
+            guard_drug_names=self.variant != "sin_nombres",
+            store=self.store,
+        )
+
+    def preguntar(self, texto: str) -> AgentResponse:
+        response = self.agent.run(
+            texto, max_steps=self.max_steps, brain=self.brain, session_id=self.session_id
+        )
+        self.session_id = response.session_id
+        self.pendientes = list(response.pending_actions)
+        return response
+
+    def confirmar(self, i: int = 0) -> AgentResponse:
+        """Run the i-th queued action and tell the coordinator what came out."""
+        action = self.pendientes.pop(i)
+        record = self.agent.registry.call(action.name, action.arguments)
+        result = self.agent.format_result(record.result) if record.ok else f"error: {record.error}"
+        return self.preguntar(
+            f"[Sistema] El técnico ha confirmado {action.name}({action.arguments}). "
+            f"Resultado: {result[:5000]}\nDíselo al técnico y sigue con lo que pidió, si quedaba "
+            "algo."
+        )
+
+    def rechazar(self, i: int = 0) -> AgentResponse:
+        action = self.pendientes.pop(i)
+        return self.preguntar(
+            f"[Sistema] El técnico NO ha confirmado {action.name}({action.arguments}): no se ha "
+            "hecho. Respóndele con lo que tengas sin ello, o propón una alternativa más pequeña."
+        )

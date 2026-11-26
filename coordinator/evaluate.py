@@ -216,6 +216,20 @@ def check_one(check: dict, answer: str, response: dict, store: CaseStore) -> boo
         return bool(serious) and all(i in answer for i in serious)
     if kind == "alguno":
         return any(check_one(c, answer, response, store) for c in check["de"])
+    if kind == "n_menciones":  # what the crawler found (v5)
+        origin = check.get("filtro", {}).get("origen")
+        ms = [m for m in store.mentions_of(DRUG) if not origin or m.encontrado_por == origin]
+        return has_number(answer, len(ms))
+    if kind == "n_descartes":  # what the triage discarded, optionally for one reason (v5)
+        motivo = check.get("motivo")
+        n = sum(
+            store.triage_state(m.id) == "descartada"
+            and (not motivo or store.answers[m.id].get("motivo_no") == motivo)
+            for m in store.mentions_of(DRUG)
+        )
+        return has_number(answer, n)
+    if kind == "sin_pendientes":
+        return not response.get("pending_actions")
     if kind == "herramientas_distintas":
         used = {s["action"]["name"] for s in response.get("steps", []) if s.get("action")}
         return len(used & set(check["de"])) >= check.get("min", 1)
@@ -299,8 +313,25 @@ SOURCE_OF = {
     "buscar_literatura": ("literatura",),
     "buscar_evidencia": ("literatura", "redes"),  # the old sub-agent searched both
     "buscar_mas_casos": ("redes",),
+    # The earlier stages (2026-11-26).
+    "listar_menciones": ("menciones",),
+    "listar_descartes": ("triaje",),
+    "estado_del_sistema": ("estado",),
+    "rastrear": ("rastreo",),
+    "triar": ("triaje",),
 }
-SOURCES = ("casos", "meddra", "rag", "faers", "literatura", "redes")
+SOURCES = (
+    "casos",
+    "meddra",
+    "rag",
+    "faers",
+    "literatura",
+    "redes",
+    "menciones",
+    "triaje",
+    "estado",
+    "rastreo",
+)
 
 
 def routing(task: dict, used: list[str]) -> dict:
@@ -433,7 +464,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--report", type=Path, default=Path("reports/coordinator_eval.json"))
     args = parser.parse_args(argv)
 
-    store = CaseStore.from_files()
+    store = CaseStore.from_files(include_monitor=False)  # the benchmarks: the frozen sample only
     slots = placeholders(store)
     bench = [
         json.loads(line) for line in args.bench.read_text("utf-8").splitlines() if line.strip()
@@ -477,7 +508,13 @@ def main(argv: list[str] | None = None) -> None:
             start = time.perf_counter()
             try:
                 response = coordinar(
-                    task["tarea"], store, args.brain, variant, args.max_steps, brains=brains
+                    task["tarea"],
+                    store,
+                    args.brain,
+                    variant,
+                    args.max_steps,
+                    brains=brains,
+                    hold_stages=True,  # rastrear / triar are proposed, never run, in an exam
                 ).model_dump()
             except Exception as exc:  # noqa: BLE001 - one failed task must not stop the run
                 response = {"final_answer": "", "steps": [], "stop_reason": f"error: {exc}"}
