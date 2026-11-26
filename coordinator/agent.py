@@ -72,7 +72,7 @@ def names_close_to_a_drug(text: str) -> set[str]:
     import difflib
     import re as _re
 
-    from coordinator.drugs import _tables, resolve
+    from common.farmacos import _tables, resolve
 
     spanish, english, _ = _tables()
     actives = list(spanish) + list(english)  # not brands: "seguro" looks like "Segluromet"

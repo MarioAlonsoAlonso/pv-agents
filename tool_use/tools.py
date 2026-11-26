@@ -40,6 +40,7 @@ from typing import Annotated, Literal
 import requests
 from pydantic import Field
 
+from common.farmacos import CATALOGO
 from tool_use.registry import ToolRegistry, tool
 
 OPEN_METEO_GEOCODING = "https://geocoding-api.open-meteo.com/v1/search"
@@ -50,43 +51,7 @@ ICSR_DIR = Path(os.environ.get("ARCA_OUTPUT_DIR", "outputs")) / "icsr"
 # Spanish INN → the name FAERS indexes (US adopted name). Our users write in Spanish, and
 # FAERS answers "No matches found" to "sertralina". Two traps where translating is not
 # enough: paracetamol is "acetaminophen" and salbutamol is "albuterol" in the US.
-DRUG_NAMES_EN = {
-    "acido valproico": "valproic acid",
-    "alprazolam": "alprazolam",
-    "amlodipino": "amlodipine",
-    "atorvastatina": "atorvastatin",
-    "celecoxib": "celecoxib",
-    "ciprofloxacino": "ciprofloxacin",
-    "diclofenaco": "diclofenac",
-    "empagliflozina": "empagliflozin",
-    "enalapril": "enalapril",
-    "escitalopram": "escitalopram",
-    "fosfomicina": "fosfomycin",
-    "ibuprofeno": "ibuprofen",
-    "insulina glargina": "insulin glargine",
-    "lactulosa": "lactulose",
-    "lamotrigina": "lamotrigine",
-    "levetiracetam": "levetiracetam",
-    "levotiroxina": "levothyroxine",
-    "lorazepam": "lorazepam",
-    "lormetazepam": "lormetazepam",
-    "losartan": "losartan",
-    "metformina": "metformin",
-    "montelukast": "montelukast",
-    "naproxeno": "naproxen",
-    "omeprazol": "omeprazole",
-    "pantoprazol": "pantoprazole",
-    "paracetamol": "acetaminophen",
-    "rosuvastatina": "rosuvastatin",
-    "salbutamol": "albuterol",
-    "sertralina": "sertraline",
-    "simvastatina": "simvastatin",
-    "sumatriptan": "sumatriptan",
-    "topiramato": "topiramate",
-    "tramadol": "tramadol",
-    "venlafaxina": "venlafaxine",
-    "zolpidem": "zolpidem",
-}
+DRUG_NAMES_EN = {f.es: f.en for f in CATALOGO}  # the system's catalogue (common/farmacos.py)
 # Common English INNs that differ from the US name too.
 DRUG_NAMES_EN.update(
     {"paracetamol (acetaminophen)": "acetaminophen", "salbutamol sulfate": "albuterol"}

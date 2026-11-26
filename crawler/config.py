@@ -15,16 +15,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-WATCHLIST: tuple[str, ...] = (
-    "sertralina",
-    "escitalopram",
-    "lorazepam",
-    "alprazolam",
-    "zolpidem",
-    "tramadol",
-    "metformina",
-    "levotiroxina",
-)
+from common.farmacos import VIGILADOS
+
+WATCHLIST = VIGILADOS  # the system's drug catalogue (common/farmacos.py)
 
 # Searches that do not name a drug: they bring posts and threads where a drug may be talked
 # about without its name, so the frozen sample is not built only from the queries that the

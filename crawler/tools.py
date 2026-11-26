@@ -79,7 +79,10 @@ class CrawlerContext:
         for drug in self.drugs:
             if fold(drug) == wanted or wanted in {fold(b) for b in self.brands.get(drug, [])}:
                 return drug
-        return None
+        from common.farmacos import resolve  # the catalogue: English name, CIMA brands
+
+        active = resolve(name).active
+        return active if active in self.drugs else None
 
 
 def build_mention(
