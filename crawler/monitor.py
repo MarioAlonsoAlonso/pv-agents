@@ -3,6 +3,7 @@
     uv run --extra crawler python -m crawler.monitor --sin-agente          # one run, no model
     uv run --extra crawler python -m crawler.monitor --brain 27b           # with the agent (DGX)
     uv run --extra crawler python -m crawler.monitor --cada 6 --bucle      # every 6 hours
+    uv run --extra crawler python -m crawler.monitor --farmacos lorazepam --desde 2026-01-01
 
 The scheduler is code, not an agent: the same steps every time. Each run, for each drug:
 
@@ -14,6 +15,11 @@ The scheduler is code, not an agent: the same steps every time. Each run, for ea
 3. **Agent (optional).** It reads the threads that changed and saves the replies that talk
    about the drug (``revisar_hilos``). New ways of naming the drug it proposes are added to
    the search terms of the next run.
+
+``--desde`` searches everything since a date in this run (for a drug added to the list, or to
+fill a gap), whatever the last run was; the next runs carry on from now. Every thread found is
+new, so the agent reads all of them: with months of posts, expect many agent runs (tokens).
+Each search term brings at most 2000 posts.
 
 State (``data/bluesky/monitor/estado.json``): last run per drug, watched threads (with their
 AT-URIs, needed to download them again) and discovered terms. New mentions are appended to
@@ -51,16 +57,19 @@ def run_once(
     follow_days: int = 7,
     first_lookback_hours: int = 24,
     now: datetime | None = None,
+    since: str | None = None,
 ) -> tuple[MentionStore, dict]:
-    """One surveillance run. Returns the new mentions and a summary; updates ``state``."""
+    """One surveillance run. Returns the new mentions and a summary; updates ``state``.
+    ``since`` (ISO date) overrides where the search starts, for every drug of this run."""
     now = now or datetime.now(UTC)
     brands = load_brands()
     store = MentionStore()
     summary: dict = {}
+    start = since
     for drug in drugs:
-        since = state["ultima_ejecucion"].get(drug) or to_iso(
-            now - timedelta(hours=first_lookback_hours)
-        )
+        since = to_iso(start) if start else None
+        since = since or state["ultima_ejecucion"].get(drug)
+        since = since or to_iso(now - timedelta(hours=first_lookback_hours))
         extra = [t["termino"] for t in state["terminos"].get(drug, [])]
         before = len(store)
         hits, _ = fixed_search(source, store, drug, brands, since, to_iso(now), extra)
@@ -135,6 +144,9 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--primera-vez-horas", type=int, default=24, help="look-back of run 1")
     parser.add_argument("--cada", type=float, default=6.0, help="hours between runs (--bucle)")
     parser.add_argument("--bucle", action="store_true", help="keep running every --cada hours")
+    parser.add_argument(
+        "--desde", default=None, help="first run: everything since this date (YYYY-MM-DD)"
+    )
     args = parser.parse_args(argv)
 
     STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -151,7 +163,9 @@ def main(argv: list[str] | None = None) -> None:
             follow_days=args.dias_seguimiento,
             first_lookback_hours=args.primera_vez_horas,
             now=started,
+            since=args.desde,
         )
+        args.desde = None  # only the first run of a loop: then from the last run on
         known = MentionStore.load_ids(out)
         new = MentionStore()
         for m in store.mentions.values():

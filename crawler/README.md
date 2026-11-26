@@ -113,6 +113,13 @@ cp .env.example .env    # BSKY_HANDLE y BSKY_APP_PASSWORD (contraseña de aplica
 | 5. Evaluación | `make crawler-eval` | 27B (híbrido y agente) |
 | 6. Vigilancia periódica | `make crawler-vigilar` | 27B (o `--sin-agente`) |
 
+**Todo lo de un fármaco desde una fecha** (un fármaco nuevo en la lista, o rellenar un hueco):
+`uv run --extra crawler python -m crawler.monitor --farmacos lorazepam --desde 2026-01-01`. Es
+el vigilante con el inicio fijado: búsqueda fija desde esa fecha, sus hilos y el agente sobre
+ellos, y las menciones van a `data/bluesky/monitor/menciones.jsonl`. Las siguientes ejecuciones
+siguen desde ahora. Con meses de posts el agente lee muchos hilos (tokens), y cada término de
+búsqueda trae como mucho 2000 posts.
+
 El servidor del 27B escucha en `0.0.0.0:8001` con clave API (`ARCA_REMOTE_LLM_API_KEY` en `.env`,
 la del correo de los profesores) y solo es accesible desde una sesión de la DGX; es compartido (5 peticiones simultáneas en total, ~50 tokens/s), así que la evaluación
 del agente puede tardar. `ARCA_REMOTE_LLM_CONCURRENCY` (2 por defecto) limita cuántas lanzamos.

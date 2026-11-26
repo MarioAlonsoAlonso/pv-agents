@@ -301,6 +301,15 @@ def test_monitor_follows_threads_and_finds_late_replies(monkeypatch):
     )
     assert summary2["sertralina"]["hilos_con_novedades"] == 1
     assert "a4" in state["hilos"]["a1"]["vistos"]
+    # --desde: everything since a date, whatever the last run was
+    store3, _ = run_once(
+        _LiveLike(toy_posts()),
+        state,
+        ["sertralina"],
+        now=datetime.fromisoformat("2025-07-01T00:00:00+00:00"),
+        since="2025-01-01",
+    )
+    assert {"a1", "b1"} <= store3.post_ids() and "d1" not in store3.post_ids()  # d1 is 2024
 
 
 # ---------------------------------------------------------------------------- remote LLM, PubMed
