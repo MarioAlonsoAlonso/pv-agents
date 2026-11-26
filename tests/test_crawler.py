@@ -667,3 +667,27 @@ def test_an_empty_final_answer_is_sent_back(source):
     response = agent.run("¿Qué dice la literatura?", max_steps=5, brain="fake")
     assert response.final_answer == "Respuesta completa" and response.n_steps == 2
     assert "without text" in response.steps[0].observation
+
+
+def test_courtesy_replies_are_not_saved_as_mentions():
+    from crawler.text import is_courtesy
+
+    for text in ["Gracias!", "🫂", "Mimitoss", "Lo siento", "Ningún problema ❤️", "jajajajjaa 💊"]:
+        assert is_courtesy(text), text
+    for text in [
+        "La amo",
+        "Alta dosis?",
+        "Me dijo bajonazo",
+        "A mí también me pasó",
+        "gracias, me da sueño",
+    ]:
+        assert not is_courtesy(text), text
+    posts = [*toy_posts(), _p("a5", "Gracias! 🫂", "2025-03-04", "a1", "a1")]
+    ctx = _ctx(FrozenSource(posts))
+    reg = make_registry(ctx, "hilos")
+    assert reg.call("leer_hilo", {"post_id": "a1"}).ok
+    out = reg.call(
+        "guardar_menciones", {"farmaco": "sertralina", "menciones": "a5 indirecta; a2 indirecta"}
+    ).result
+    assert out.startswith("1 saved of 2") and "[a5] not saved: a courtesy" in out
+    assert ctx.store.post_ids() == {"a2"}

@@ -27,7 +27,7 @@ from pydantic import Field
 from agent.react_agent import final_answer
 from crawler.sources import Post, Source, SourceError, to_iso
 from crawler.store import ConversationPost, MentionContext, MentionStore, RawMention
-from crawler.text import fold
+from crawler.text import fold, is_courtesy
 from tool_use.registry import ToolRegistry, tool
 
 POSTS_PER_PART = 25
@@ -268,6 +268,11 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
                 )
             elif kind is None:
                 lines.append(f"[{post_id}] error: missing type (nombre, marca, errata, ...)")
+            elif kind in ("indirecta", "jerga") and is_courtesy(post.text):
+                lines.append(
+                    f"[{post_id}] not saved: a courtesy or support reply (thanks, a hug, emojis) "
+                    "says nothing about the drug"
+                )
             elif ctx.store.add(build_mention(ctx.source, post, drug, kind, "agente")):
                 saved += 1
                 lines.append(f"[{post_id}] saved")

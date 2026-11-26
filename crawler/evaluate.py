@@ -34,6 +34,30 @@ from crawler.sources import FrozenSource
 from crawler.systems import SYSTEMS, SystemResult, run_system
 
 
+def agent_errors_by_triage_sheet(results: list[SystemResult]) -> dict:
+    """Of the mentions the agent saved, how many the triage's answer sheet says are not about the
+    drug (``no_es_mencion``), by its two parts (change F, 2026-11-26). The sheet annotates the 725
+    mentions of the v4 hybrid: a mention found again (same post and drug, same id) is judged; a
+    new one is not. Empty if the sheet is not in data/ (it is not in git)."""
+    from common import rutas
+
+    if not all(rutas.GOLD_TRIAJE[s].exists() for s in rutas.SPLITS):
+        return {}
+    out = {}
+    for split in rutas.SPLITS:
+        with open(rutas.GOLD_TRIAJE[split], encoding="utf-8") as f:
+            sheet = {g["id"]: g for g in map(json.loads, filter(str.strip, f))}
+        agent = [
+            m
+            for r in results
+            for m in r.store.mentions.values()
+            if m.encontrado_por == "agente" and m.id in sheet
+        ]
+        wrong = sum(sheet[m.id].get("motivo_no") == "no_es_mencion" for m in agent)
+        out[split] = {"juzgadas": len(agent), "no_hablan_del_farmaco": wrong}
+    return out
+
+
 def load_gold(path: Path) -> dict[str, dict]:
     with open(path, encoding="utf-8") as f:
         return {g["post_id"]: g for g in map(json.loads, f) if g}
@@ -202,6 +226,9 @@ def main(argv: list[str] | None = None) -> None:
                 for t in traces:
                     f.write(json.dumps(t, ensure_ascii=False) + "\n")
         report["sistemas"][key] = score(results, gold)
+        check = agent_errors_by_triage_sheet(results)
+        if check:
+            report["sistemas"][key]["errores_del_agente_segun_hoja_triaje"] = check
         if system == "hibrido":
             report["sistemas"][key]["coste_solo_hilos_anotados"] = annotated_threads is not None
         args.out.parent.mkdir(parents=True, exist_ok=True)

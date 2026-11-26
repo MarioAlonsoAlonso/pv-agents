@@ -244,6 +244,36 @@ farmacólogo, y con la parte de mecanismo comprobada solo en sus cifras.
 **Conclusión:** encuentra lo mismo que una búsqueda simple, no inventa referencias y lo que añade
 es un resumen fiel y ordenado (evidencia, grupos de riesgo, mecanismo) por ~15 000 tokens.
 
+## Menos «gracias»: el agente guarda menos respuestas que no hablan del fármaco (2026-11-26)
+
+La hoja de soluciones del triaje juzga las 725 menciones del híbrido v4. De las 302 que guardó el
+agente, **165 no hablaban del fármaco** (`no_es_mencion`): 56 de 111 en su parte de desarrollo y
+109 de 191 en la de examen. Al triaje le llegaban como ruido, y son justo las que peor juzga. Dos
+tipos:
+
+1. **Cortesía o apoyo sin más** («Gracias!», «Lo siento», «Mimitoss», emojis). Ahora las rechaza el
+   código (`crawler.text.is_courtesy`, en `guardar_menciones`): diseñado mirando solo la parte de
+   desarrollo, quita 7 de sus 56 errores y **ninguna** de sus 55 menciones buenas; en la de examen,
+   3 de 109 y ninguna de 82. Poco, pero sin coste: nunca pierde una mención de verdad. (Filtrar
+   por longitud no sirve: «La amo», «Alta dosis?» o «Me dijo bajonazo» son menciones buenas.)
+2. **Respuestas con contenido que no son del fármaco**: antidepresivos en general, otro fármaco,
+   otro tema del hilo. Es la mayoría y hay que entenderlo: va en el prompt del agente
+   (`_WHAT_IS_A_MENTION`, con esos tres tipos y la excepción de «las pastillas» referidas al
+   fármaco de esa persona).
+
+**Pendiente de medir (DGX):** el cambio de prompt solo se ve volviendo a ejecutar el híbrido sobre
+la muestra congelada, con la hoja del triaje copiada a `data/triaje/`:
+
+```bash
+ARCA_CRAWLER_DATA=data/bluesky_sertralina uv run --extra crawler python -m crawler.evaluate \
+    --systems hibrido --brain 27b --out reports/crawler_eval_sertralina_v5.json
+```
+
+`errores_del_agente_segun_hoja_triaje` da, por partes, cuántas de las menciones del agente que la
+hoja juzga no hablan del fármaco (antes: 56 de 111 y 109 de 191), y el resto del informe dice si
+se pierden menciones indirectas (antes, 17 de 19). Ojo: la regla del prompt se escribió mirando
+errores de la parte de desarrollo; la cifra que vale es la de examen.
+
 ## La evaluación
 
 Los cuatro sistemas se ejecutan sobre la **misma muestra congelada** (mismos posts, misma

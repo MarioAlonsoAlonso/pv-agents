@@ -54,3 +54,24 @@ def utf8_stdout() -> None:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+# Courtesy and support with nothing else ("Gracias!", "Lo siento", "un abrazo", emojis, laughs):
+# the crawler's agent saved them as indirect mentions because they are in a thread about the
+# drug. Measured with the triage's answer sheet (2026-11-26), on its development part: 7 of the
+# 56 wrong agent mentions, and none of the 55 right ones; on its exam part, 3 of 109 and none of
+# 82. Words are compared after collapsing repeated letters ("Mimitoss" -> "mimitos").
+_COURTESY = {
+    re.sub(r"(.)\1+", r"\1", w)
+    for w in """gracias mil muchas muchisimas lo siento sentimos animo animos mucho mucha fuerza
+    fuerzas abrazo abrazos abrazote mimito mimitos beso besos un una unos te os ojala suerte ningun
+    problema nada de a ti vos igualmente ok vale genial me alegro cuidate cuidaos bonito precioso
+    lindo linda amor amiga amigo guapa guapo y tambien para""".split()
+}
+
+
+def is_courtesy(text: str) -> bool:
+    """Only courtesy, support, laughter or emojis: nothing that could be about a drug."""
+    words = [re.sub(r"(.)\1+", r"\1", w) for w in re.findall(r"[a-zñ]+", fold(text).lower())]
+    words = [w for w in words if not re.fullmatch(r"(j[aeiou])+j?", w)]  # laughter
+    return all(w in _COURTESY for w in words)

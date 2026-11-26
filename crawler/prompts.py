@@ -40,7 +40,15 @@ NATIVE_ACTION_FORMAT = (
 _WHAT_IS_A_MENTION = """Qué es una mención: un post que habla del fármaco, lo nombre o no.
 - Guárdalo SIN valorarlo: experiencias, preguntas, opiniones, bromas y noticias sobre el
   fármaco se guardan todas. Decidir si es una reacción adversa es trabajo de otro agente.
-- No es mención un post que no trata del fármaco aunque esté en el mismo hilo.
+- No es mención un post que no trata del fármaco aunque esté en el mismo hilo. En la
+  evaluación (2026-11-26), la mitad de las respuestas que guardaba el agente eran de estos tipos:
+  - cortesía o apoyo sin más ("gracias", "lo siento", "ánimo", "un abrazo", emojis);
+  - antidepresivos, pastillas o psicofármacos EN GENERAL, u otro fármaco, sin referirse al de
+    la conversación ("el más amable de los antidepresivos", "¿y los ansiolíticos?");
+  - otro tema del hilo (la enfermedad, el médico, el alcohol, el trabajo) sin decir nada del
+    fármaco.
+  Sí lo es si "las pastillas", "el antidepresivo" o "la medicación" se refieren al fármaco de
+  esa persona en la conversación (jerga o indirecta).
 - Tipos: nombre (principio activo), marca (nombre comercial), errata ("setralina",
   "sertra"), indirecta (no lo nombra, pero por el hilo se sabe que habla de él: "a mí
   también me dejó KO las primeras semanas" respondiendo a alguien que habla de sertralina),
