@@ -85,11 +85,16 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--sin-vigilante", action="store_true", help="only the frozen sample")
     args = parser.parse_args(argv)
 
-    store = CaseStore.from_files(include_monitor=not args.sin_vigilante)
+    store = CaseStore.from_files(include_monitor=not args.sin_vigilante, allow_empty=True)
     print(
         f"{len(store.mentions)} menciones, {sum(store.reviewed.values())} triadas, "
         f"{len(store.cases)} casos. Cargando el RAG y el modelo de razonamiento…"
     )
+    if not store.mentions:
+        print(
+            "  (todavía no hay datos: ni la muestra de evaluación ni el vigilante. Puedes pedirle "
+            "que rastree un fármaco, o copiar la muestra a data/: coordinator/README.md)"
+        )
     warm_up(args.variante)
     conv = Conversacion(store, brain=args.brain, variant=args.variante, max_steps=args.max_steps)
     log = FOLDER / "chat" / f"{datetime.now():%Y%m%d-%H%M%S}.jsonl"

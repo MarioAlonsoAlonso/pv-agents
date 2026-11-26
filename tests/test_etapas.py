@@ -297,3 +297,21 @@ def test_the_v5_bench_and_its_checks(live, tmp_path):
     assert check_one({"type": "sin_pendientes"}, "", {"pending_actions": []}, store)
     assert not set(STAGE_TOOLS) & set(make_registry(store, "sin_etapas").tools)
     assert set(STAGE_TOOLS) <= set(make_registry(store).tools)
+
+
+def test_the_chat_can_start_with_no_data_at_all(live, tmp_path):
+    f = monitor.files()
+    store = CaseStore.from_files(
+        [
+            (tmp_path / "no.jsonl", tmp_path / "no2.jsonl", "muestra"),
+            (f["menciones"], f["triaje"], "vigilante"),
+        ],
+        meddra_file=None,
+        allow_empty=True,
+    )
+    assert store.mentions == {} and store.cases == {}
+    monitor.crawl_and_save(_LiveLike(POSTS), ["sertralina"], since="2025-01-01")
+    store.reload()  # the first crawl shows up
+    assert len(store.mentions) == 3
+    with pytest.raises(FileNotFoundError):
+        CaseStore.from_files([(tmp_path / "no.jsonl", tmp_path / "no2.jsonl")], meddra_file=None)

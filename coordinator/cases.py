@@ -318,10 +318,12 @@ class CaseStore:
         sources=None,
         meddra_file: Path | None = FOLDER / "meddra_terminos.json",
         include_monitor: bool = True,
+        allow_empty: bool = False,
     ) -> CaseStore:
         """``sources``: (mentions, answers[, name]) files; by default the evaluation sample and,
         with ``include_monitor``, the monitor's live store. Mentions without an answer file are
-        kept too: they are what is waiting for the triage."""
+        kept too: they are what is waiting for the triage. ``allow_empty``: no file yet is not an
+        error (the chat can start by crawling)."""
         sources = [
             (s[0], s[1], s[2] if len(s) > 2 else "muestra")
             for s in (sources or default_sources(include_monitor))
@@ -336,6 +338,10 @@ class CaseStore:
                     answers = {a["id"]: a for a in map(json.loads, filter(str.strip, f))}
             pairs.append((read_mentions(mentions_file), answers))
             names.append(name)
+        if not pairs and allow_empty:
+            store = cls(meddra_file=meddra_file, sources=sources)
+            store.reload()  # nothing to read yet; keeps the MedDRA cache if there is one
+            return store
         if not pairs:
             raise FileNotFoundError(
                 "No hay casos: faltan las menciones del rastreador o las respuestas del triaje "
@@ -350,6 +356,8 @@ class CaseStore:
         """Read the files again, in place (the tools keep this same object): after the
         coordinator launched ``rastrear`` or ``triar``. The MedDRA codes are kept."""
         if not self.sources:
+            return
+        if not any(Path(s[0]).exists() for s in self.sources):
             return
         fresh = CaseStore.from_files(self.sources, self.meddra_file)
         meddra = {**fresh.meddra, **self.meddra}
