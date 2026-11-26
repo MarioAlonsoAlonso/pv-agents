@@ -1006,6 +1006,31 @@ tool»). Corregido y vuelto a puntuar todo: solo cambian las cifras de `sin_etap
 posible lo que antes no se podía: sin ellas el coordinador no sabe qué encontró el rastreador ni
 qué descartó el triaje, y responde «no hay casos» donde lo que pasa es que no se ha rastreado.
 
+### 2026-11-26 · Proyecto final · El lote del vigilante en vivo: ¿sirve para medir el triaje?
+
+**Qué queríamos saber.** Si las 128 menciones de sertralina que el vigilante encontró en vivo
+(13-09 a 26-11-2026, primer rastreo desde el chat) sirven como lote nuevo para medir un triaje
+más permisivo (cambio G), y, de paso, qué encuentra el rastreador en vivo frente a la muestra.
+
+**Qué hicimos.** Cruzar el lote con la muestra congelada por id, por post y por texto, y mirar
+en la hoja de soluciones del triaje las menciones de la muestra de ese periodo que el vigilante
+no encontró. Sin modelo.
+
+**Qué pasó.** 107 de las 128 ya están en la muestra (68 del examen del triaje y 39 de
+desarrollo); solo 19 son nuevas, 15 de ellas posteriores al 17-11. De las 158 menciones de la
+muestra en ese periodo, el vigilante encuentra 71 de las 73 de la búsqueda fija y 36 de las 85
+respuestas que encontró el agente. De las 49 que no encuentra, 26 no hablaban del fármaco, 21
+eran preguntas, bromas u opiniones o sin efecto, y 2 eran efectos adversos; de las 36 que sí
+encuentra, 10 son efectos adversos y 14 no hablaban del fármaco.
+
+**Qué concluimos.** El lote no sirve para medir el triaje: 19 menciones nuevas dan unos 4
+efectos adversos, y el resto son posts que el triaje ya vio, muchos del examen. El cambio G se
+queda sin medir y no se aplica. Lo que sí muestra es el efecto del rastreo en vivo con el prompt
+nuevo del agente (cambio F): guarda menos de la mitad de las respuestas indirectas, pierde 2 de
+los 12 efectos adversos que había entre ellas y deja fuera 26 de las 40 que no hablaban del
+fármaco. Es una comparación aproximada: el rastreo en vivo se hizo en otro momento, con los hilos
+como estaban ese día, y no solo cambia el prompt.
+
 ### 2026-11-26 · Proyecto final · Rastreador v5: el agente guarda menos respuestas que no hablan del fármaco
 
 **Qué queríamos saber.** Según la hoja del triaje, 165 de las 302 respuestas que guardaba el
