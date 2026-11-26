@@ -29,6 +29,7 @@ out: the benchmarks, so that their numbers do not change.
 from __future__ import annotations
 
 import json
+import os
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -93,18 +94,43 @@ class Case:
             return "respuesta en una conversación (agente)"
         return "nombra el fármaco"
 
-    def report_text(self) -> str:
+    def report_text(self, pista: bool | None = None) -> str:
         """The case as a notification, for the MedDRA coder: the post itself, plus the reaction
-        the triage deduced from the conversation when the post does not say it."""
+        the triage deduced from the conversation when the post does not say it. With ``pista``
+        (``ARCA_MEDDRA_PISTA=1``), also what the triage read: the reactions and the denied
+        symptoms (``triage_hint``; whether it helps is measured by ``rlm/evaluate_pista.py``)."""
+        if pista is None:
+            pista = os.environ.get("ARCA_MEDDRA_PISTA", "0") == "1"
+        text = self.texto.strip()
+        if pista:
+            return text + triage_hint(self.triaje)
         deduced = [
             r.strip(" []")
             for r in self.triaje.get("reacciones", "").split("|")
             if r.strip().startswith("[")
         ]
-        text = self.texto.strip()
         if deduced:
             text += f" (Según la conversación, la reacción es: {', '.join(deduced)}.)"
         return text
+
+
+def triage_hint(answer: dict | None) -> str:
+    """What the triage tells the MedDRA coder, appended to the text it codes (change I,
+    2026-11-26): the reactions in the patient's words and what the patient denies."""
+    if not answer:
+        return ""
+    if answer.get("es_efecto_adverso") != "si":
+        return (
+            "\n\n(Ayuda del triaje, que ya leyó la notificación: no encontró ningún efecto "
+            "adverso. Puede equivocarse: codifica lo que dice la notificación.)"
+        )
+    reactions = answer.get("reacciones") or "—"
+    denied = answer.get("negadas") or "—"
+    return (
+        f"\n\n(Ayuda del triaje, que ya leyó la notificación: reacciones, con las palabras del "
+        f"paciente: {reactions}; lo que niega: {denied}. Puede equivocarse: codifica lo que dice "
+        "la notificación.)"
+    )
 
 
 # Themes of the reactions as the patients wrote them, for an overview of many cases at once

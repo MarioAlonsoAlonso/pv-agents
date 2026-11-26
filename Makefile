@@ -92,6 +92,9 @@ rlm-eval-27b: ## Fase 1 v2: test y OOD del alumno del 27B frente al de la v1 (GP
 	$(UV) run python -u -m rlm.evaluate $(RLM_EVAL_ARGS) --out reports/phase1_eval_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b
 	$(UV) run python -u -m rlm.evaluate --data rlm/data/test_ood.jsonl --model $(RLM_MODEL) 		--max-new-tokens 2048 --n-examples 100 --out reports/phase1_eval_ood_1.7b_profesor27b.json 		--adapters sft27=$(RLM_W)/sft_lora_27b
 
+rlm-pista: ## ¿Codifica mejor el 27B si el triaje le da antes las reacciones? Test (200), DGX
+	$(UV) run python -u -m rlm.evaluate_pista --codificador 27b
+
 # Fase 2: herramientas
 tools-eval: ## Fase 2: banco de 30 casos con y sin herramientas (GPU)
 	$(UV) run python -m tool_use.evaluate --out reports/phase2_eval.json
@@ -205,4 +208,4 @@ docker-api: ## API dentro del contenedor
 shell: ## Shell interactiva con GPU dentro del contenedor
 	docker compose run --rm train
 
-.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-distill-27b rlm-sft-27b rlm-grpo-27b rlm-eval-27b rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar crawler-vigilar-triar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval coordinador-chat coordinador-web coordinador-eval-etapas coordinador-examen-etapas api enunciado build docker-check-gpu docker-smoke docker-api shell
+.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-distill-27b rlm-sft-27b rlm-grpo-27b rlm-eval-27b rlm-pista rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar crawler-vigilar-triar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval coordinador-chat coordinador-web coordinador-eval-etapas coordinador-examen-etapas api enunciado build docker-check-gpu docker-smoke docker-api shell
