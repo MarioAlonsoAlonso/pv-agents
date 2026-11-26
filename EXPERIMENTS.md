@@ -937,3 +937,48 @@ la literatura aportan en sus categorías, con pocas peticiones para que sea sign
 más serio no lo mide ninguna ablación: ante un fármaco que no existe, el coordinador lo sustituye
 por uno parecido y da una señal falsa. Y otra vez, varios errores eran de la medida y no del
 sistema; solo leyendo las trazas se distinguen.
+
+### 2026-11-26 · Proyecto final · Revisión de la rama del rastreador y dos validaciones sin GPU
+
+**Qué queríamos saber.** Si los cambios del 26-11 en la rama `rastreador` (etapas desde el
+coordinador, catálogo único de fármacos, rutas de `data/` en un sitio, triaje movido a
+`triage/esquema.py`) cambian algo de lo ya medido. Y dos preguntas para decidir los cambios A
+(codificar MedDRA con el 27B) y G (triaje más permisivo) sin gastar el servidor.
+
+**Qué hicimos.** Puntuar con el código nuevo todas las respuestas guardadas del coordinador (v1,
+v2, v3 y v4, completo y ablaciones) y del triaje (9 ejecuciones) y compararlas con `main`;
+comparar los prompts del triaje, la resolución de 40 nombres (marcas, erratas, inventados) y la
+detección de nombres parecidos de los bancos. Después, precisión y recall por término MedDRA con
+los informes de la fase 1 (`rlm/term_pr.py`) y, sobre las respuestas de desarrollo del triaje, una
+regla en el código que manda a revisión los «no» cuyo post nombra un síntoma
+(`triage/regla_revision.py`).
+
+**Qué pasó.** Todo idéntico: los aciertos tarea a tarea del coordinador, las cifras del triaje,
+los prompts y los nombres. La revisión encontró dos fallos de la medida en lo nuevo, arreglados
+con un test cada uno: en un examen, `registrar_notificacion` escribía en `data/` y la notificación
+se convertía en un caso para las tareas siguientes; y `estado_del_sistema` leía el estado del
+vigilante de la máquina aunque el banco solo cargue la muestra congelada.
+
+MedDRA por término (examen de 200 y fuera de distribución de 100; «tolerante»: se acepta la
+respuesta sin las etiquetas `<answer>`):
+
+| | Precisión | Recall | Nombres fuera del diccionario |
+|---|---|---|---|
+| 1,7B SFT + GRPO · examen | 76,7 % | 72,7 % | 59 |
+| 27B sin razonar · examen · tolerante | 75,8 % | 77,7 % | 55 |
+| 27B razonando · examen · tolerante | 63,2 % | 76,6 % | 157 |
+| 1,7B SFT + GRPO · fuera de distribución | 64,5 % | 57,5 % | 47 |
+| 27B razonando · fuera de distribución · tolerante | 83,1 % | 83,9 % | 32 |
+
+Regla de revisión del triaje (desarrollo, 287 menciones, 72 efectos adversos): v2 pierde 7, y
+solo 1 contiene una palabra de la lista de síntomas. La regla recupera ese 1 a cambio de mandar
+15–20 menciones más a revisión (precisión del 91,5 % al 72,5–76,7 %).
+
+**Qué concluimos.** La rama se puede juntar: no cambia ninguna cifra. En el examen, el 27B y el
+1,7B entrenado codifican igual de bien término a término; el 27B gana con claridad en términos
+nunca vistos, y su error principal (razonando) son nombres que no están en el subconjunto de 90
+PT del repositorio: una comprobación del diccionario en el código, que le devuelva el término,
+ataca justo eso (cambio A). Para el cambio G, la regla por palabras no sirve: los casos perdidos
+se cuentan con palabras que ninguna lista prevé, así que ser más permisivo tiene que venir del
+modelo (una respuesta «dudoso» o su seguridad) y medirse en un lote nuevo anotado, no en el
+examen, que ya está usado.

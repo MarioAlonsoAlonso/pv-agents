@@ -1,0 +1,101 @@
+{
+ "1.7B base · test": {
+  "problemas": 200,
+  "precision": 0.477,
+  "recall": 0.347,
+  "f1": 0.402,
+  "verdaderos": 126,
+  "falsos_positivos": 138,
+  "falsos_negativos": 237,
+  "nombres_fuera_del_diccionario": 115,
+  "sin_respuesta": 63
+ },
+ "1.7B SFT · test": {
+  "problemas": 200,
+  "precision": 0.749,
+  "recall": 0.675,
+  "f1": 0.71,
+  "verdaderos": 245,
+  "falsos_positivos": 82,
+  "falsos_negativos": 118,
+  "nombres_fuera_del_diccionario": 68,
+  "sin_respuesta": 27
+ },
+ "1.7B SFT+GRPO · test": {
+  "problemas": 200,
+  "precision": 0.767,
+  "recall": 0.727,
+  "f1": 0.747,
+  "verdaderos": 264,
+  "falsos_positivos": 80,
+  "falsos_negativos": 99,
+  "nombres_fuera_del_diccionario": 59,
+  "sin_respuesta": 19
+ },
+ "1.7B SFT+GRPO · OOD": {
+  "problemas": 100,
+  "precision": 0.645,
+  "recall": 0.575,
+  "f1": 0.608,
+  "verdaderos": 111,
+  "falsos_positivos": 61,
+  "falsos_negativos": 82,
+  "nombres_fuera_del_diccionario": 47,
+  "sin_respuesta": 9
+ },
+ "27B sin razonar · test · estricto": {
+  "problemas": 200,
+  "precision": 0.845,
+  "recall": 0.479,
+  "f1": 0.612,
+  "verdaderos": 174,
+  "falsos_positivos": 32,
+  "falsos_negativos": 189,
+  "nombres_fuera_del_diccionario": 21,
+  "sin_respuesta": 97
+ },
+ "27B sin razonar · test · tolerante": {
+  "problemas": 200,
+  "precision": 0.758,
+  "recall": 0.777,
+  "f1": 0.767,
+  "verdaderos": 282,
+  "falsos_positivos": 90,
+  "falsos_negativos": 81,
+  "nombres_fuera_del_diccionario": 55,
+  "sin_respuesta": 14
+ },
+ "27B razonando · test · tolerante": {
+  "problemas": 200,
+  "precision": 0.632,
+  "recall": 0.766,
+  "f1": 0.692,
+  "verdaderos": 278,
+  "falsos_positivos": 162,
+  "falsos_negativos": 85,
+  "nombres_fuera_del_diccionario": 157,
+  "sin_respuesta": 16
+ },
+ "27B sin razonar · OOD · tolerante": {
+  "problemas": 100,
+  "precision": 0.744,
+  "recall": 0.798,
+  "f1": 0.77,
+  "verdaderos": 154,
+  "falsos_positivos": 53,
+  "falsos_negativos": 39,
+  "nombres_fuera_del_diccionario": 40,
+  "sin_respuesta": 4
+ },
+ "27B razonando · OOD · tolerante": {
+  "problemas": 100,
+  "precision": 0.831,
+  "recall": 0.839,
+  "f1": 0.835,
+  "verdaderos": 162,
+  "falsos_positivos": 33,
+  "falsos_negativos": 31,
+  "nombres_fuera_del_diccionario": 32,
+  "sin_respuesta": 6
+ }
+}
