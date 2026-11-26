@@ -261,18 +261,41 @@ tipos:
    (`_WHAT_IS_A_MENTION`, con esos tres tipos y la excepción de «las pastillas» referidas al
    fármaco de esa persona).
 
-**Pendiente de medir (DGX):** el cambio de prompt solo se ve volviendo a ejecutar el híbrido sobre
-la muestra congelada, con la hoja del triaje copiada a `data/triaje/`:
+**Medido (v5, 2026-11-26, DGX):** el híbrido otra vez sobre la muestra congelada, como la v4
+(`--farmacos sertralina --todos-los-hilos`, con la hoja del triaje en `data/triaje/`):
 
 ```bash
 ARCA_CRAWLER_DATA=data/bluesky_sertralina uv run --extra crawler python -m crawler.evaluate \
-    --systems hibrido --brain 27b --out reports/crawler_eval_sertralina_v5.json
+    --systems hibrido --brain 27b --farmacos sertralina --todos-los-hilos \
+    --out reports/crawler_eval_sertralina_v5.json
 ```
 
-`errores_del_agente_segun_hoja_triaje` da, por partes, cuántas de las menciones del agente que la
-hoja juzga no hablan del fármaco (antes: 56 de 111 y 109 de 191), y el resto del informe dice si
-se pierden menciones indirectas (antes, 17 de 19). Ojo: la regla del prompt se escribió mirando
-errores de la parte de desarrollo; la cifra que vale es la de examen.
+| | v4 | **v5 (cambio F)** |
+|---|---|---|
+| Menciones enviadas al triaje | 708 | **603** (−15 %) |
+| Recall (567 posts anotados) | 97 % (64/66) | **98 %** |
+| Respuestas indirectas encontradas | 17 de 19 | **19 de 19** |
+| Marca («Tialin», 1 post) | 1 de 1 | 0 de 1 |
+| Precisión (posts anotados) | 89 % | 90 % |
+| Tokens | 2,26 M | 2,15 M |
+
+Con la hoja del triaje, que juzga todas las conversaciones y no solo las 61 anotadas (solo las
+menciones que ya había encontrado la v4: las nuevas no tienen juicio):
+
+| Respuestas del agente | Desarrollo v4 → v5 | **Examen v4 → v5** |
+|---|---|---|
+| No hablan del fármaco (errores) | 56 → 17 | **109 → 38** |
+| Hablan del fármaco | 55 → 41 | **82 → 48** |
+| % que hablan del fármaco | 50 % → 71 % | **43 % → 56 %** |
+| **Efectos adversos que sigue encontrando** (de toda la hoja) | 72 → **70** | 89 → **87** |
+
+**Conclusión.** En el examen quita dos de cada tres errores del agente (71 de 109) y envía un 15 %
+menos al triaje. También deja de guardar respuestas que sí hablan del fármaco (34 de 82 en el
+examen), pero casi ninguna era un efecto adverso: **pierde 4 de los 161 casos (2,5 %)**, el coste
+real del cambio (el propio triaje pierde el 21 %). Se queda. La hoja del rastreador sola no lo
+habría visto: en sus 61 conversaciones no pierde nada (19 de 19). Diferencias de uno o dos posts
+(el Tialin, 17 frente a 19) pueden ser azar: el 27B muestrea. La regla del prompt se escribió
+mirando errores de la parte de desarrollo; la cifra que vale es la de examen.
 
 ## La evaluación
 

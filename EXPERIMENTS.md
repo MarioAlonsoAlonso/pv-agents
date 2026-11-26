@@ -1005,3 +1005,27 @@ tool»). Corregido y vuelto a puntuar todo: solo cambian las cifras de `sin_etap
 **Qué concluimos.** Las herramientas de las etapas no estropean nada de lo anterior y hacen
 posible lo que antes no se podía: sin ellas el coordinador no sabe qué encontró el rastreador ni
 qué descartó el triaje, y responde «no hay casos» donde lo que pasa es que no se ha rastreado.
+
+### 2026-11-26 · Proyecto final · Rastreador v5: el agente guarda menos respuestas que no hablan del fármaco
+
+**Qué queríamos saber.** Según la hoja del triaje, 165 de las 302 respuestas que guardaba el
+agente del híbrido no hablaban del fármaco: llegaban al triaje como ruido (en el examen del
+triaje, solo el 54 % de sus «sí» a respuestas indirectas eran efectos adversos). ¿Se pueden
+quitar sin perder casos?
+
+**Qué hicimos.** Un filtro en el código para la cortesía sin más («gracias», «lo siento»,
+emojis), medido antes en la hoja (examen: quita 3 de 109 errores y ninguna mención buena), y
+reglas en el prompt para el resto (antidepresivos en general, otro fármaco, otro tema del hilo),
+escritas mirando solo los errores de la parte de desarrollo de la hoja. El híbrido otra vez sobre
+la muestra congelada, como la v4.
+
+**Qué pasó.** Envía 603 menciones en vez de 708; en los 567 posts anotados, recall 98 % (19 de 19
+indirectas, antes 17) y precisión 90 % (antes 89 %). Con la hoja del triaje, en su parte de
+examen: errores del agente 109 → 38, respuestas que sí hablan del fármaco 82 → 48, y de los 161
+efectos adversos de toda la hoja sigue encontrando 157.
+
+**Qué concluimos.** El cambio quita dos tercios del ruido que llegaba al triaje a cambio de 4
+casos de 161 (2,5 %). Se queda. La hoja del rastreador (61 conversaciones) no veía las respuestas
+buenas perdidas; la del triaje (todas) sí: para medir un filtro hay que mirar dónde caen sus
+efectos.
+
