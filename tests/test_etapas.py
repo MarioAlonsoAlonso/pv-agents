@@ -381,3 +381,28 @@ def test_the_web_page_sends_confirms_and_reports_background_jobs(live, tmp_path)
     assert panel.check_jobs() and panel.history[-1]["content"] == "Ya está: 3 menciones."
     assert "3 menciones" in panel.store_text() and not panel.check_jobs()
     assert build_app(panel) is not None  # Gradio builds the page
+
+
+def test_a_notification_goes_through_the_triage_and_becomes_a_case(live, tmp_path, monkeypatch):
+    from common import rutas
+    from coordinator.tools import make_registry
+
+    monkeypatch.setattr(rutas, "NOTIFICACIONES_MENCIONES", tmp_path / "n" / "menciones.jsonl")
+    monkeypatch.setattr(rutas, "NOTIFICACIONES_TRIAJE", tmp_path / "n" / "triaje.jsonl")
+    store = _store(tmp_path)
+    reg = make_registry(store)
+    text = "Me escribe una paciente: con Besitran tiene muchísimo sueño. Su correo es a@b.es"
+    got = reg.call(
+        "registrar_notificacion", {"texto": text, "farmaco": "Besitran", "origen": "correo"}
+    ).result
+    assert got["farmaco"] == "sertralina" and got["triaje"]["es_efecto_adverso"] == "si"
+    case = store.cases[got["id"]]  # the same kind of case as a post
+    assert case.fuente == "correo" and case.summary()["origen"] == "notificación (correo)"
+    seen = reg.call("ver_mencion", {"mencion_id": got["id"]}).result
+    assert "[correo]" in seen["texto"] and "registrada por el técnico" in seen["nota"]
+    assert (
+        "error"
+        in reg.call(
+            "registrar_notificacion", {"texto": "algo largo de verdad", "farmaco": "xelofrina"}
+        ).result
+    )

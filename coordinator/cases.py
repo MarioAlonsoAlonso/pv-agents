@@ -15,13 +15,15 @@ The MedDRA codes are added later, one case at a time, by the reasoning model
 (``codificar_meddra``); they are kept in ``data/coordinador/meddra_terminos.json`` so that a case is
 coded only once.
 
-Two sources (2026-11-26): the frozen evaluation sample (sertraline, what every benchmark uses)
-and the live store of the monitor (``crawler/monitor.py``: ``menciones.jsonl`` and
+Sources (2026-11-26): the frozen evaluation sample (sertraline, what every benchmark uses), the
+live store of the monitor (``crawler/monitor.py``: ``menciones.jsonl`` and
 ``triaje_respuestas.jsonl``), which grows when the monitor runs or the coordinator launches
-``rastrear`` / ``triar``. The store keeps every mention and every triage answer, not only the
-cases, so that the coordinator can answer about any stage: what the crawler found, what the
-triage discarded and why, what is still waiting for triage. ``include_monitor=False`` leaves the
-live data out (the benchmarks, so that their numbers do not change).
+``rastrear`` / ``triar``, and the notifications the technician registers
+(``registrar_notificacion``: an e-mail, a phone call), triaged the same way. The store keeps
+every mention and every triage answer, not only the cases, so that the coordinator can answer
+about any stage: what the crawler found, what the triage discarded and why, what is still
+waiting for triage. ``include_monitor=False`` leaves the live data (monitor and notifications)
+out: the benchmarks, so that their numbers do not change.
 """
 
 from __future__ import annotations
@@ -52,6 +54,7 @@ class Case:
     tipo_mencion: str
     triaje: dict
     hilo_id: str = ""  # the conversation: several cases in one may be the same person
+    fuente: str = "bluesky"  # or correo / telefono / otro: a notification (contract 1.2)
 
     @property
     def grave(self) -> bool:
@@ -80,10 +83,15 @@ class Case:
             "sexo": t.get("sexo", ""),
             "edad": t.get("edad", ""),
             "desenlace": t.get("desenlace", ""),
-            "origen": "respuesta en una conversación (agente)"
-            if self.encontrado_por == "agente"
-            else "nombra el fármaco",
+            "origen": self.origin_text(),
         }
+
+    def origin_text(self) -> str:
+        if self.encontrado_por == "tecnico":
+            return f"notificación ({self.fuente})"
+        if self.encontrado_por == "agente":
+            return "respuesta en una conversación (agente)"
+        return "nombra el fármaco"
 
     def report_text(self) -> str:
         """The case as a notification, for the MedDRA coder: the post itself, plus the reaction
@@ -220,10 +228,7 @@ def overview(cases: list[Case], meddra: dict[str, list[str]] | None = None) -> d
         "por_desenlace": count(c.triaje.get("desenlace", "desconocido") for c in cases),
         "por_paciente": count(c.triaje.get("paciente", "desconocido") for c in cases),
         "edad": {"conocida": len(known_ages), "valores": count(known_ages)},
-        "por_origen": count(
-            "respuesta en una conversación" if c.encontrado_por == "agente" else "nombra el fármaco"
-            for c in cases
-        ),
+        "por_origen": count(c.origin_text().replace(" (agente)", "") for c in cases),
         "por_trimestre": dict(
             sorted(
                 Counter(f"{c.fecha[:4]}-T{(int(c.fecha[5:7]) - 1) // 3 + 1}" for c in cases).items()
@@ -258,6 +263,7 @@ def default_sources(include_monitor: bool = True) -> list[tuple[Path, Path, str]
 
         live = files()
         out.append((live["menciones"], live["triaje"], "vigilante"))
+        out.append((rutas.NOTIFICACIONES_MENCIONES, rutas.NOTIFICACIONES_TRIAJE, "notificacion"))
     return out
 
 
@@ -309,6 +315,7 @@ class CaseStore:
                     tipo_mencion=m.tipo_mencion,
                     triaje={k: v for k, v in answer.items() if k != "id"},
                     hilo_id=m.hilo_id,
+                    fuente=m.fuente,
                 )
                 if case.es_efecto_adverso:
                     store.cases[m.id] = case

@@ -2,7 +2,7 @@
 
 Qué recibe el triaje del rastreador, para poder desarrollarlo en paralelo. Cómo construir y
 evaluar el triaje con el examen preparado: [`evaluacion_triaje/GUIA_TRIAJE.md`](../evaluacion_triaje/GUIA_TRIAJE.md). Versión del formato:
-**1.1** (campo `version`).
+**1.2** (campo `version`).
 
 ## En una frase
 
@@ -29,7 +29,7 @@ en cada ejecución. Para procesar solo las nuevas, guardad los `id` ya vistos.
 |---|---|---|---|
 | `version` | texto | sí | Versión del formato (`"1.1"`) |
 | `id` | texto | sí | Id de la mención: `M-` + 10 caracteres. Mismo post y mismo fármaco → mismo id. **Usadlo para descartar duplicados** |
-| `fuente` | texto | sí | De momento siempre `"bluesky"` |
+| `fuente` | texto | sí | `"bluesky"` para los posts del rastreador; `"correo"`, `"telefono"` u `"otro"` para una notificación que registra el técnico desde el coordinador (1.2) |
 | `post_id` | texto | sí | Id del post: `p` + 12 caracteres. Es un hash: **no identifica al autor ni se puede convertir en un enlace** |
 | `hilo_id` | texto | sí | `post_id` del primer post de la conversación. **Menciones con el mismo `hilo_id` son de la misma conversación**: pueden ser el mismo caso contado por varias personas o la misma persona en varios mensajes |
 | `farmaco` | texto | sí | Principio activo vigilado, en minúsculas: `sertralina`, `escitalopram`, `lorazepam`, `alprazolam`, `zolpidem`, `tramadol`, `metformina`, `levotiroxina`. Un post que habla de dos fármacos genera **dos menciones** |
@@ -41,7 +41,7 @@ en cada ejecución. Para procesar solo las nuevas, guardad los `id` ya vistos.
 | `conversacion_completa` | sí/no | sí | `false` si falta algún mensaje de la cadena (borrado, bloqueado o fuera de la muestra): entonces `conversacion` empieza en el más antiguo disponible |
 | `idioma` | texto o `null` | no | Idioma con el que **la aplicación del autor etiquetó el post** (`"es"`, a veces `"ca"`, `"pt"`…). No se detecta del texto: ver más abajo |
 | `fecha` | texto | sí | Cuándo se publicó el post, ISO 8601 en UTC (`2026-03-02T10:15:00Z`) |
-| `encontrado_por` | texto | sí | `busqueda_fija`: el post contiene el nombre, una marca o una errata conocida (casi siempre acierta). `agente`: el agente leyó la conversación y decidió que habla del fármaco (menciones indirectas; en la evaluación **1 de cada 4 no hablaba realmente de él**) |
+| `encontrado_por` | texto | sí | `busqueda_fija`: el post contiene el nombre, una marca o una errata conocida (casi siempre acierta). `agente`: el agente leyó la conversación y decidió que habla del fármaco (menciones indirectas; en la evaluación **1 de cada 4 no hablaba realmente de él**). `tecnico`: una notificación registrada por el técnico (1.2) |
 | `motivo` | texto | sí | Por qué se guardó. En las de `busqueda_fija` lo escribe el código (`contiene 'Besitran'`); **en las del `agente` está vacío**: para entender por qué una respuesta habla del fármaco, usad `contexto` (texto real), no una explicación del modelo |
 | `guardado` | texto | sí | Cuándo lo guardó el rastreador, ISO 8601 en UTC |
 
@@ -156,6 +156,11 @@ menciones = list(store.mentions.values())  # list[RawMention]
 
 ## Cambios en el formato
 
+- **1.2** (2026-11-26): notificaciones. `fuente` admite `correo`, `telefono` y `otro`, y
+  `encontrado_por`, `tecnico`: una notificación que el técnico registra desde el coordinador pasa
+  por el mismo triaje que un post. `farmaco` puede ser cualquiera del catálogo
+  (`common/farmacos.py`) en una notificación; en Bluesky, uno de los vigilados. Solo se añaden
+  valores: un fichero 1.1 se sigue leyendo igual.
 - **1.1** (2026-11-20): `conversacion` y `conversacion_completa`. Un fichero 1.0 se sigue leyendo
   (la conversación queda vacía).
 

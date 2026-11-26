@@ -58,7 +58,7 @@
   "description": "One post that talks about one watched drug, as the crawler hands it to triage.\n\nContract between the crawler and triage (``crawler/CONTRATO_TRIAJE.md``). Not judged: it\nmay or may not describe an adverse reaction; deciding that is triage's job.",
   "properties": {
     "version": {
-      "default": "1.1",
+      "default": "1.2",
       "description": "Version of this format.",
       "title": "Version",
       "type": "string"
@@ -69,9 +69,14 @@
       "type": "string"
     },
     "fuente": {
-      "const": "bluesky",
       "default": "bluesky",
-      "description": "Social network the post comes from.",
+      "description": "Where the text comes from: 'bluesky' (a post the crawler found), or a notification the technician received by e-mail ('correo'), phone ('telefono') or another way ('otro'), registered from the coordinator (added in 1.2).",
+      "enum": [
+        "bluesky",
+        "correo",
+        "telefono",
+        "otro"
+      ],
       "title": "Fuente",
       "type": "string"
     },
@@ -86,7 +91,7 @@
       "type": "string"
     },
     "farmaco": {
-      "description": "Watched active ingredient the post talks about, lower case, as in crawler/config.py WATCHLIST (e.g. 'sertralina'). A post about two drugs gives two mentions.",
+      "description": "Active ingredient the post talks about, lower case, as in the drug catalogue (common/farmacos.py, e.g. 'sertralina'): one of the watched ones for Bluesky; any drug of the catalogue for a notification (1.2). A post about two drugs gives two mentions.",
       "title": "Farmaco",
       "type": "string"
     },
@@ -143,10 +148,11 @@
       "type": "string"
     },
     "encontrado_por": {
-      "description": "busqueda_fija: the post contains the name, a brand or a known misspelling (almost always right). agente: the crawler agent read the conversation and decided it talks about the drug (indirect mentions; about 1 in 4 is not really about it).",
+      "description": "busqueda_fija: the post contains the name, a brand or a known misspelling (almost always right). agente: the crawler agent read the conversation and decided it talks about the drug (indirect mentions; about 1 in 4 is not really about it). tecnico: a notification the technician registered (fuente correo, telefono, otro; 1.2).",
       "enum": [
         "busqueda_fija",
-        "agente"
+        "agente",
+        "tecnico"
       ],
       "title": "Encontrado Por",
       "type": "string"

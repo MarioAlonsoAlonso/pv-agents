@@ -14,6 +14,9 @@ They now read them from here, so that moving a file means changing one line.
       triaje/
         gold_triaje_{dev,test}.jsonl           the answer sheet (only to evaluate the triage)
         eval/v2_27b_mencion_{dev,test}_respuestas.jsonl   the triage's answers to the sample
+      notificaciones/                  notifications registered from the coordinator (e-mail,
+        menciones.jsonl                  phone): as mentions (contract 1.2), and the triage's
+        triaje_respuestas.jsonl          answers, like the monitor's store
       coordinador/                     MedDRA codes already done, chat logs, evaluation traces
 """
 
@@ -34,3 +37,8 @@ GOLD_TRIAJE = {s: TRIAJE / f"gold_triaje_{s}.jsonl" for s in SPLITS}
 # The triage's final configuration (v2, one post per request, 27B) on the sample.
 RESPUESTAS_TRIAJE = {s: TRIAJE_EVAL / f"v2_27b_mencion_{s}_respuestas.jsonl" for s in SPLITS}
 COORDINADOR = DATA / "coordinador"
+# Notifications the technician registers from the coordinator (an e-mail, a phone call): the
+# same two files as the monitor, so they go through the same triage and become the same cases.
+NOTIFICACIONES = DATA / "notificaciones"
+NOTIFICACIONES_MENCIONES = NOTIFICACIONES / "menciones.jsonl"
+NOTIFICACIONES_TRIAJE = NOTIFICACIONES / "triaje_respuestas.jsonl"

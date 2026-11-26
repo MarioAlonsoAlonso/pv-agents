@@ -286,3 +286,80 @@ def triage(store, drug: str) -> dict:
         "casos_ahora": len(store.of_drug(drug)),
         "nota": "los efectos adversos ya son casos: listar_casos, ver_mencion, codificar_meddra…",
     }
+
+
+ORIGINS = ("correo", "telefono", "otro")
+
+
+def register_notification(store, text: str, drug_name: str, origin: str = "correo") -> dict:
+    """A notification the technician received (an e-mail, a phone note) goes through the same
+    triage as a post and becomes the same kind of case: whether it is an adverse event, the
+    reactions, patient, age, sex, seriousness and outcome. It is kept with the system's data
+    (``data/notificaciones/``), anonymised like the posts (e-mails, links, handles)."""
+    import hashlib
+
+    from common import rutas
+    from common.farmacos import resolve
+    from crawler.store import MentionStore, RawMention
+    from crawler.text import anonymize
+    from triage.agent import read_answers, run_triage
+
+    text = " ".join((text or "").split())
+    if len(text) < 10:
+        return {"error": "la notificación está vacía o es demasiado corta"}
+    drug = resolve(drug_name or "").active
+    if drug is None:
+        return {
+            "error": f"'{drug_name}' no es un fármaco del catálogo del sistema: dime el principio "
+            "activo (o una marca española) para registrarla"
+        }
+    if origin not in ORIGINS:
+        origin = "otro"
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    post_id = "n" + hashlib.sha1(f"{now} {text}".encode()).hexdigest()[:12]
+    mention = RawMention(
+        id=RawMention.make_id(post_id, drug),
+        fuente=origin,
+        post_id=post_id,
+        hilo_id=post_id,
+        farmaco=drug,
+        tipo_mencion="nombre",
+        texto=anonymize(text),
+        fecha=now,
+        encontrado_por="tecnico",
+        motivo=f"notificación registrada por el técnico ({origin})",
+        guardado=now,
+    )
+    one = MentionStore()
+    one.add(mention)
+    one.save(rutas.NOTIFICACIONES_MENCIONES, append=True)
+    run_triage(
+        [mention],
+        brain=brain(),
+        version="v2",
+        por="mencion",
+        out=rutas.NOTIFICACIONES_TRIAJE,
+        llm_factory=TRIAGE_LLM_FACTORY,
+        workers=1,
+        progress=lambda _: None,
+    )
+    if not any(s[0] == rutas.NOTIFICACIONES_MENCIONES for s in store.sources or []):
+        store.sources = [
+            *(store.sources or []),
+            (rutas.NOTIFICACIONES_MENCIONES, rutas.NOTIFICACIONES_TRIAJE, "notificacion"),
+        ]
+    store.reload()
+    answer = read_answers(rutas.NOTIFICACIONES_TRIAJE).get(mention.id, {})
+    out = {"id": mention.id, "farmaco": drug, "origen": origin, "triaje": answer}
+    if answer.get("es_efecto_adverso") == "si":
+        out["nota"] = (
+            "registrada como caso: enséñale al técnico lo que ha entendido el triaje (reacciones, "
+            "paciente, edad, sexo, gravedad, desenlace) para que lo compruebe. Ya se puede "
+            "codificar (codificar_meddra) y, si es válido, preparar su ICSR."
+        )
+    else:
+        out["nota"] = (
+            "el triaje dice que no es un efecto adverso (motivo en 'triaje'): díselo al técnico; "
+            "queda guardada igualmente"
+        )
+    return out

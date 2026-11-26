@@ -61,6 +61,7 @@ STAGE_TOOLS = (
     "listar_descartes",
     "rastrear",
     "triar",
+    "registrar_notificacion",
 )
 DISCARD_REASONS = {
     "no_es_mencion": "no habla del fármaco (error del rastreador: un «gracias», otro fármaco…)",
@@ -690,8 +691,27 @@ def make_registry(
                 out["meddra"] = store.meddra.get(case.id, "sin codificar: usa codificar_meddra")
         out["nota"] = (
             "post público de Bluesky, anonimizado (@usuario, [enlace]); notificante: consumidor"
+            if m.fuente == "bluesky"
+            else f"notificación recibida por {m.fuente} y registrada por el técnico"
         )
         return out
+
+    @tool
+    def registrar_notificacion(
+        texto: Annotated[str, Field(description="The notification as the technician got it.")],
+        farmaco: Annotated[str, Field(description="Suspect drug: active ingredient or brand.")],
+        origen: Annotated[
+            Literal["correo", "telefono", "otro"], Field(description="How it arrived.")
+        ] = "correo",
+    ) -> dict:
+        """Register a notification the technician received (an e-mail, a phone call): it goes
+        through the same triage as the posts (is it an adverse event, reactions, patient, age,
+        sex, seriousness, outcome) and is kept as a case, so it can be listed, coded with
+        codificar_meddra and reported in an ICSR. Use it when the technician wants to register,
+        save or process a notification; to only know its MedDRA terms, codificar_notificacion."""
+        from coordinator import etapas
+
+        return etapas.register_notification(store, texto, farmaco, origen)
 
     @tool
     def triar(
@@ -733,5 +753,12 @@ def make_registry(
     if variant != "sin_nombres":
         registry.register(farmacos_disponibles, identificar_farmaco, comparar_senal)
     if variant != "sin_etapas":
-        registry.register(estado_del_sistema, listar_menciones, listar_descartes, rastrear, triar)
+        registry.register(
+            estado_del_sistema,
+            listar_menciones,
+            listar_descartes,
+            rastrear,
+            triar,
+            registrar_notificacion,
+        )
     return registry

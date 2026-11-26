@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 MentionType = Literal["nombre", "marca", "errata", "indirecta", "jerga"]
 
 
-SCHEMA_VERSION = "1.1"  # 1.1: conversacion, conversacion_completa
+SCHEMA_VERSION = "1.2"  # 1.1: conversacion; 1.2: notifications (fuente, encontrado_por)
 
 
 class MentionContext(BaseModel):
@@ -57,7 +57,12 @@ class RawMention(BaseModel):
         description="Stable id of the mention, 'M-' + 10 hex chars, hash of (post_id, farmaco). "
         "The same post and drug always give the same id: use it to drop duplicates."
     )
-    fuente: Literal["bluesky"] = Field("bluesky", description="Social network the post comes from.")
+    fuente: Literal["bluesky", "correo", "telefono", "otro"] = Field(
+        "bluesky",
+        description="Where the text comes from: 'bluesky' (a post the crawler found), or a "
+        "notification the technician received by e-mail ('correo'), phone ('telefono') or another "
+        "way ('otro'), registered from the coordinator (added in 1.2).",
+    )
     post_id: str = Field(
         description="Pseudonymous stable id of the post ('p' + 12 hex chars). It is a hash: it "
         "does not identify the author and cannot be turned back into a link."
@@ -67,8 +72,9 @@ class RawMention(BaseModel):
         "hilo_id belong to the same conversation (they may describe the same case)."
     )
     farmaco: str = Field(
-        description="Watched active ingredient the post talks about, lower case, as in "
-        "crawler/config.py WATCHLIST (e.g. 'sertralina'). A post about two drugs gives two "
+        description="Active ingredient the post talks about, lower case, as in the drug "
+        "catalogue (common/farmacos.py, e.g. 'sertralina'): one of the watched ones for Bluesky; "
+        "any drug of the catalogue for a notification (1.2). A post about two drugs gives two "
         "mentions."
     )
     tipo_mencion: MentionType = Field(
@@ -96,10 +102,11 @@ class RawMention(BaseModel):
         None, description="Language declared by the author in Bluesky (ISO 639-1, e.g. 'es')."
     )
     fecha: str = Field(description="When the post was published, ISO 8601 in UTC.")
-    encontrado_por: Literal["busqueda_fija", "agente"] = Field(
+    encontrado_por: Literal["busqueda_fija", "agente", "tecnico"] = Field(
         description="busqueda_fija: the post contains the name, a brand or a known misspelling "
         "(almost always right). agente: the crawler agent read the conversation and decided it "
-        "talks about the drug (indirect mentions; about 1 in 4 is not really about it)."
+        "talks about the drug (indirect mentions; about 1 in 4 is not really about it). "
+        "tecnico: a notification the technician registered (fuente correo, telefono, otro; 1.2)."
     )
     motivo: str = Field(
         "", description="Why it was saved (e.g. \"contiene 'sertralina'\"); may be empty."
