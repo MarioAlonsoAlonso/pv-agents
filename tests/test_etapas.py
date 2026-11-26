@@ -358,3 +358,26 @@ def test_the_icsr_still_runs_at_once_and_jobs_can_be_foreground(live, tmp_path):
     conv.preguntar("Busca la sertralina desde 2025")
     done = conv.confirmar(0, segundo_plano=False)  # in the foreground: the answer comes back
     assert done.final_answer == "Hecho." and conv.trabajos == [] and len(store.mentions) == 3
+
+
+def test_the_web_page_sends_confirms_and_reports_background_jobs(live, tmp_path):
+    from coordinator.web import Panel, build_app
+
+    store = _store(tmp_path)
+    llm = _ScriptedLLM(
+        [
+            _call("rastrear", farmaco="sertralina", desde="2025-01-01", con_agente=False),
+            _call("final_answer", answer="Es grande, ¿lo lanzo?"),
+            _call("final_answer", answer="Ya está: 3 menciones."),
+        ]
+    )
+    panel = Panel(Conversacion(store, brain="fake", brains={"fake": Brain(llm=llm)}, coder=str))
+    panel.send("Busca la sertralina desde 2025")
+    assert panel.history[-1]["content"] == "Es grande, ¿lo lanzo?"
+    assert "Rastrear sertralina" in panel.pending_text() and "rastrear" in panel.trace
+    panel.confirm(panel.pending_choices()[0])
+    assert "segundo plano" in panel.history[-1]["content"]
+    panel.conv.trabajos[0].hilo.join(timeout=30)
+    assert panel.check_jobs() and panel.history[-1]["content"] == "Ya está: 3 menciones."
+    assert "3 menciones" in panel.store_text() and not panel.check_jobs()
+    assert build_app(panel) is not None  # Gradio builds the page

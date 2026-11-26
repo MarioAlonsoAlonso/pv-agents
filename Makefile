@@ -170,6 +170,9 @@ coordinador-eval: ## Coordinador: banco de 13 peticiones y ablaciones (DGX con G
 coordinador-chat: ## Coordinador: conversación en la terminal, con confirmación de acciones (DGX)
 	$(UV) run --extra crawler python -m coordinator.chat
 
+coordinador-web: ## Coordinador: la conversación en una página web, http://127.0.0.1:7860 (DGX: túnel ssh)
+	$(UV) run --extra agent --extra crawler python -m coordinator.web
+
 coordinador-eval-etapas: ## Coordinador: banco v5 de las etapas, PRÁCTICA (10), completo y sin_etapas (DGX)
 	$(UV) run python -m coordinator.evaluate --bench coordinator/bench/tareas_v5.jsonl \
 		--conjunto dev --variantes completo sin_etapas
@@ -202,4 +205,4 @@ docker-api: ## API dentro del contenedor
 shell: ## Shell interactiva con GPU dentro del contenedor
 	docker compose run --rm train
 
-.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-distill-27b rlm-sft-27b rlm-grpo-27b rlm-eval-27b rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar crawler-vigilar-triar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval coordinador-chat coordinador-eval-etapas coordinador-examen-etapas api enunciado build docker-check-gpu docker-smoke docker-api shell
+.PHONY: help setup setup-min lock test lint format check-gpu smoke smoke-dry rlm-data rlm-distill rlm-sft rlm-grpo rlm-eval rlm-distill-27b rlm-sft-27b rlm-grpo-27b rlm-eval-27b rag-corpus rag-gold rag-eval rag-eval-gen rag-test crawler-marcas crawler-muestra crawler-lote crawler-prenotar crawler-gold crawler-eval crawler-vigilar crawler-vigilar-triar triage-base triage-prueba triage-dev triage-examen coordinador-casos coordinador-eval coordinador-chat coordinador-web coordinador-eval-etapas coordinador-examen-etapas api enunciado build docker-check-gpu docker-smoke docker-api shell

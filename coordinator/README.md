@@ -279,7 +279,28 @@ técnico> ¿Hay casos graves de tramadol?
 técnico> Sí, desde enero de 2026
   ⏸ [1] Rastrear tramadol en Bluesky desde 2026-01-01. Rastrear 329 días: unas 345 menciones…
 técnico> sí
+  lanzado en segundo plano: rastrear(…) · en marcha · desde 17:02
+  Puedes seguir preguntando; cuando termine te lo diré (o escribe «trabajos»).
 ```
+
+**En segundo plano.** Un rastreo o un triaje confirmado corre en otro hilo: la conversación sigue
+y, al terminar, el coordinador lo cuenta y sigue (tras un rastreo, propone el triaje). El ICSR se
+ejecuta al momento. Un turno cada vez.
+
+**En una página web** (`make coordinador-web`, [`web.py`](web.py)): la misma conversación, con
+los pendientes y los botones de confirmar o rechazar, los trabajos en segundo plano (se comprueban
+cada 5 s) y, a la derecha, qué herramientas consultó para la última respuesta. En la DGX escucha
+solo en la máquina de la sesión: desde el PC, `ssh -L 7860:localhost:7860 <usuario>@<dgx>` y
+http://localhost:7860.
+
+**Casos que pueden ser el mismo.** Los posts están anonimizados: no se sabe si dos casos son la
+misma persona. `resumen_casos` da cuántas conversaciones distintas hay, cuántos casos comparten
+conversación y cuántos repiten texto; `listar_casos` y `ver_mencion` dan los otros casos de su
+conversación; el prompt pide decir «N casos en M conversaciones» cuando se cuentan personas.
+
+**Una herramienta para leer.** `ver_mencion` lee cualquier post, caso o no, y sustituye a
+`ver_caso` (2026-11-26); la evaluación cuenta `ver_mencion` como `ver_caso` en los bancos
+anteriores, así que sus trazas guardadas puntúan igual.
 
 **Primera prueba con el 27B (2026-11-26, DGX, sin datos previos).** «Busca información de la
 sertralina en septiembre de 2026»: propuso el rastreo con su coste, esperó el «sí», encontró 128
@@ -307,6 +328,8 @@ coordinator/
   evaluate.py   el banco, las comprobaciones y las ablaciones
   demo.py       probarlo a mano y ver la traza (una pregunta)
   chat.py       conversación en la terminal, con «sí» / «no» a lo pendiente
+  web.py        la misma conversación en una página web (botones, trabajos, traza)
+  drugs.py      lo que solo necesita el coordinador de los fármacos; el catálogo, en common/
   bench/        los bancos (v1–v5)
 ```
 
