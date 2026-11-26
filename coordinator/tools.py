@@ -161,6 +161,11 @@ def make_registry(
             "pregúntale si se refiere a alguno, sin dar sus datos como si fueran de ese nombre.",
         }
 
+    def with_thread(case) -> dict:
+        """A case's summary, and the other cases of its conversation if there are any."""
+        others = store.same_conversation(case)
+        return case.summary() | ({"misma_conversacion": others[:5]} if others else {})
+
     @tool
     def listar_casos(
         farmaco: Annotated[
@@ -243,7 +248,7 @@ def make_registry(
             "graves": sum(c.grave for c in all_cases),
             "coinciden": len(cases),
             "mostrados": min(limite, len(cases)),
-            "casos": [c.summary() for c in cases[:limite]],
+            "casos": [with_thread(c) for c in cases[:limite]],
         }
         if len(cases) > limite:
             out["nota"] = (
@@ -678,7 +683,7 @@ def make_registry(
         if case is None:
             out["respuesta_del_triaje"] = store.answers.get(m.id, "sin triar todavía")
         else:
-            out |= {**case.summary(), "negadas": case.triaje.get("negadas", "")}
+            out |= {**with_thread(case), "negadas": case.triaje.get("negadas", "")}
             # Without the reasoning model (ablation), the codes it left in the cache must not
             # leak through here: in the first sin_meddra run they did ("ya estaba codificado").
             if variant != "sin_meddra":

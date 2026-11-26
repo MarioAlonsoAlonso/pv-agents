@@ -51,6 +51,7 @@ class Case:
     encontrado_por: str
     tipo_mencion: str
     triaje: dict
+    hilo_id: str = ""  # the conversation: several cases in one may be the same person
 
     @property
     def grave(self) -> bool:
@@ -174,6 +175,8 @@ def overview(cases: list[Case], meddra: dict[str, list[str]] | None = None) -> d
     that fit no theme are listed apart (usually vague: "efectos secundarios", "horrible")."""
     from collections import Counter
 
+    from crawler.text import fold
+
     def count(values):
         return dict(Counter(values).most_common())
 
@@ -190,8 +193,24 @@ def overview(cases: list[Case], meddra: dict[str, list[str]] | None = None) -> d
                 themes[name].append(c.id)
     ages = [c.triaje.get("edad", "") for c in cases]
     known_ages = [a for a in ages if a not in ("", "desconocido")]
+    threads = Counter(c.hilo_id or c.id for c in cases)
+    shared = {t for t, n in threads.items() if n > 1}
+    texts = Counter(" ".join(fold(c.texto).split()) for c in cases)
     out = {
         "casos": len(cases),
+        # Possible double counting (2026-11-26): the posts are anonymised, so the system cannot
+        # know whether two cases are the same person; it can say which share a conversation
+        # (a reply "a mí también" is usually someone else, but one person may post twice) and
+        # which repeat the same text word for word (a copied or re-posted message).
+        "posibles_repetidos": {
+            "conversaciones_distintas": len(threads),
+            "conversaciones_con_varios_casos": len(shared),
+            "casos_en_esas_conversaciones": sum(threads[t] for t in shared),
+            "casos_con_texto_repetido": sum(n for n in texts.values() if n > 1),
+            "nota": "varios casos de una conversación pueden ser personas distintas («a mí "
+            "también») o la misma persona en varios mensajes; los posts están anonimizados y el "
+            "sistema no lo sabe. Si importa contar personas, dilo así.",
+        },
         "graves": [
             {"id": c.id, "criterio": c.triaje.get("criterio_gravedad", "")}
             for c in cases
@@ -289,6 +308,7 @@ class CaseStore:
                     encontrado_por=m.encontrado_por,
                     tipo_mencion=m.tipo_mencion,
                     triaje={k: v for k, v in answer.items() if k != "id"},
+                    hilo_id=m.hilo_id,
                 )
                 if case.es_efecto_adverso:
                     store.cases[m.id] = case
@@ -356,6 +376,16 @@ class CaseStore:
             self.cases, self.reviewed = fresh.cases, fresh.reviewed
             self.mentions, self.answers, self.origin = fresh.mentions, fresh.answers, fresh.origin
             self.meddra = meddra
+
+    def same_conversation(self, case: Case) -> list[str]:
+        """The other cases of the same drug in the case's conversation."""
+        if not case.hilo_id:
+            return []
+        return [
+            c.id
+            for c in self.of_drug(case.farmaco)
+            if c.hilo_id == case.hilo_id and c.id != case.id
+        ]
 
     def mentions_of(self, drug: str | None = None) -> list[RawMention]:
         """The crawler's mentions (= what the triage receives), newest first."""

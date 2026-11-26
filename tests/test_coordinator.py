@@ -704,3 +704,14 @@ def test_an_answer_from_the_sheets_must_cite_its_fragments(tmp_path, monkeypatch
     )
     r = coordinar("¿Zolpidem?", store, brain="f", brains={"f": Brain(llm=llm)})
     assert r.final_answer == "Sigo sin citas."
+
+
+def test_cases_of_one_conversation_are_flagged_as_possibly_the_same(tmp_path):
+    ms, store = _store(tmp_path)  # every toy mention is in the conversation "h"
+    reg = make_registry(store)
+    out = reg.call("resumen_casos", {"farmaco": "sertralina"}).result["posibles_repetidos"]
+    assert out["conversaciones_distintas"] == 1 and out["casos_en_esas_conversaciones"] == 4
+    listed = reg.call("listar_casos", {"farmaco": "sertralina"}).result["casos"]
+    assert all(len(c["misma_conversacion"]) == 3 for c in listed)
+    seen = reg.call("ver_mencion", {"mencion_id": ms[0].id}).result
+    assert ms[0].id not in seen["misma_conversacion"] and len(seen["misma_conversacion"]) == 3
