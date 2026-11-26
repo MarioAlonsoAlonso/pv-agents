@@ -1054,3 +1054,8 @@ casos de 161 (2,5 %). Se queda. La hoja del rastreador (61 conversaciones) no ve
 buenas perdidas; la del triaje (todas) sí: para medir un filtro hay que mirar dónde caen sus
 efectos.
 
+En el triaje (sus respuestas v2 de las menciones que entrega la v5, sin ejecutar nada): en su
+examen, falsas alarmas 18 → 14, precisión 80 % → 83 % (respuestas indirectas, 54 % → 61 %) y
+casos detectados 70 → 69. Casi todo el ruido que quita el cambio F el triaje ya lo descartaba: el
+beneficio para el triaje es real pero pequeño.
+

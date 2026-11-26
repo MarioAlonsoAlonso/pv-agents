@@ -297,6 +297,14 @@ habría visto: en sus 61 conversaciones no pierde nada (19 de 19). Diferencias d
 (el Tialin, 17 frente a 19) pueden ser azar: el 27B muestrea. La regla del prompt se escribió
 mirando errores de la parte de desarrollo; la cifra que vale es la de examen.
 
+**Y en el triaje** (sus respuestas v2 de las menciones que sigue entregando la v5, con la hoja;
+sin ejecutar ningún modelo): en el examen, de 438 a 333 menciones, falsas alarmas 18 → 14,
+precisión 80 % → **83 %** (en las respuestas indirectas, 54 % → 61 %) y casos detectados 70 → 69.
+En desarrollo no cambia (6 falsas alarmas). Casi todo lo que quita el cambio F el triaje ya lo
+descartaba bien: le ahorra trabajo (unos 250 000 tokens) y le mejora algo la precisión, a cambio
+de un caso; no sustituye mejorar el triaje. 36 menciones nuevas de la v5 no tienen ni respuesta del
+triaje ni hoja y no se cuentan.
+
 ## La evaluación
 
 Los cuatro sistemas se ejecutan sobre la **misma muestra congelada** (mismos posts, misma
