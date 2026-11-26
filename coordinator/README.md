@@ -240,12 +240,12 @@ Ahora se le puede preguntar por cualquier etapa, y lanzar las dos primeras:
 
 | El técnico pide… | Herramienta |
 |---|---|
-| Lo que encontró el rastreador (= lo que recibe el triaje) | `listar_menciones` |
+| Lo que encontró el rastreador (= lo que recibe el triaje) | `listar_menciones`; una entera, con su conversación, `ver_mencion` |
 | Lo que descartó el triaje y por qué | `listar_descartes` |
 | En qué punto está cada etapa y qué falta | `estado_del_sistema` |
 | Los casos, MedDRA, ficha, FAERS, literatura, ICSR | lo de antes |
 | Algo que necesita una etapa que no se ha hecho («casos de tramadol») | `estado_del_sistema` → explica qué falta y ofrece `rastrear` / `triar` |
-| «Busca todo lo del lorazepam desde enero» | `rastrear`, después `triar` |
+| «Busca todo lo del lorazepam desde enero», «solo septiembre» | `rastrear` (desde y, si hace falta, hasta), después `triar` |
 
 **El almacén.** [`cases.py`](cases.py) lee la muestra congelada de la evaluación y, además, el
 almacén del vigilante (`data/bluesky/monitor/menciones.jsonl` y `triaje_respuestas.jsonl`), y
@@ -280,6 +280,14 @@ técnico> Sí, desde enero de 2026
   ⏸ [1] Rastrear tramadol en Bluesky desde 2026-01-01. Rastrear 329 días: unas 345 menciones…
 técnico> sí
 ```
+
+**Primera prueba con el 27B (2026-11-26, DGX, sin datos previos).** «Busca información de la
+sertralina en septiembre de 2026»: propuso el rastreo con su coste, esperó el «sí», encontró 128
+menciones (81 de la búsqueda fija, 47 del agente) y propuso el triaje, otra vez con confirmación
+(128 > 100). Tres fallos, corregidos: `rastrear` no tenía fecha final (para «solo septiembre»
+rastreó hasta hoy, 86 días en vez de 30); el técnico no podía leer un post entero (no había
+herramienta para menciones que no son casos, y el prompt le hacía resumir siempre); y la
+estimación usaba el ritmo de la muestra congelada (90 previstas, 128 reales: ahora 1,5 al día).
 
 **Evaluación:** banco v5 ([`bench/v5.py`](bench/v5.py), 24 peticiones: menciones, descartes,
 estado, etapa que falta y lanzar), `make coordinador-eval-etapas` (completo frente a

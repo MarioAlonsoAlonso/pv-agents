@@ -200,7 +200,7 @@ def test_a_mention_in_two_sources_counts_once(tmp_path):
 
 
 def test_estimates_and_plan():
-    assert etapas.estimate_crawl(30)["menciones_aprox"] == 32
+    assert etapas.estimate_crawl(30)["menciones_aprox"] == 45  # 1.5 a day
     assert "M tokens" in etapas.estimate_triage(500)["texto"]
     assert etapas.watched("Besitran") == ("sertralina", None)
     assert etapas.watched("omeprazol")[1] is not None
@@ -315,3 +315,27 @@ def test_the_chat_can_start_with_no_data_at_all(live, tmp_path):
     assert len(store.mentions) == 3
     with pytest.raises(FileNotFoundError):
         CaseStore.from_files([(tmp_path / "no.jsonl", tmp_path / "no2.jsonl")], meddra_file=None)
+
+
+def test_a_closed_period_and_reading_a_whole_mention(live, tmp_path):
+    from datetime import date
+
+    from coordinator.tools import make_registry
+
+    now = datetime(2025, 6, 1, tzinfo=UTC)
+    got = monitor.crawl_and_save(
+        _LiveLike(POSTS), ["sertralina"], since="2025-01-01", until="2025-04-01", now=now
+    )
+    assert got["nuevas"] == 1  # only a1 (March); b1 (1 April) and c1 (May) are outside
+    state = monitor.load_state(monitor.files()["estado"])
+    assert "sertralina" not in state["ultima_ejecucion"]  # a past window: the cursor stays
+    # "only September" is 30 days: small, it runs without asking
+    day, end, error = etapas.window("2026-09-01", "2026-09-30")
+    assert (day, end, error) == (date(2026, 9, 1), date(2026, 10, 1), None)
+    assert etapas.window("2026-09-30", "2026-09-01")[2] is not None
+    store = _store(tmp_path)
+    reg = make_registry(store)
+    mid = next(iter(store.mentions))
+    whole = reg.call("ver_mencion", {"mencion_id": mid}).result
+    assert whole["texto"].startswith("Llevo un mes") and whole["triaje"] == "sin_triar"
+    assert "error" in reg.call("ver_mencion", {"mencion_id": "M-nope"}).result

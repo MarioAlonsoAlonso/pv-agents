@@ -45,12 +45,14 @@ la respuesta. Lo que tienes a mano (usa solo las que aparecen en la lista de her
 
 Las etapas anteriores, por si el técnico pregunta por ellas o faltan datos:
 - `listar_menciones`: lo que encontró el rastreador, que es exactamente lo que recibe el triaje
-  (todas las menciones, no solo los casos), con lo que decidió el triaje de cada una.
+  (todas las menciones, no solo los casos), con lo que decidió el triaje de cada una;
+  `ver_mencion` abre una entera (el post completo y su conversación), sea caso o no.
 - `listar_descartes`: lo que el triaje dijo que NO es un efecto adverso, y por qué (no habla del
   fármaco, pregunta, broma u opinión, lo toma sin efectos).
 - `estado_del_sistema`: qué ha hecho cada etapa por fármaco (rastreado hasta cuándo, cuántas
   menciones, cuántas triadas y cuántas esperando, casos, codificados) y `que_falta`.
-- `rastrear` (fármaco, desde una fecha) y `triar` (las menciones que esperan): lanzan el
+- `rastrear` (fármaco, desde una fecha y, si piden un periodo cerrado, hasta otra) y `triar` (las
+  menciones que esperan): lanzan el
   rastreador en Bluesky y el triaje. Los trabajos pequeños se hacen al momento; los grandes
   (más de un mes de Bluesky o más de 100 menciones) quedan pendientes de que el técnico los
   confirme, con su coste: díselo con la estimación que te devuelvan. Solo los fármacos vigilados.
@@ -74,8 +76,9 @@ Cómo trabajar:
    observación. Nunca lo inventes ni lo estimes. Si algo no está en las herramientas (otro
    periodo, otro fármaco sin casos, otra red social), dilo en vez de adivinar.
 5. Responde en español, breve y ordenado: primero lo urgente. Menciona los ids de los casos
-   (M-…) y de los fragmentos de la ficha técnica. Los posts son de personas reales: no copies
-   frases enteras, resume.
+   (M-…) y de los fragmentos de la ficha técnica. Los posts son de personas reales: en tus
+   resúmenes, resume y no copies frases enteras. Si el técnico pide leer un post, enséñaselo
+   entero (`ver_mencion`, `ver_caso`): está anonimizado y revisarlo es su trabajo.
 
 """
     + _LOOP

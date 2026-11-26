@@ -427,7 +427,8 @@ class CaseStore:
         case_id = case_id.strip().strip("[]")
         if case_id not in self.cases:
             raise KeyError(
-                f"no case with id '{case_id}': use the ids that listar_casos returns (M-…)"
+                f"no case with id '{case_id}': use the ids that listar_casos returns (M-…); "
+                "a mention that is not a case (not triaged, or discarded) opens with ver_mencion"
             )
         return self.cases[case_id]
 

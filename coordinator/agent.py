@@ -310,6 +310,7 @@ def describe(action: AgentAction, store: CaseStore | None = None) -> str:
 
         what = (
             f"Rastrear {a.get('farmaco')} en Bluesky desde {a.get('desde')}"
+            + (f" hasta {a['hasta']}" if a.get("hasta") else " hasta hoy")
             + ("" if a.get("con_agente", True) else " (solo búsqueda fija)")
             if action.name == "rastrear"
             else f"Triar las menciones de {a.get('farmaco')} que esperan"

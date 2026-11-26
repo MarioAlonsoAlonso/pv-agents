@@ -52,7 +52,14 @@ VARIANTS = (
     "sin_etapas",
 )
 # The tools of the earlier stages (2026-11-26); ``sin_etapas`` is the coordinator before them.
-STAGE_TOOLS = ("estado_del_sistema", "listar_menciones", "listar_descartes", "rastrear", "triar")
+STAGE_TOOLS = (
+    "estado_del_sistema",
+    "listar_menciones",
+    "ver_mencion",
+    "listar_descartes",
+    "rastrear",
+    "triar",
+)
 DISCARD_REASONS = {
     "no_es_mencion": "no habla del fármaco (error del rastreador: un «gracias», otro fármaco…)",
     "pregunta_o_consejo": "pregunta o consejo, sin una experiencia propia",
@@ -575,7 +582,7 @@ def make_registry(
                 }
                 for m, d in rows[:limite]
             ],
-            "nota": "posts de personas reales (anonimizados): resume, no copies frases enteras",
+            "nota": "textos recortados; el post completo de una mención, con ver_mencion",
         }
 
     @tool
@@ -625,6 +632,13 @@ def make_registry(
     def rastrear(
         farmaco: Annotated[str, Field(description="Watched active ingredient in Spanish.")],
         desde: Annotated[str, Field(description="Search everything since this date, YYYY-MM-DD.")],
+        hasta: Annotated[
+            str | None,
+            Field(
+                description="Last day to search, YYYY-MM-DD, included (e.g. a month: "
+                "desde='2026-09-01', hasta='2026-09-30'). Empty: until now."
+            ),
+        ] = None,
         con_agente: Annotated[
             bool,
             Field(
@@ -633,19 +647,53 @@ def make_registry(
             ),
         ] = True,
     ) -> dict:
-        """Run the crawler on live Bluesky: every post about a watched drug since a date. The
-        new mentions go to the store and wait for the triage (then call triar). A search of more
-        than a month is not run at once: it is queued, with its cost, for the technician to
-        confirm. Use it when estado_del_sistema says a drug or a period has not been crawled."""
+        """Run the crawler on live Bluesky: every post about a watched drug in a period (from
+        'desde' to 'hasta', or until now). The new mentions go to the store and wait for the
+        triage (then call triar). A search of more than a month is not run at once: it is
+        queued, with its cost, for the technician to confirm. Use it when estado_del_sistema
+        says a drug or a period has not been crawled."""
         from coordinator import etapas
 
         drug, error = etapas.watched(farmaco)
         if error:
             return {"error": error}
-        day, error = etapas.parse_day(desde)
+        day, end, error = etapas.window(desde, hasta)
         if error:
             return {"error": error}
-        return etapas.crawl(store, drug, day.isoformat(), con_agente)
+        until = end.isoformat() if hasta else None
+        return etapas.crawl(store, drug, day.isoformat(), con_agente, until)
+
+    @tool
+    def ver_mencion(
+        mencion_id: Annotated[
+            str, Field(description="Mention id as listar_menciones gives it (M-…).")
+        ],
+    ) -> dict:
+        """Read one mention in full, case or not: the whole post (anonymised) and the earlier
+        messages of its conversation, how the crawler found it and everything the triage said
+        about it (or that it has not been triaged). Use it when the technician wants to read a
+        post."""
+        from evaluacion_triaje.lote import conversation_text
+
+        m = store.mentions.get(mencion_id.strip().strip("[]"))
+        if m is None:
+            return {
+                "error": f"no hay ninguna mención '{mencion_id}': usa los ids de listar_menciones"
+            }
+        return {
+            "id": m.id,
+            "farmaco": m.farmaco,
+            "fecha": m.fecha[:10],
+            "como_lo_nombra": m.tipo_mencion,
+            "encontrada_por": m.encontrado_por,
+            "fuente": store.origin.get(m.id, "muestra"),
+            "texto": m.texto,
+            "conversacion_anterior": conversation_text(m) or "(es el primer post)",
+            "triaje": store.triage_state(m.id),
+            "respuesta_del_triaje": store.answers.get(m.id, "sin triar todavía"),
+            "nota": "post público de Bluesky, anonimizado (@usuario, [enlace]); "
+            "notificante: consumidor",
+        }
 
     @tool
     def triar(
@@ -687,5 +735,7 @@ def make_registry(
     if variant != "sin_nombres":
         registry.register(farmacos_disponibles, identificar_farmaco, comparar_senal)
     if variant != "sin_etapas":
-        registry.register(estado_del_sistema, listar_menciones, listar_descartes, rastrear, triar)
+        registry.register(
+            estado_del_sistema, listar_menciones, ver_mencion, listar_descartes, rastrear, triar
+        )
     return registry

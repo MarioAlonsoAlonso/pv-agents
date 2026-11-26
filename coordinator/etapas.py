@@ -32,7 +32,9 @@ STAGE_TOOLS = ("rastrear", "triar")
 SMALL_DAYS = 31
 SMALL_TRIAGE = 100
 EARLIEST = date(2023, 2, 1)  # Bluesky's beta; public since 2024-02-06
-MENTIONS_PER_DAY = 1.05  # sertraline, 725 mentions in 687 days
+# Sertraline: 725 mentions in 687 days in the frozen sample (2025-01 to 2026-11), but 128 in
+# 86 days live (2026-09 to 2026-11-26, first crawl from the chat): Bluesky in Spanish grows.
+MENTIONS_PER_DAY = 1.5
 CRAWL_TOKENS_PER_MENTION = 3100
 CRAWL_MINUTES_PER_DAY = 11 / 687
 TRIAGE_TOKENS_PER_MENTION = 2400
@@ -70,6 +72,25 @@ def parse_day(value: str) -> tuple[date | None, str | None]:
     if day >= datetime.now(UTC).date():
         return None, "la fecha de inicio tiene que ser anterior a hoy"
     return day, None
+
+
+def window(since: str, until: str | None) -> tuple[date | None, date | None, str | None]:
+    """[since, until] as dates (until included; today if empty), or an error."""
+    from datetime import timedelta
+
+    day, error = parse_day(since)
+    if error:
+        return None, None, error
+    today = datetime.now(UTC).date()
+    if not until:
+        return day, today, None
+    try:
+        last = date.fromisoformat(str(until).strip()[:10])
+    except ValueError:
+        return None, None, f"fecha '{until}' no válida: usa AAAA-MM-DD"
+    if last < day:
+        return None, None, "la fecha final es anterior a la inicial"
+    return day, min(last + timedelta(days=1), today), None  # end: exclusive
 
 
 def _minutes(m: float) -> str:
@@ -131,10 +152,10 @@ def plan(name: str, args: dict, store) -> dict:
             "estimacion": "",
         }
     if name == "rastrear":
-        day, error = parse_day(args.get("desde", ""))
+        day, end, error = window(args.get("desde", ""), args.get("hasta"))
         if error:
             return {"error": error, "grande": False, "estimacion": ""}
-        days = (datetime.now(UTC).date() - day).days
+        days = (end - day).days
         e = estimate_crawl(days, args.get("con_agente", True))
         return {"error": None, "grande": days > SMALL_DAYS, "estimacion": e["texto"]}
     n = len(pending(store, drug))
@@ -218,8 +239,9 @@ def state(store, drug: str | None = None) -> dict:
     }
 
 
-def crawl(store, drug: str, since: str, with_agent: bool = True) -> dict:
-    """Run the crawler (the monitor, from ``since``) and reload the store."""
+def crawl(store, drug: str, since: str, with_agent: bool = True, until: str | None = None) -> dict:
+    """Run the crawler (the monitor, from ``since``; until ``until`` exclusive, or now) and
+    reload the store."""
     from crawler.monitor import crawl_and_save
 
     if SOURCE_FACTORY is not None:
@@ -228,12 +250,15 @@ def crawl(store, drug: str, since: str, with_agent: bool = True) -> dict:
         from crawler.sources import LiveSource
 
         source = LiveSource()
-    result = crawl_and_save(source, [drug], brain=brain() if with_agent else None, since=since)
+    result = crawl_and_save(
+        source, [drug], brain=brain() if with_agent else None, since=since, until=until
+    )
     store.reload()
     waiting = len(pending(store, drug))
     return {
         "farmaco": drug,
         "desde": since,
+        "hasta": until or "ahora",
         "menciones_nuevas": result["nuevas"],
         "por_origen": result["por_origen"],
         "esperando_triaje": waiting,

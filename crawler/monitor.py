@@ -124,9 +124,12 @@ def run_once(
     first_lookback_hours: int = 24,
     now: datetime | None = None,
     since: str | None = None,
+    until: str | None = None,
 ) -> tuple[MentionStore, dict]:
     """One surveillance run. Returns the new mentions and a summary; updates ``state``.
-    ``since`` (ISO date) overrides where the search starts, for every drug of this run."""
+    ``since`` (ISO date) overrides where the search starts, for every drug of this run.
+    ``until`` (ISO date, exclusive) closes the window: a past period ("only September"), which
+    does not move the last-run date, so the periodic monitor carries on where it was."""
     now = now or datetime.now(UTC)
     brands = load_brands()
     store = MentionStore()
@@ -138,7 +141,8 @@ def run_once(
         since = since or to_iso(now - timedelta(hours=first_lookback_hours))
         extra = [t["termino"] for t in state["terminos"].get(drug, [])]
         before = len(store)
-        hits, _ = fixed_search(source, store, drug, brands, since, to_iso(now), extra)
+        end = to_iso(until) if until else to_iso(now)
+        hits, _ = fixed_search(source, store, drug, brands, since, end, extra)
         explicit = len(store) - before
 
         # Watch the threads of the hits, and download the watched ones again.
@@ -182,7 +186,8 @@ def run_once(
                     known = state["terminos"].setdefault(drug, [])
                     if term["termino"].lower() not in {t["termino"].lower() for t in known}:
                         known.append({**term, "desde": to_iso(now)})
-        state["ultima_ejecucion"][drug] = to_iso(now)
+        if not until:
+            state["ultima_ejecucion"][drug] = to_iso(now)
         summary[drug] = {
             "explicitas": explicit,
             "por_agente": len(store) - before - explicit,
@@ -202,19 +207,22 @@ def crawl_and_save(
     since: str | None = None,
     now: datetime | None = None,
     folder: Path | None = None,
+    until: str | None = None,
 ) -> dict:
     """One run that keeps its result: the new mentions are appended to ``menciones.jsonl``
-    and the state is saved. What the command line and the coordinator's ``rastrear`` call."""
+    and the state is saved. What the command line and the coordinator's ``rastrear`` call.
+    With ``until``, replies the agent found in those threads after the window are left out."""
     f = files(folder)
     with exclusive(f"rastreo de {', '.join(drugs)}", f["lock"].parent):
         state = load_state(f["estado"])
         store, summary = run_once(
-            source, state, drugs, brain, follow_days, first_lookback_hours, now, since
+            source, state, drugs, brain, follow_days, first_lookback_hours, now, since, until
         )
         known = MentionStore.load_ids(f["menciones"])
+        end = to_iso(until) if until else None
         new = MentionStore()
         for m in store.mentions.values():
-            if m.id not in known:
+            if m.id not in known and (end is None or to_iso(m.fecha) < end):
                 new.add(m)
         f["menciones"].parent.mkdir(parents=True, exist_ok=True)
         new.save(f["menciones"], append=True)
@@ -298,6 +306,9 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--desde", default=None, help="first run: everything since this date (YYYY-MM-DD)"
     )
+    parser.add_argument(
+        "--hasta", default=None, help="with --desde: only until this date, exclusive (YYYY-MM-DD)"
+    )
     parser.add_argument("--triar", action="store_true", help="triage the new mentions too")
     args = parser.parse_args(argv)
 
@@ -312,8 +323,9 @@ def main(argv: list[str] | None = None) -> None:
             first_lookback_hours=args.primera_vez_horas,
             since=args.desde,
             now=started,
+            until=args.hasta,
         )
-        args.desde = None  # only the first run of a loop: then from the last run on
+        args.desde = args.hasta = None  # only the first run of a loop: then from the last run on
         print(f"[{to_iso(started)}] {result['nuevas']} menciones nuevas → {files()['menciones']}")
         for drug, s in result["por_farmaco"].items():
             print(f"  {drug}: {s}")
