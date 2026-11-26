@@ -95,7 +95,14 @@ def main(argv: list[str] | None = None) -> None:
             "  (todavía no hay datos: ni la muestra de evaluación ni el vigilante. Puedes pedirle "
             "que rastree un fármaco, o copiar la muestra a data/: coordinator/README.md)"
         )
-    warm_up(args.variante)
+    try:
+        warm_up(args.variante)
+    except Exception as exc:  # noqa: BLE001 - no RAG index or no GPU: the rest still works
+        print(
+            f"  aviso: no se pudo cargar el RAG o el modelo MedDRA ({type(exc).__name__}: {exc}).\n"
+            "  Rastrear, triar, casos, FAERS y literatura funcionan; las fichas técnicas y la "
+            "codificación MedDRA darán error (en la DGX: una sesión con GPU y make rag-corpus)."
+        )
     conv = Conversacion(store, brain=args.brain, variant=args.variante, max_steps=args.max_steps)
     log = FOLDER / "chat" / f"{datetime.now():%Y%m%d-%H%M%S}.jsonl"
     log.parent.mkdir(parents=True, exist_ok=True)
