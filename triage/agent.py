@@ -6,7 +6,7 @@ model. The model only reads and decides; the code
 * groups the mentions by conversation (one request reads the whole thread, so the replies of
   a thread share their context) and splits long threads into chunks;
 * keeps only answers for ids it sent (an invented id is dropped), with the exact values of the
-  answer sheet (``evaluacion_triaje.lote.validate``), and fixes what is mechanical (``true`` →
+  answer sheet (``triage.esquema.validate``), and fixes what is mechanical (``true`` →
   ``si``, a criterion without ``grave = si``, a source of sex when the sex is unknown);
 * asks again, once, for the mentions whose answer is missing or invalid, saying what was wrong;
 * and if there is still no valid answer, does NOT drop the mention: it goes on as a possible
@@ -30,7 +30,7 @@ from pathlib import Path
 
 from crawler.store import RawMention
 from crawler.text import fold
-from evaluacion_triaje.lote import LABELS, normalise, validate
+from triage.esquema import LABELS, normalise, validate
 from triage.prompts import REPAIR, build_prompt
 
 FIELDS = [f for f in LABELS if f != "notas"]

@@ -1,17 +1,14 @@
-"""Proportions with a 95 % Wilson interval, shared by the analyst-tool evaluations."""
+"""Proportions with a 95 % Wilson interval (``common.stats``) for the crawler's reports."""
 
 from __future__ import annotations
 
-import math
-
 
 def wilson(k: int, n: int, z: float = 1.96) -> list[float] | None:
-    if not n:
-        return None
-    p = k / n
-    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
-    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
-    return [round(max(0.0, centre - half), 3), round(min(1.0, centre + half), 3)]
+    """``common.stats.wilson`` rounded to 3 decimals, as the crawler's reports have it."""
+    from common.stats import wilson as interval
+
+    ci = interval(k, n, z)
+    return None if ci is None else [round(ci[0], 3), round(ci[1], 3)]
 
 
 def rate(k: int, n: int) -> dict:

@@ -673,7 +673,7 @@ def make_registry(
         messages of its conversation, how the crawler found it and everything the triage said
         about it (or that it has not been triaged). Use it when the technician wants to read a
         post."""
-        from evaluacion_triaje.lote import conversation_text
+        from crawler.store import conversation_text
 
         m = store.mentions.get(mencion_id.strip().strip("[]"))
         if m is None:

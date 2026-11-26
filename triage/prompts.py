@@ -23,8 +23,41 @@ changed and what happened.
 
 from __future__ import annotations
 
-from crawler.store import RawMention
-from evaluacion_triaje.lote import PRELABEL_PROMPT, conversation_text
+from crawler.store import RawMention, conversation_text
+
+# v0: the prompt of the pre-annotation of the answer sheet (it was defined in
+# evaluacion_triaje/lote.py until 2026-11-26; the annotation tool imports it from here).
+PRELABEL_PROMPT = """Eres anotador de farmacovigilancia. Para cada mención de abajo (un post de
+Bluesky que habla de {farmaco}, con los mensajes anteriores de su conversación), decide lo
+siguiente.
+Anota SOLO lo que dice el post, leído con su conversación; no supongas nada.
+
+- es_efecto_adverso: "si" si el autor cuenta que a él o a alguien concreto le pasó algo malo con
+  el fármaco (síntomas, molestias, síntomas al dejarlo o bajar la dosis, o que no le hace efecto),
+  aunque dude de la causa. "no" en otro caso.
+- motivo_no (solo si "no"): "no_es_mencion" (no habla del fármaco: un "gracias", otro fármaco,
+  otra cosa), "pregunta_o_consejo", "broma_opinion_noticia" o "sin_reaccion" (lo toma o le va
+  bien, sin nada malo).
+- reacciones (solo si "si"): cada reacción con las palabras del autor, separadas por " | ". Si
+  solo se sabe por la conversación ("a mí también me pasó"), escríbela entre corchetes: [náuseas].
+- negadas: lo que el autor dice que NO tuvo (vacío si nada).
+- paciente: "autor", "familiar_o_conocido" o "desconocido".
+- edad: el número si se dice; si no, "desconocido".
+- sexo: "mujer", "hombre" o "desconocido"; sexo_fuente: "dicho", "deducido" (por el género
+  gramatical: "estoy cansada") o "" si desconocido.
+- grave: "si" solo si dice muerte, riesgo vital, hospitalización (ingreso), discapacidad u otro
+  evento médicamente importante (p. ej. ideación suicida, manía, convulsiones); si no, "no_consta".
+- criterio_gravedad: "muerte", "riesgo_vital", "hospitalizacion", "discapacidad",
+  "otro_importante" o "".
+- desenlace: "recuperado", "recuperandose", "no_recuperado" o "desconocido".
+
+Menciones:
+{menciones}
+
+Responde SOLO con una lista JSON, un objeto por mención, con "id" y los campos de arriba:
+[{{"id": "...", "es_efecto_adverso": "...", "motivo_no": "...", "reacciones": "...", "negadas": "",
+  "paciente": "...", "edad": "...", "sexo": "...", "sexo_fuente": "...", "grave": "...",
+  "criterio_gravedad": "", "desenlace": "..."}}]"""
 
 
 def render_mentions(mentions: list[RawMention]) -> str:

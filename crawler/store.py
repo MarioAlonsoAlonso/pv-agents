@@ -161,3 +161,9 @@ def write_schema(path: str | Path) -> None:
     """Write the JSON Schema of RawMention (for teammates who do not use Python)."""
     schema = RawMention.model_json_schema()
     Path(path).write_text(json.dumps(schema, ensure_ascii=False, indent=2) + "\n", "utf-8")
+
+
+def conversation_text(m: RawMention) -> str:
+    """The earlier posts of a mention's conversation, numbered, one line each: how the triage,
+    the answer sheet and the coordinator show the context of a post."""
+    return "\n".join(f"[{i}] {' '.join(c.texto.split())}" for i, c in enumerate(m.conversacion, 1))

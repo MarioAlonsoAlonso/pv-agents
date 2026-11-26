@@ -31,8 +31,7 @@ import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from crawler.store import RawMention, read_mentions
-from evaluacion_triaje.lote import conversation_text
+from crawler.store import RawMention, conversation_text, read_mentions
 
 DATA = Path("data")
 FOLDER = DATA / "coordinador"

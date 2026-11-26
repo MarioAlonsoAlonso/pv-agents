@@ -20,50 +20,18 @@ from collections import Counter
 from pathlib import Path
 
 from crawler.annotate import kappa
-from crawler.store import RawMention, read_mentions
+from crawler.store import RawMention, conversation_text, read_mentions
+
+# The triage's fields, checks and v0 prompt live with the triage (the system needs them);
+# this evaluation tool imports them, and keeps the names for the code that uses them here.
+from triage.esquema import CASE_FIELDS, LABELS, VALUES, normalise, validate  # noqa: F401
+from triage.prompts import PRELABEL_PROMPT
 
 FOLDER = Path("data/triaje")
 READ_COLUMNS = ["n", "id", "hilo_id", "encontrado_por", "idioma", "conversacion", "texto"]
-LABELS = [
-    "es_efecto_adverso",
-    "motivo_no",
-    "reacciones",
-    "negadas",
-    "paciente",
-    "edad",
-    "sexo",
-    "sexo_fuente",
-    "grave",
-    "criterio_gravedad",
-    "desenlace",
-    "notas",
-]
-VALUES = {
-    "es_efecto_adverso": {"si", "no"},
-    "motivo_no": {"no_es_mencion", "pregunta_o_consejo", "broma_opinion_noticia", "sin_reaccion"},
-    "paciente": {"autor", "familiar_o_conocido", "desconocido"},
-    "sexo": {"mujer", "hombre", "desconocido"},
-    "sexo_fuente": {"dicho", "deducido", ""},
-    "grave": {"si", "no_consta"},
-    "criterio_gravedad": {
-        "muerte",
-        "riesgo_vital",
-        "hospitalizacion",
-        "discapacidad",
-        "otro_importante",
-        "",
-    },
-    "desenlace": {"recuperado", "recuperandose", "no_recuperado", "desconocido"},
-}
-CASE_FIELDS = ["paciente", "sexo", "sexo_fuente", "grave", "criterio_gravedad", "desenlace"]
 
 
 # --------------------------------------------------------------------------- sheet
-
-
-def conversation_text(m: RawMention) -> str:
-    """The earlier posts, numbered, one line each (the sheet's reading column)."""
-    return "\n".join(f"[{i}] {' '.join(c.texto.split())}" for i, c in enumerate(m.conversacion, 1))
 
 
 def write_sheet(mentions: list[RawMention], path: Path, labels: dict | None = None) -> None:
@@ -90,75 +58,7 @@ def read_sheet(path: Path) -> list[dict]:
         return list(csv.DictReader(f, delimiter=";"))
 
 
-def normalise(row: dict) -> dict:
-    out = {}
-    for field in LABELS:
-        value = (row.get(field) or "").strip()
-        if field in VALUES or field == "edad":
-            value = value.lower().replace("í", "i").replace("ó", "o")
-        out[field] = value
-    if out["es_efecto_adverso"] != "si":  # case fields only make sense for adverse events
-        for field in ["reacciones", "negadas", *CASE_FIELDS, "edad"]:
-            out[field] = ""
-    else:
-        out["motivo_no"] = ""
-        out["edad"] = out["edad"] or "desconocido"
-    return out
-
-
-def validate(row: dict) -> str | None:
-    lab = normalise(row)
-    if lab["es_efecto_adverso"] not in VALUES["es_efecto_adverso"]:
-        return "es_efecto_adverso debe ser si o no"
-    if lab["es_efecto_adverso"] == "no":
-        if lab["motivo_no"] not in VALUES["motivo_no"]:
-            return f"motivo_no no válido: '{lab['motivo_no']}'"
-        return None
-    if not lab["reacciones"]:
-        return "un efecto adverso necesita al menos una reacción"
-    for field in CASE_FIELDS:
-        if lab[field] not in VALUES[field]:
-            return f"{field} no válido: '{lab[field]}'"
-    if lab["edad"] != "desconocido" and not lab["edad"].isdigit():
-        return f"edad no válida: '{lab['edad']}'"
-    if lab["grave"] == "si" and not lab["criterio_gravedad"]:
-        return "grave = si necesita criterio_gravedad"
-    return None
-
-
 # --------------------------------------------------------------------------- 27B
-
-PRELABEL_PROMPT = """Eres anotador de farmacovigilancia. Para cada mención de abajo (un post de
-Bluesky que habla de {farmaco}, con los mensajes anteriores de su conversación), decide lo
-siguiente.
-Anota SOLO lo que dice el post, leído con su conversación; no supongas nada.
-
-- es_efecto_adverso: "si" si el autor cuenta que a él o a alguien concreto le pasó algo malo con
-  el fármaco (síntomas, molestias, síntomas al dejarlo o bajar la dosis, o que no le hace efecto),
-  aunque dude de la causa. "no" en otro caso.
-- motivo_no (solo si "no"): "no_es_mencion" (no habla del fármaco: un "gracias", otro fármaco,
-  otra cosa), "pregunta_o_consejo", "broma_opinion_noticia" o "sin_reaccion" (lo toma o le va
-  bien, sin nada malo).
-- reacciones (solo si "si"): cada reacción con las palabras del autor, separadas por " | ". Si
-  solo se sabe por la conversación ("a mí también me pasó"), escríbela entre corchetes: [náuseas].
-- negadas: lo que el autor dice que NO tuvo (vacío si nada).
-- paciente: "autor", "familiar_o_conocido" o "desconocido".
-- edad: el número si se dice; si no, "desconocido".
-- sexo: "mujer", "hombre" o "desconocido"; sexo_fuente: "dicho", "deducido" (por el género
-  gramatical: "estoy cansada") o "" si desconocido.
-- grave: "si" solo si dice muerte, riesgo vital, hospitalización (ingreso), discapacidad u otro
-  evento médicamente importante (p. ej. ideación suicida, manía, convulsiones); si no, "no_consta".
-- criterio_gravedad: "muerte", "riesgo_vital", "hospitalizacion", "discapacidad",
-  "otro_importante" o "".
-- desenlace: "recuperado", "recuperandose", "no_recuperado" o "desconocido".
-
-Menciones:
-{menciones}
-
-Responde SOLO con una lista JSON, un objeto por mención, con "id" y los campos de arriba:
-[{{"id": "...", "es_efecto_adverso": "...", "motivo_no": "...", "reacciones": "...", "negadas": "",
-  "paciente": "...", "edad": "...", "sexo": "...", "sexo_fuente": "...", "grave": "...",
-  "criterio_gravedad": "", "desenlace": "..."}}]"""
 
 
 def prelabel(mentions: list[RawMention], brain: str = "27b") -> dict[str, dict]:

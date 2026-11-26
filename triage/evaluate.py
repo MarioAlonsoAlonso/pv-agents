@@ -26,22 +26,13 @@ import math
 from collections import Counter
 from pathlib import Path
 
+from common.stats import wilson
 from crawler.annotate import kappa
-from crawler.store import RawMention, read_mentions
-from evaluacion_triaje.lote import conversation_text, normalise
+from crawler.store import RawMention, conversation_text, read_mentions
+from triage.esquema import normalise
 
 CASE = ["paciente", "edad", "sexo", "grave", "desenlace"]
 MOTIVES = ["no_es_mencion", "pregunta_o_consejo", "broma_opinion_noticia", "sin_reaccion"]
-
-
-def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
-    """95 % Wilson score interval for k successes out of n."""
-    if n == 0:
-        return None
-    p = k / n
-    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
-    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
-    return max(0.0, centre - half), min(1.0, centre + half)
 
 
 def share(k: int, n: int) -> dict:
