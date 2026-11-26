@@ -290,8 +290,9 @@ herramienta para menciones que no son casos, y el prompt le hacía resumir siemp
 estimación usaba el ritmo de la muestra congelada (90 previstas, 128 reales: ahora 1,5 al día).
 
 **Evaluación:** banco v5 ([`bench/v5.py`](bench/v5.py), 24 peticiones: menciones, descartes,
-estado, etapa que falta y lanzar), `make coordinador-eval-etapas` (completo frente a
-`sin_etapas`). Pendiente de ejecutar en la DGX.
+estado, etapa que falta y lanzar), completo frente a `sin_etapas`: `make coordinador-eval-etapas`
+(práctica, 10 peticiones) y, una sola vez al final, `make coordinador-examen-etapas` (examen, 14).
+Pendiente de ejecutar en la DGX.
 
 ## Piezas
 
