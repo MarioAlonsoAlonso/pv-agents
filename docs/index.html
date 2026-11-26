@@ -368,10 +368,11 @@ footer .wrap { display: grid; gap: .5rem; }
           </div>
 
           <div class="group">
-            <p>Codificador MedDRA <span>· términos exactos</span></p>
+            <p>Codificador MedDRA <span>· términos exactos (examen de 200)</span></p>
             <div class="row" title="Qwen3-1.7B sin entrenar: 18,5 %"><span class="n">Pequeño sin entrenar</span><div class="track"><div class="bar" style="width:18.5%"></div></div><span class="v">18,5 %</span></div>
-            <div class="row" title="Qwen3.8-27B: 46 %"><span class="n">Grande (27B)</span><div class="track"><div class="bar" style="width:46%"></div></div><span class="v">46 %</span></div>
             <div class="row win" title="Qwen3-1.7B entrenado (SFT + GRPO): 56,5 %"><span class="n">Pequeño entrenado</span><div class="track"><div class="bar" style="width:56.5%"></div></div><span class="v">56,5 %</span></div>
+            <div class="row" title="Qwen3.8-27B sin entrenar, perdonando el formato de la respuesta: 67,5 %"><span class="n">Grande (27B)*</span><div class="track"><div class="bar" style="width:67.5%"></div></div><span class="v">67,5 %</span></div>
+            <p class="muted" style="font-weight:400;font-size:.85rem">* Perdonando el formato de la respuesta; exigiéndolo, el 27B se queda en el 46 %.</p>
           </div>
 
           <div class="axis"><span></span><div><span>0</span><span>50</span><span>100 %</span></div><span></span></div>
@@ -416,8 +417,8 @@ footer .wrap { display: grid; gap: .5rem; }
           <p>Buscar por palabras lo hace el código gratis. El agente solo lee conversaciones. Así encuentra el 97 % de las menciones con la mitad de coste que un agente que lo hace todo.</p>
         </div>
         <div>
-          <h3>Un modelo pequeño entrenado gana en su tarea</h3>
-          <p>Qwen3-1.7B entrenado codifica en MedDRA mejor que el modelo de 27B (56,5 % frente a 46 % de términos exactos), y cabe en una GPU pequeña.</p>
+          <h3>Entrenar un modelo pequeño triplica su acierto, pero el grande sabe más</h3>
+          <p>Con SFT y GRPO, Qwen3-1.7B pasa del 18,5 % al 56,5 % de términos MedDRA exactos y siempre responde en el formato pedido. El 27B, sin entrenar, acierta más si se le perdona el formato (67,5 %) y sobre todo en términos que el pequeño nunca vio (74 % frente a 38 %). El pequeño gana en coste y en funcionar en local.</p>
         </div>
         <div>
           <h3>Un examen aparte cambia la historia</h3>
