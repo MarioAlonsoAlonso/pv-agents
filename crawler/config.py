@@ -12,9 +12,9 @@ the posts are public but they are health data about people, and the repository i
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
+from common import rutas
 from common.farmacos import VIGILADOS
 
 WATCHLIST = VIGILADOS  # the system's drug catalogue (common/farmacos.py)
@@ -39,7 +39,7 @@ NOISE_TERMS: tuple[str, ...] = ("ibuprofeno",)
 DEFAULT_SINCE = "2025-01-01"
 LANG = "es"
 
-DATA_DIR = Path(os.environ.get("ARCA_CRAWLER_DATA", "data/bluesky"))
+DATA_DIR = rutas.CRAWLER_DATA  # data/bluesky, or ARCA_CRAWLER_DATA (common/rutas.py)
 PACKAGE_DIR = Path(__file__).parent
 BRANDS_FILE = PACKAGE_DIR / "data" / "marcas.json"  # public CIMA data, versioned
 

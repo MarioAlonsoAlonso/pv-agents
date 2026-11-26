@@ -312,7 +312,6 @@ SOURCE_OF = {
     "comparar_senal": ("faers",),
     "buscar_literatura": ("literatura",),
     "buscar_evidencia": ("literatura", "redes"),  # the old sub-agent searched both
-    "buscar_mas_casos": ("redes",),
     # The earlier stages (2026-11-26).
     "listar_menciones": ("menciones",),
     "listar_descartes": ("triaje",),

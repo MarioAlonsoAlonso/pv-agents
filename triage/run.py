@@ -20,17 +20,15 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
+from common import rutas  # noqa: E402  (the system's data paths)
 from crawler.store import read_mentions
 from triage.agent import BRAINS, Cost, run_triage
 from triage.evaluate import errors, load_jsonl, print_report, score
 from triage.prompts import PROMPTS
 
-DATA = Path("data")
-EVAL = DATA / "triaje" / "eval"
-SPLITS = {
-    "dev": (DATA / "hibrido_27b_menciones_dev.jsonl", DATA / "triaje" / "gold_triaje_dev.jsonl"),
-    "test": (DATA / "hibrido_27b_menciones_test.jsonl", DATA / "triaje" / "gold_triaje_test.jsonl"),
-}
+DATA = rutas.DATA
+EVAL = rutas.TRIAJE_EVAL
+SPLITS = {s: (rutas.MENCIONES[s], rutas.GOLD_TRIAJE[s]) for s in rutas.SPLITS}
 
 
 def main(argv: list[str] | None = None) -> None:

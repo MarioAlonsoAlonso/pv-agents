@@ -31,22 +31,14 @@ import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from common import rutas  # noqa: E402  (the system's data paths)
 from crawler.store import RawMention, conversation_text, read_mentions
 
-DATA = Path("data")
-FOLDER = DATA / "coordinador"
+DATA = rutas.DATA
+FOLDER = rutas.COORDINADOR
 # The mentions and the triage's answers (the final configuration, v2 per post), development
 # and exam together: the triage is finished, so both are just data for the coordinator.
-SOURCES = [
-    (
-        DATA / "hibrido_27b_menciones_dev.jsonl",
-        DATA / "triaje" / "eval" / "v2_27b_mencion_dev_respuestas.jsonl",
-    ),
-    (
-        DATA / "hibrido_27b_menciones_test.jsonl",
-        DATA / "triaje" / "eval" / "v2_27b_mencion_test_respuestas.jsonl",
-    ),
-]
+SOURCES = [(rutas.MENCIONES[s], rutas.RESPUESTAS_TRIAJE[s]) for s in rutas.SPLITS]
 
 
 @dataclass

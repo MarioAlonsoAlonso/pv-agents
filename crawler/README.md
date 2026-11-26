@@ -5,10 +5,9 @@ también los que **no lo nombran** ("a mí también me dejó KO", respondiendo a
 sertralina), y se los pasa al triaje como `RawMention`. **No valora nada**: decidir si un post
 describe una reacción adversa es trabajo del triaje.
 
-**Su segundo papel:** dos herramientas para el analista. `buscar_literatura` pregunta a PubMed
+**Su segundo papel:** una herramienta para el coordinador. `buscar_literatura` pregunta a PubMed
 qué se ha publicado sobre un fármaco y una reacción (si está descrita, en quién, el mecanismo) y
-devuelve un resumen con PMID; `buscar_mas_casos` busca en Bluesky más personas que cuenten esa
-reacción con ese fármaco.
+devuelve un resumen con PMID.
 
 **Sistema elegido: el híbrido** (búsqueda fija + agente que lee las conversaciones). En la
 evaluación sobre sertralina encuentra el 97 % de las menciones (17 de 19 indirectas) frente al 70 %
@@ -55,7 +54,6 @@ crawler/
   annotate.py   lote para anotar, pre-anotación, kappa, gold
   evaluate.py   recall por tipo de mención, precisión y coste de cada sistema
   eval_literatura.py  evaluación de buscar_literatura (bench/literatura*.jsonl)
-  eval_casos.py      evaluación de buscar_mas_casos (bench/casos*.jsonl)
   stats.py           proporciones con intervalo de Wilson
   monitor.py    vigilancia periódica
   ANOTACION.md  guía de anotación
@@ -148,23 +146,22 @@ lo que envió sin que hablara del fármaco (`sobrantes`), con el texto, para el 
 
 El analista valida señales (GVP módulo IX): si la reacción es conocida, si es plausible, en quién
 es más probable. La ficha técnica (RAG) dice si está en la ficha; FAERS, cuántas notificaciones
-hay. El rastreador aporta dos cosas más, cada una como herramienta aparte:
+hay. El rastreador aporta la literatura:
 
 | Herramienta (en `crawler/agent.py`) | Cuándo | Devuelve |
 |---|---|---|
 | `buscar_literatura(farmaco, pregunta)` | La reacción no está en la ficha, o para valorar plausibilidad y grupos de riesgo | `resumen` con PMID, `articulos`, `referencias_sin_respaldo` (PMID citados que ninguna búsqueda devolvió: no citarlos) |
-| `buscar_mas_casos(farmaco, reaccion)` | La señal viene de redes y la reacción es algo que el paciente nota y cuenta (no un análisis) | `resumen` y `casos`: los posts guardados, con su texto real |
 
-**Decisión (2026-11-23): `buscar_mas_casos` queda aparcada.** El sistema solo vigila fármacos de la
-lista, y para ellos los casos ya están en la base de menciones que recoge el vigilante y clasifica
-el triaje: contar cuántos hay de una reacción es una consulta a esa base, que hace el analista,
-no una búsqueda nueva con un agente (buscar palabras en las menciones recogidas ya encuentra el
-84 % de los casos). Sigue implementada y con su evaluación preparada por si se vigilan fármacos
-nuevos o hace falta buscar antes del inicio de la vigilancia, pero no se ha medido.
+**Decisión: sin herramienta de «más casos» en Bluesky.** Hubo una segunda, `buscar_mas_casos`
+(un agente que buscaba en Bluesky más personas contando una reacción), aparcada el 2026-11-23 y
+borrada el 2026-11-26. El sistema solo vigila fármacos de la lista, y para ellos los casos ya
+están en la base de menciones que recoge el vigilante y clasifica el triaje: contar cuántos hay
+de una reacción es una consulta a esa base, no una búsqueda nueva con un agente (buscar palabras
+en las menciones recogidas ya encontraba el 84 % de los casos, con la hoja del triaje como
+respuestas). Si se vigilaran fármacos nuevos, se rastrean con el vigilante (`--desde`).
 
 Se registra en el analista con `registry.register(buscar_literatura)`.
-Desde Python: `investigar_literatura(pregunta, farmaco)` y `buscar_casos(farmaco, reaccion,
-fuente, marcas)`.
+Desde Python: `investigar_literatura(pregunta, farmaco)`.
 
 **Por qué dos y no una.** Hasta el 2026-11-23 era una sola (`buscar_evidencia`, Bluesky y PubMed
 a la vez). En 14 preguntas no inventó ninguna cita (0 de 81 PMID), pero gastaba los pasos en
@@ -246,32 +243,6 @@ farmacólogo, y con la parte de mecanismo comprobada solo en sus cifras.
 
 **Conclusión:** encuentra lo mismo que una búsqueda simple, no inventa referencias y lo que añade
 es un resumen fiel y ordenado (evidencia, grupos de riesgo, mecanismo) por ~15 000 tokens.
-
-### Evaluación de `buscar_mas_casos`
-
-Sobre la **muestra congelada de sertralina**, con la **hoja de soluciones del triaje** como
-respuestas: de las 725 menciones que el híbrido envió al triaje, los posts anotados como efecto
-adverso cuya reacción encaja con la pregunta (expresión regular revisada a mano,
-`eval_casos construir --ver`). [`bench/casos.jsonl`](bench/casos.jsonl) (desarrollo): calor,
-insomnio, bruxismo, piernas inquietas y mareo (58 casos) y un control (caída del pelo, 0).
-[`bench/casos_test.jsonl`](bench/casos_test.jsonl) (examen): problemas sexuales, temblores,
-estómago, embotamiento emocional y somnolencia (44 casos) y un control (sangrado, 0).
-
-- **Recall**: casos encontrados / casos de la hoja. **Precisión**: de lo guardado que la hoja
-  cubre, cuántos son casos. Lo guardado fuera de las 725 se cuenta aparte (sin juzgar).
-- Sistema de comparación (`fija`, sin modelo): las menciones ya recogidas por el rastreador cuyo
-  texto contiene una palabra de la reacción. Desarrollo: **recall 84 % [73-92], precisión 50 %
-  [41-60]**; examen: 84 % [71-92] y 37 % [28-46]. Encuentra casi todo, pero la mitad o más son
-  bromas, preguntas u otras reacciones: el agente tiene que ganar en precisión sin perder recall.
-
-```bash
-uv run python -m crawler.eval_casos construir --ver      # donde está la hoja del triaje → data/casos/
-uv run python -m crawler.eval_casos evaluar --sistemas fija
-ARCA_CRAWLER_DATA=data/bluesky_sertralina uv run --extra crawler python -m crawler.eval_casos evaluar --sistemas agente
-```
-
-Cifras (sin texto) en `reports/crawler_casos_eval[_casos_test].json`; posts guardados, perdidos y
-trazas en `data/bluesky/casos/<banco>_<cerebro>/`.
 
 ## La evaluación
 

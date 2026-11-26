@@ -136,7 +136,7 @@ def _snippet(text: str) -> str:
 
 
 def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
-    """The tools of one run. ``mode`` is ``vigilancia``, ``hilos``, ``casos`` or ``literatura``."""
+    """The tools of one run. ``mode`` is ``vigilancia``, ``hilos`` or ``literatura``."""
 
     @tool
     def nombres_comerciales(
@@ -299,8 +299,6 @@ def make_registry(ctx: CrawlerContext, mode: str) -> ToolRegistry:
         registry.register(
             nombres_comerciales, buscar_bluesky, leer_hilo, guardar_menciones, proponer_termino
         )
-    elif mode == "casos":  # Bluesky only, for the analyst: no new terms for the watch list
-        registry.register(nombres_comerciales, buscar_bluesky, leer_hilo, guardar_menciones)
     elif mode != "literatura":
         raise ValueError(f"unknown mode {mode!r}")
     if mode == "literatura":  # PubMed only

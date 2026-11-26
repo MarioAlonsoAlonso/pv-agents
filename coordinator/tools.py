@@ -26,7 +26,7 @@ cases, whether the reaction is known (technical sheet) and whether there is a si
 
 ``variant`` removes components for the ablations: ``sin_rag``, ``sin_meddra``,
 ``sin_literatura`` (``sin_evidencia`` is its old name, from when the sub-agent searched Bluesky
-and PubMed at once). The crawler's other analyst tool, ``buscar_mas_casos``, is parked (Mario,
+and PubMed at once). The crawler's other analyst tool, ``buscar_mas_casos``, was parked (Mario,
 2026-11-23): for the watched drugs the cases are already in the case store, so "how many
 patients tell X" is a query on it, not a new search.
 """

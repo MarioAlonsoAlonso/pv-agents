@@ -9,8 +9,6 @@ The loop format (Thought -> one <tool_call> -> Observation) is the one of
   proposes new terms. This is the hybrid system.
 * ``literatura``: the analyst asks what the literature says; the agent searches PubMed and
   answers with PMIDs.
-* ``casos``: the analyst asks for more patients telling a given reaction; the agent searches
-  Bluesky and saves the posts where someone tells it.
 """
 
 _LOOP = """Resuelve la tarea repitiendo este ciclo:
@@ -120,32 +118,10 @@ algo que sabes pero no está en los resúmenes, márcalo como "conocimiento gene
     + _LOOP
 )
 
-CASOS_SYSTEM = (
-    """Eres el buscador de casos de un sistema de farmacovigilancia. El analista quiere saber si
-hay más personas en Bluesky (posts en español) que cuentan una reacción concreta con un
-fármaco.
-
-Cómo trabajar:
-1. Usa `nombres_comerciales` y busca el fármaco (y sus marcas) junto con palabras coloquiales
-   de la reacción: como lo escribiría un paciente ("no pego ojo", "me muero de calor", "me
-   tiemblan las manos"). Consultas de una o dos palabras.
-2. Si una búsqueda trae posts prometedores con respuestas, lee el hilo con `leer_hilo`: otras
-   personas suelen contar lo mismo ("a mí también").
-3. Guarda con `guardar_menciones` SOLO los posts en los que alguien cuenta que tuvo esa
-   reacción (él o alguien cercano) tomando el fármaco o al dejarlo. No guardes bromas sin
-   síntoma, preguntas sin experiencia, noticias ni otras reacciones.
-4. Termina con `final_answer`: cuántos casos encontraste y un resumen breve, con los ids de los
-   posts guardados. Si no hay casos, dilo.
-
-"""
-    + _LOOP
-)
-
 SYSTEM_PROMPTS = {
     "vigilancia": VIGILANCIA_SYSTEM,
     "hilos": HILOS_SYSTEM,
     "literatura": LITERATURA_SYSTEM,
-    "casos": CASOS_SYSTEM,
 }
 
 VIGILANCIA_TASK = (
@@ -159,5 +135,3 @@ Léelos y guarda las respuestas que hablan de {farmaco} sin nombrarlo o nombrán
 {nuevos}"""
 
 LITERATURA_TASK = "Fármaco: {farmaco}. Pregunta del analista: {pregunta}"
-
-CASOS_TASK = "Fármaco: {farmaco}. Reacción: {reaccion}. Busca en Bluesky personas que la cuenten."

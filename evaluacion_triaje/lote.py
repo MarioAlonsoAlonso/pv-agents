@@ -19,6 +19,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from common import rutas
 from crawler.annotate import kappa
 from crawler.store import RawMention, conversation_text, read_mentions
 
@@ -27,7 +28,7 @@ from crawler.store import RawMention, conversation_text, read_mentions
 from triage.esquema import CASE_FIELDS, LABELS, VALUES, normalise, validate  # noqa: F401
 from triage.prompts import PRELABEL_PROMPT
 
-FOLDER = Path("data/triaje")
+FOLDER = rutas.TRIAJE
 READ_COLUMNS = ["n", "id", "hilo_id", "encontrado_por", "idioma", "conversacion", "texto"]
 
 

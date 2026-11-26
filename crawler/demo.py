@@ -6,7 +6,6 @@
     uv run --extra crawler python -m crawler.demo hilos lorazepam --dias 14 --max-hilos 6
     # the analyst's tools: what PubMed says, and more patients on Bluesky
     uv run --extra crawler python -m crawler.demo literatura sertralina "¿hiponatremia en ancianos?"
-    uv run --extra crawler python -m crawler.demo casos sertralina bruxismo
     # the same, but on the frozen sample instead of live Bluesky
     uv run python -m crawler.demo vigilar sertralina --muestra data/bluesky/sample.jsonl
 
@@ -55,18 +54,16 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("modo", choices=["vigilar", "hilos", "literatura", "casos"])
+    parser.add_argument("modo", choices=["vigilar", "hilos", "literatura"])
     parser.add_argument("farmaco")
-    parser.add_argument(
-        "pregunta", nargs="?", default="", help="literatura: the question; casos: the reaction"
-    )
+    parser.add_argument("pregunta", nargs="?", default="", help="literatura: the question")
     parser.add_argument("--brain", default="27b")
     parser.add_argument("--dias", type=int, default=7, help="live: how far back to look")
     parser.add_argument("--max-hilos", type=int, default=6, help="hilos: threads to read")
     parser.add_argument("--muestra", type=Path, default=None, help="use a frozen sample")
     args = parser.parse_args(argv)
 
-    from crawler.agent import buscar_casos, investigar_literatura, revisar_hilos, vigilar
+    from crawler.agent import investigar_literatura, revisar_hilos, vigilar
     from crawler.systems import fixed_search, threads_of
 
     brands = load_brands()
@@ -80,7 +77,7 @@ def main(argv: list[str] | None = None) -> None:
         until = to_iso(datetime.now(UTC))
         since = to_iso(datetime.now(UTC) - timedelta(days=args.dias))
     print(f"fuente: {'muestra ' + str(args.muestra) if args.muestra else 'Bluesky en vivo'}")
-    if args.modo in ("literatura", "casos"):  # the analyst's tools: no period
+    if args.modo == "literatura":  # the coordinator's tool: no period
         print(f"periodo: sin límite (herramienta del analista) · cerebro: {args.brain}")
     else:
         print(f"periodo: {since} → {until} · cerebro: {args.brain}")
@@ -95,11 +92,8 @@ def main(argv: list[str] | None = None) -> None:
         runs = revisar_hilos(source, store, brands, args.farmaco, threads, brain=args.brain)
     else:
         if not args.pregunta:
-            parser.error(f"{args.modo} necesita una pregunta (literatura) o una reacción (casos)")
-        if args.modo == "literatura":
-            runs = [investigar_literatura(args.pregunta, args.farmaco, brain=args.brain)]
-        else:
-            runs = [buscar_casos(args.farmaco, args.pregunta, source, brands, brain=args.brain)]
+            parser.error("literatura necesita una pregunta")
+        runs = [investigar_literatura(args.pregunta, args.farmaco, brain=args.brain)]
         store = runs[0].context.store
 
     for run in runs:
