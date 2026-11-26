@@ -982,3 +982,26 @@ ataca justo eso (cambio A). Para el cambio G, la regla por palabras no sirve: lo
 se cuentan con palabras que ninguna lista prevé, así que ser más permisivo tiene que venir del
 modelo (una respuesta «dudoso» o su seguridad) y medirse en un lote nuevo anotado, no en el
 examen, que ya está usado.
+
+### 2026-11-26 · Proyecto final · Coordinador con las etapas: práctica y examen del banco v5
+
+**Qué queríamos saber.** Si el coordinador con las herramientas nuevas de la rama `rastreador`
+(estado del sistema, menciones, descartes, lanzar el rastreo y el triaje) sigue igual de bien en
+lo de antes, y si responde sobre las etapas anteriores.
+
+**Qué hicimos.** Repetir solo la práctica de los bancos v2 y v4 con el código nuevo, y el banco v5
+(24 peticiones sobre las etapas: 10 de práctica y 14 de examen) frente a la variante
+`sin_etapas`. En los exámenes no se lanza nada: `rastrear` y `triar` quedan pendientes y
+`registrar_notificacion` no guarda.
+
+**Qué pasó.** Práctica: v2 45/46 (antes 43/46), v4 21/22 (antes 20/22); el fallo nuevo (gk01)
+contesta bien con la ficha pero esta vez no mira nuestros casos, variación del muestreo.
+`estado_del_sistema` aparece en 2 de las 68 tareas, de más pero sin error. Banco v5: completo
+10/10 en práctica y **14/14 en el examen**; sin las herramientas de etapas, 0/10 y **2/14**. La
+primera puntuación de `sin_etapas` daba 4/14: el corrector contaba como usada una herramienta
+que no existe en esa variante (el modelo la llama porque el prompt la nombra y recibe «unknown
+tool»). Corregido y vuelto a puntuar todo: solo cambian las cifras de `sin_etapas`.
+
+**Qué concluimos.** Las herramientas de las etapas no estropean nada de lo anterior y hacen
+posible lo que antes no se podía: sin ellas el coordinador no sabe qué encontró el rastreador ni
+qué descartó el triaje, y responde «no hay casos» donde lo que pasa es que no se ha rastreado.

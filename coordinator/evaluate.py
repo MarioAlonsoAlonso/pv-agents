@@ -139,7 +139,15 @@ ALIASES = {"ver_mencion": "ver_caso"}
 
 
 def used_tools(response: dict) -> set[str]:
-    used = {s["action"]["name"] for s in response.get("steps", []) if s.get("action")}
+    """The tools the coordinator actually used. A call to a tool its variant does not have
+    ("error: unknown tool", the prompt names it) is not a use: in the v5 exam, ``sin_etapas``
+    passed two tasks that ask for listar_menciones / listar_descartes by calling them and
+    getting that error (2026-11-26)."""
+    used = {
+        s["action"]["name"]
+        for s in response.get("steps", [])
+        if s.get("action") and not str(s.get("observation") or "").startswith("error: unknown tool")
+    }
     return used | {ALIASES[t] for t in used if t in ALIASES}
 
 

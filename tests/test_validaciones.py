@@ -53,3 +53,19 @@ def test_the_review_rule_counts_what_it_recovers():
         "efectos_adversos_en_revision": 1,
     }
     assert r["perdidos_por_v2"]["con_un_sintoma_de_la_lista"] == 1
+
+
+def test_a_call_to_a_tool_the_variant_lacks_is_not_a_use():
+    from coordinator.evaluate import used_tools
+
+    def step(name, observation):
+        return {"action": {"name": name, "arguments": {}}, "observation": observation}
+
+    response = {
+        "steps": [
+            step("listar_menciones", "error: unknown tool 'listar_menciones'. Available: [...]"),
+            step("ver_mencion", '{"id": "M-1"}'),
+            step("faers_reaction_counts", "error: openFDA 500"),  # failed, but it exists
+        ]
+    }
+    assert used_tools(response) == {"ver_mencion", "ver_caso", "faers_reaction_counts"}
