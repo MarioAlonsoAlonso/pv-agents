@@ -406,3 +406,53 @@ def test_a_notification_goes_through_the_triage_and_becomes_a_case(live, tmp_pat
             "registrar_notificacion", {"texto": "algo largo de verdad", "farmaco": "xelofrina"}
         ).result
     )
+
+
+def test_in_an_exam_a_notification_is_triaged_but_not_saved(live, tmp_path, monkeypatch):
+    """Review (2026-11-26): ``hold_stages`` held rastrear and triar, but registrar_notificacion
+    wrote to data/ and made a case that the next tasks of the same exam would see."""
+    from common import rutas
+
+    saved = tmp_path / "n" / "menciones.jsonl"
+    monkeypatch.setattr(rutas, "NOTIFICACIONES_MENCIONES", saved)
+    monkeypatch.setattr(rutas, "NOTIFICACIONES_TRIAJE", tmp_path / "n" / "triaje.jsonl")
+    store = _store(tmp_path)
+    before = dict(store.cases)
+    text = "Me escribe una paciente: con Besitran tiene muchísimo sueño desde hace días."
+    llm = _ScriptedLLM(
+        [
+            _call("registrar_notificacion", texto=text, farmaco="Besitran", origen="correo"),
+            _call("final_answer", answer="El triaje dice que es un efecto adverso."),
+        ]
+    )
+    out = coordinar(
+        "Registra esta notificación: " + text,
+        store,
+        brain="fake",
+        brains={"fake": Brain(llm=llm)},
+        coder=str,
+        hold_stages=True,
+    )
+    observation = out.steps[0].observation
+    assert '"es_efecto_adverso": "si"' in observation and "modo examen" in observation
+    assert store.cases == before and not saved.exists()
+
+
+def test_the_frozen_sample_ignores_the_monitors_state(live, tmp_path):
+    """Review (2026-11-26): the benchmarks read only the frozen sample, so a crawl made on that
+    machine (the monitor's state) must not appear in estado_del_sistema."""
+    from coordinator.tools import make_registry
+
+    monitor.crawl_and_save(_LiveLike(POSTS), ["sertralina"], since="2025-01-01")
+    f = monitor.files()
+    state = {
+        "ultima_ejecucion": {"sertralina": "2026-11-26T10:00:00Z"},
+        "hilos": {},
+        "terminos": {},
+    }
+    f["estado"].write_text(json.dumps(state), "utf-8")
+    seen_live = CaseStore.from_files([(f["menciones"], f["triaje"], "vigilante")])
+    frozen = CaseStore.from_files([(f["menciones"], f["triaje"], "muestra")])  # as a sample
+    for store, last in ((seen_live, "2026-11-26"), (frozen, "nunca")):
+        got = make_registry(store).call("estado_del_sistema", {"farmaco": "sertralina"}).result
+        assert got["farmacos"]["sertralina"]["ultimo_rastreo_del_vigilante"] == last

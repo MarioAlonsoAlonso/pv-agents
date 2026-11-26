@@ -169,7 +169,11 @@ def state(store, drug: str | None = None) -> dict:
     """What each stage has done for each watched drug, and what is missing."""
     from crawler.monitor import files, load_state, running
 
-    monitor = load_state(files()["estado"])
+    # The benchmarks read only the frozen sample (``include_monitor=False``): there the monitor's
+    # state must not count either, or "last crawl: today" would describe mentions that are not
+    # in the store, and the answer would depend on the machine (review, 2026-11-26).
+    live = any(len(s) > 2 and s[2] != "muestra" for s in store.sources or [])
+    monitor = load_state(files()["estado"]) if live else {"ultima_ejecucion": {}}
     out = {}
     for d in [drug] if drug else list(WATCHLIST):
         ms = store.mentions_of(d)
@@ -291,12 +295,20 @@ def triage(store, drug: str) -> dict:
 ORIGINS = ("correo", "telefono", "otro")
 
 
-def register_notification(store, text: str, drug_name: str, origin: str = "correo") -> dict:
+def register_notification(
+    store, text: str, drug_name: str, origin: str = "correo", save: bool = True
+) -> dict:
     """A notification the technician received (an e-mail, a phone note) goes through the same
     triage as a post and becomes the same kind of case: whether it is an adverse event, the
     reactions, patient, age, sex, seriousness and outcome. It is kept with the system's data
-    (``data/notificaciones/``), anonymised like the posts (e-mails, links, handles)."""
+    (``data/notificaciones/``), anonymised like the posts (e-mails, links, handles).
+
+    ``save=False`` (the benchmarks, ``hold_stages``): the same triage on throw-away files, and the
+    case store does not change. Otherwise a notification registered during an exam would stay in
+    ``data/`` and become a case for the next tasks of the same run (review, 2026-11-26)."""
     import hashlib
+    import tempfile
+    from pathlib import Path
 
     from common import rutas
     from common.farmacos import resolve
@@ -330,6 +342,27 @@ def register_notification(store, text: str, drug_name: str, origin: str = "corre
         motivo=f"notificación registrada por el técnico ({origin})",
         guardado=now,
     )
+    if not save:
+        with tempfile.TemporaryDirectory() as tmp:
+            answers = Path(tmp) / "triaje.jsonl"
+            run_triage(
+                [mention],
+                brain=brain(),
+                version="v2",
+                por="mencion",
+                out=answers,
+                llm_factory=TRIAGE_LLM_FACTORY,
+                workers=1,
+                progress=lambda _: None,
+            )
+            answer = read_answers(answers).get(mention.id, {})
+        return {
+            "id": mention.id,
+            "farmaco": drug,
+            "origen": origin,
+            "triaje": answer,
+            "nota": "modo examen: el triaje la ha leído, pero no se ha guardado ni es un caso",
+        }
     one = MentionStore()
     one.add(mention)
     one.save(rutas.NOTIFICACIONES_MENCIONES, append=True)

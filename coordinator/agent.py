@@ -192,6 +192,19 @@ class CoordinatorAgent(CrawlerAgent):
             held = self.hold_if_big(name, arguments, pending)
             if held:
                 return held
+        if name == "registrar_notificacion" and self.hold_stages and self.store is not None:
+            # An exam must not change the data: the same triage, on files that are thrown away
+            # (otherwise the notification would be a case for the next tasks of the run).
+            from coordinator import etapas
+
+            try:
+                args = self.registry.tools[name].validate(arguments)
+            except Exception as exc:  # noqa: BLE001 - validation errors are observations
+                return f"error: invalid arguments: {exc}"
+            result = etapas.register_notification(
+                self.store, args["texto"], args["farmaco"], args["origen"], save=False
+            )
+            return self.format_result(result)
         if name == "create_icsr_report" and not allow_actions:
             from tool_use.tools import icsr_problem
 
