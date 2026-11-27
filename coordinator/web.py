@@ -9,8 +9,10 @@ their cost, confirmed or rejected with a button, and the searches and triages th
 background, checked every few seconds. On the right, the tools the coordinator used for its last
 answer, the trace that shows where each piece of the answer came from.
 
-On the DGX the page listens on the session's machine only; from your computer, open a tunnel
-(``ssh -L 7860:localhost:7860 <user>@<dgx>``) and go to http://localhost:7860.
+On the DGX the page listens on the session's machine only. To open it from your computer: with
+VS Code (Remote-SSH) the Ports panel forwards 7860; with ssh, ``ssh -L 7860:localhost:7860
+<user>@<dgx>`` and http://localhost:7860; with JupyterHub, ``--root-path /user/<u>/proxy/7860``
+and the hub's ``/user/<u>/proxy/7860/`` address.
 
 The page logic is in ``Panel`` (plain Python, tested without a browser); ``build_app`` only wires
 it to Gradio.
@@ -227,6 +229,11 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--brain", default="27b")
     parser.add_argument("--max-steps", type=int, default=20)
     parser.add_argument("--puerto", type=int, default=7860)
+    parser.add_argument(
+        "--root-path",
+        default="",
+        help="behind a proxy, the path the page is served at (Jupyter: /user/<u>/proxy/7860)",
+    )
     parser.add_argument("--sin-vigilante", action="store_true", help="only the frozen sample")
     args = parser.parse_args(argv)
 
@@ -236,7 +243,9 @@ def main(argv: list[str] | None = None) -> None:
     except Exception as exc:  # noqa: BLE001 - no RAG index or no GPU: the rest still works
         print(f"aviso: no se pudo cargar el RAG o el modelo MedDRA ({exc}); el resto funciona")
     conv = Conversacion(store, brain=args.brain, variant=args.variante, max_steps=args.max_steps)
-    build_app(Panel(conv)).launch(server_name="127.0.0.1", server_port=args.puerto)
+    build_app(Panel(conv)).launch(
+        server_name="127.0.0.1", server_port=args.puerto, root_path=args.root_path or None
+    )
 
 
 if __name__ == "__main__":
