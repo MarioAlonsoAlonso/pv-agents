@@ -97,6 +97,7 @@ section { padding-block: 3.5rem; border-bottom: 1px solid var(--line); }
 .node .d { font-size: .92rem; color: var(--muted); }
 .tag { justify-self: start; font-family: var(--mono); font-size: .72rem; background: var(--code-bg); border-radius: 4px; padding: .1rem .4rem; color: var(--ink); }
 .node.agent .tag { background: var(--accent-soft); color: var(--accent-ink); }
+.node.model { border: 1.5px dashed var(--accent); }
 .arrow { position: relative; align-self: center; height: 2px; background: var(--muted); margin: 0 .3rem; }
 .arrow::after { content: ""; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left: 8px solid var(--muted); border-right: 0; }
 .chain2 { display: grid; grid-template-columns: minmax(0, .8fr) 2rem minmax(0, 1.1fr) 2rem minmax(0, 2.4fr); align-items: stretch; }
@@ -213,7 +214,7 @@ footer .wrap { display: grid; gap: .5rem; }
       <div class="sec-head">
         <span class="sec-num">2.</span>
         <h2>Cómo funciona</h2>
-        <p>El sistema trabaja en dos momentos. Las cajas con borde verde son agentes de IA; las demás son código o datos.</p>
+        <p>El sistema trabaja en dos momentos. Las cajas con borde verde son agentes de IA (deciden qué hacer y llaman a herramientas); las de borde discontinuo usan un modelo en una sola llamada, sin herramientas; las demás son código o datos.</p>
       </div>
 
       <div class="lane">
@@ -230,10 +231,10 @@ footer .wrap { display: grid; gap: .5rem; }
             <span class="tag">búsqueda + agente · Qwen3.8-27B</span>
           </div>
           <span class="arrow" aria-hidden="true"></span>
-          <div class="node agent">
+          <div class="node model">
             <span class="t">Triaje</span>
-            <span class="d">Decide si el post cuenta un efecto adverso y apunta cuál, quién, si es grave y cómo acabó.</span>
-            <span class="tag">Qwen3.8-27B</span>
+            <span class="d">Clasificador: decide si el post cuenta un efecto adverso y apunta cuál, quién, si es grave y cómo acabó. El código valida cada respuesta.</span>
+            <span class="tag">una llamada por post · Qwen3.8-27B</span>
           </div>
           <span class="arrow" aria-hidden="true"></span>
           <div class="node">
@@ -260,7 +261,7 @@ footer .wrap { display: grid; gap: .5rem; }
           <div class="tools">
             <div class="node"><span class="t">Casos y etapas</span><span class="d">Los casos de la parte A, qué encontró el rastreador y qué descartó el triaje. Puede lanzar un rastreo o un triaje nuevo.</span></div>
             <div class="node"><span class="t">Fichas técnicas y guías</span><span class="d">Buscador (RAG) en 34 fichas de la AEMPS y 3 guías de la EMA.</span></div>
-            <div class="node agent"><span class="t">Codificador MedDRA</span><span class="d">Pasa «no pego ojo» a <span class="mono">Insomnia</span>.</span><span class="tag">Qwen3-1.7B entrenado por nosotros</span></div>
+            <div class="node model"><span class="t">Codificador MedDRA</span><span class="d">Pasa «no pego ojo» a <span class="mono">Insomnia</span>.</span><span class="tag">Qwen3-1.7B entrenado por nosotros</span></div>
             <div class="node"><span class="t">FAERS y señal</span><span class="d">Cuenta notificaciones en la base de EE. UU. y calcula si hay señal (PRR).</span></div>
             <div class="node agent"><span class="t">Literatura</span><span class="d">Busca en PubMed qué se ha publicado.</span><span class="tag">sub-agente · Qwen3.8-27B</span></div>
             <div class="node"><span class="t">Informe ICSR</span><span class="d">Prepara el borrador oficial. Nunca se envía solo.</span></div>
@@ -281,7 +282,7 @@ footer .wrap { display: grid; gap: .5rem; }
       <div class="who">
         <div><b>Mario</b><span>Rastreador y sub-agente de literatura</span></div>
         <div><b>Matteo</b><span>Codificador MedDRA (modelo de razonamiento entrenado)</span></div>
-        <div><b>Pedro</b><span>Triaje, coordinador y evaluación del sistema</span></div>
+        <div><b>Pedro</b><span>Triaje (clasificador), coordinador y evaluación del sistema</span></div>
       </div>
     </div>
   </section>
