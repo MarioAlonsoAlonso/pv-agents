@@ -86,9 +86,13 @@ def rlm_coder(text: str, attempts: int = 2) -> str:
     2026-11-23 its reasoning ("<think> Okay, let's tackle…") was stored as MedDRA terms. Now a
     completion without ``<answer>`` is retried once (the model samples) and then reported as
     a failure, never as terms."""
+    import os
+
     import agent.react_agent as ra
     from rlm.rewards import extract_answer
 
+    if os.environ.get("ARCA_MEDDRA_CODER", "1.7b").lower() == "27b":
+        return coder_27b(text)
     if ra._RLM is None:
         from rlm.inference import ReasoningModel
 
@@ -103,6 +107,30 @@ def rlm_coder(text: str, attempts: int = 2) -> str:
         f"the reasoning model did not finish its answer in {attempts} attempts (it kept "
         "reasoning until the token limit). Say that this case could not be coded automatically."
     )
+
+
+_REMOTE_CODER = None
+
+
+def coder_27b(text: str) -> str:
+    """Change A: the 27B with the coder of ``rlm/coder27b.py``, the same one the phase-1 test
+    measures (``rlm.evaluate_remote --codificador final``). ``ARCA_MEDDRA_THINKING=1`` turns its
+    reasoning on (more right answers, many more tokens)."""
+    import os
+
+    from common.llm import RemoteChatModel
+    from rlm.coder27b import code
+
+    global _REMOTE_CODER
+    if _REMOTE_CODER is None:
+        _REMOTE_CODER = RemoteChatModel()
+    coding = code(text, _REMOTE_CODER, thinking=os.environ.get("ARCA_MEDDRA_THINKING") == "1")
+    if not coding.answer:
+        raise CodingFailed(
+            "the 27B gave no MedDRA answer, not even when asked again. Say that this case could "
+            "not be coded automatically."
+        )
+    return coding.answer
 
 
 def is_term(name: str) -> bool:

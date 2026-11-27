@@ -3,6 +3,7 @@
     uv run python -m rlm.evaluate_pista                          # 27B, test (200), DGX
     uv run python -m rlm.evaluate_pista --n 20                   # quick check
     uv run python -m rlm.evaluate_pista --codificador 1.7b       # the phase-1 model (GPU)
+    uv run python -m rlm.evaluate_pista --codificador 27b-final --triaje v3p   # after A and G
     uv run python -m rlm.evaluate_pista --solo-puntuar           # score what is saved
 
 In the system, the coder reads the post again from scratch (``coordinator/cases.py``,
@@ -58,7 +59,9 @@ def with_hint(problem: dict, answer: dict | None) -> dict:
     return {**problem, "question": problem["question"] + hint_text(answer)}
 
 
-def triage_all(problems: list[dict], out: Path, llm_factory=None) -> dict[str, dict]:
+def triage_all(
+    problems: list[dict], out: Path, llm_factory=None, version: str = "v2"
+) -> dict[str, dict]:
     """The triage of every notification, as notifications registered by the technician."""
     import hashlib
 
@@ -85,7 +88,7 @@ def triage_all(problems: list[dict], out: Path, llm_factory=None) -> dict[str, d
         key[p["question"]] = m.id
     run_triage(
         mentions,
-        version="v2",
+        version=version,
         por="mencion",
         out=out,
         llm_factory=llm_factory,
@@ -154,16 +157,32 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--codificador", choices=["27b", "1.7b"], default="27b")
+    parser.add_argument(
+        "--codificador",
+        choices=["27b", "27b-final", "1.7b"],
+        default="27b",
+        help="27b: the bare 27B; 27b-final: the coder of change A (rlm/coder27b.py); 1.7b: GPU",
+    )
+    parser.add_argument(
+        "--triaje", default="v2", help="the triage version that writes the hint (change G: v3p)"
+    )
     parser.add_argument("--thinking", action="store_true", help="27B with its reasoning mode")
     parser.add_argument("--n", type=int, help="only the first N problems")
     parser.add_argument("--hilos", type=int, default=2)
     parser.add_argument("--solo-puntuar", action="store_true")
     args = parser.parse_args(argv)
 
-    name = args.codificador + ("_thinking" if args.thinking else "")
+    name = (
+        args.codificador.replace("-", "_")
+        + ("_thinking" if args.thinking else "")
+        + (f"_triaje_{args.triaje}" if args.triaje != "v2" else "")
+    )
     out = Path("reports") / f"phase1_pista_{name}.json"
-    triage_file = rutas.COORDINADOR / "pista" / "triaje_test.jsonl"
+    triage_file = (
+        rutas.COORDINADOR
+        / "pista"
+        / ("triaje_test.jsonl" if args.triaje == "v2" else f"triaje_{args.triaje}_test.jsonl")
+    )
     problems = load_problems(TEST, args.n)
     report = json.loads(out.read_text("utf-8")) if out.exists() else {}
     local = threading.local()
@@ -178,9 +197,11 @@ def main(argv: list[str] | None = None) -> None:
         out.write_text(json.dumps(report, ensure_ascii=False, indent=1), "utf-8")
 
     print(f"1. triaje de {len(problems)} notificaciones → {triage_file}")
-    hints = triage_all(problems, triage_file) if not args.solo_puntuar else {}
+    hints = triage_all(problems, triage_file, version=args.triaje) if not args.solo_puntuar else {}
     if args.codificador == "1.7b" and not args.solo_puntuar:
         remote.solve = local_solver()  # the same loop, another coder
+    if args.codificador == "27b-final":
+        remote.solve = remote.solve_final  # the coder the system uses (change A)
     verifier = MedDRAVerifier()
     results = {}
     for condition in ("sin_pista", "con_pista"):
@@ -206,7 +227,7 @@ def main(argv: list[str] | None = None) -> None:
                 factory,
                 done,
                 save_entry,
-                args.hilos if args.codificador == "27b" else 1,
+                args.hilos if args.codificador != "1.7b" else 1,
             )
         )
         for r in rows:

@@ -29,24 +29,22 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+# The same system prompt as rlm/data.py (R1_ZERO_SYSTEM_PROMPT), kept with the 27B coder
+# (``rlm/coder27b.py``) so that this script does not need the ``datasets`` library.
+from rlm.coder27b import SYSTEM
 from rlm.evaluate import summarize
 from rlm.meddra import term_f1
 from rlm.rewards import has_valid_format, thinking_length
 from rlm.verifier import MedDRAVerifier
 
-# The same system prompt as rlm/data.py (R1_ZERO_SYSTEM_PROMPT), copied so that this script does
-# not need the ``datasets`` library.
-SYSTEM = (
-    "A conversation between User and Assistant. The user asks a question, and the "
-    "Assistant solves it. The assistant first thinks about the reasoning process in the "
-    "mind and then provides the user with the answer. The reasoning process and answer "
-    "are enclosed within <think> </think> and <answer> </answer> tags, respectively, "
-    "i.e., <think> reasoning process here </think> <answer> answer here </answer>."
-)
 SETS = {
     "test": (Path("rlm/data/test.jsonl"), Path("reports/phase1_eval_1.7b.json")),
     "ood": (Path("rlm/data/test_ood.jsonl"), Path("reports/phase1_eval_ood_grpo_1.7b.json")),
+    # To iterate on the 27B coder (change A) without touching the test: the problems the 1.7B
+    # was trained on, with their answers (no 1.7B comparison: it has seen them).
+    "train": (Path("rlm/data/train.jsonl"), None),
 }
+CODERS = ("directo", "final")  # the bare 27B (2026-11-23) or the coder of change A
 MODES = {"sin_thinking": False, "thinking": True}
 
 
@@ -79,6 +77,33 @@ def solve(llm, problem: dict, thinking: bool, verifier: MedDRAVerifier) -> dict:
         "detail": result.detail,
         "f1": term_f1(result.predicted, problem["answer"], verifier.dictionary),
         "seconds": round(time.perf_counter() - start, 1),
+    }
+
+
+def solve_final(llm, problem: dict, thinking: bool, verifier: MedDRAVerifier) -> dict:
+    """The coder the system uses (change A, ``rlm.coder27b.code``): format asked for, a short
+    answer without tags read, and names outside the dictionary sent back once."""
+    from rlm.coder27b import code
+
+    start = time.perf_counter()
+    c = code(problem["question"], llm, thinking, verifier.dictionary)
+    ok = verifier.is_correct(c.answer, problem["answer"])
+    detail = verifier.verify(f"<answer>{c.answer}</answer>", problem["answer"]).detail
+    return {
+        "question": problem["question"],
+        "expected": problem["answer"],
+        "raw": c.raw,
+        "predicted": c.answer,
+        "is_correct": ok,
+        "has_valid_format": has_valid_format(c.raw),
+        "n_tokens": c.n_tokens,
+        "thinking_words": thinking_length(c.raw),
+        "family": (problem.get("branches") or {}).get("family", "all"),
+        "detail": detail if c.answer else "no answer",
+        "f1": term_f1(c.answer, problem["answer"], verifier.dictionary),
+        "seconds": round(time.perf_counter() - start, 1),
+        "devuelto": c.devuelto,
+        "primera": c.primera,
     }
 
 
@@ -157,6 +182,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--modos", nargs="+", default=list(MODES), choices=list(MODES))
     parser.add_argument("--n", type=int, help="only the first N problems of each set")
     parser.add_argument("--hilos", type=int, default=2)
+    parser.add_argument(
+        "--codificador",
+        default="directo",
+        choices=CODERS,
+        help="directo: the bare 27B (2026-11-23); final: the coder of change A (rlm/coder27b.py)",
+    )
     parser.add_argument("--out", type=Path, default=Path("reports/phase1_eval_27b.json"))
     parser.add_argument(
         "--solo-puntuar", action="store_true", help="only score the saved rows (no model)"
@@ -175,12 +206,15 @@ def main(argv: list[str] | None = None) -> None:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(report, ensure_ascii=False, indent=1), "utf-8")
 
+    global solve
+    if args.codificador == "final":
+        solve = solve_final  # run() looks it up at call time (evaluate_pista does the same)
     for name in args.conjuntos:
         data_path, small_path = SETS[name]
         problems = load_problems(data_path, args.n)
-        small = json.loads(small_path.read_text("utf-8"))["grpo"]["rows"]
+        small = json.loads(small_path.read_text("utf-8"))["grpo"]["rows"] if small_path else []
         for mode in args.modos:
-            key = f"{name}·{mode}"
+            key = f"{name}·{mode}" + ("·final" if args.codificador == "final" else "")
             entry = report.setdefault(key, {"rows": []})
             done = {r["question"]: r for r in entry["rows"]}
 
