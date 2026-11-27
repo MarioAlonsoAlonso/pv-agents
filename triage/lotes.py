@@ -30,12 +30,17 @@ NORMAL, EXTRA = "lorazepam", "extra_lorazepam"
 
 
 def load(version: str, lot: str, split: str, brain: str = "27b") -> dict[str, dict] | None:
-    f = rutas.TRIAJE_EVAL / f"{version}_{brain}_mencion_{lot}_{split}_respuestas.jsonl"
+    """The saved answers of a run of ``triage.run --por mencion --lote <lot>``."""
+    from triage.run import run_name
+
+    f = rutas.TRIAJE_EVAL / f"{run_name(version, brain, 'mencion', split, lot)}_respuestas.jsonl"
     return load_jsonl(f) if f.exists() else None
 
 
 def gold_of(lot: str, split: str) -> dict[str, dict]:
-    return normalise_gold(load_jsonl(rutas.LOTES[lot][split][1]))
+    from triage.run import lot_files
+
+    return normalise_gold(load_jsonl(lot_files(lot, split)[1]))
 
 
 def said_yes(answers: dict, i: str) -> bool:

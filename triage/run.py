@@ -4,7 +4,6 @@
     uv run python -m triage.run --version v1 --limite 5          # quick check on the DGX
     uv run python -m triage.run --version v1                     # development set (DGX)
     uv run python -m triage.run --version v1 --examen            # the exam: ONCE, at the end
-    uv run python -m triage.run --version v3 --por mencion --lote lorazepam   # another batch
 
 Outputs, under ``data/triaje/eval/`` (out of git: they contain the posts' text):
 ``<name>_respuestas.jsonl`` (one answer per mention), ``<name>_coste.json`` and
@@ -32,6 +31,19 @@ EVAL = rutas.TRIAJE_EVAL
 SPLITS = {s: (rutas.MENCIONES[s], rutas.GOLD_TRIAJE[s]) for s in rutas.SPLITS}
 
 
+def lot_files(lote: str, split: str) -> tuple[Path, Path]:
+    """(mentions, answer sheet) of another annotated batch: ``data/<lote>/lote_<lote>_<split>``
+    and ``gold_<lote>_<split>``; an ``extra_<lote>`` batch lives in the same folder."""
+    folder = DATA / lote.removeprefix("extra_")
+    stem = lote if lote.startswith("extra_") else f"lote_{lote}"
+    return folder / f"{stem}_{split}.jsonl", folder / f"gold_{lote}_{split}.jsonl"
+
+
+def run_name(version: str, brain: str, por: str, split: str, lote: str | None = None) -> str:
+    """The name of a run (its files and its key in the report); a batch adds its name."""
+    return f"{version}_{brain}_{por}_{split}" + (f"_{lote}" if lote else "")
+
+
 def main(argv: list[str] | None = None) -> None:
     from dotenv import load_dotenv
 
@@ -51,11 +63,6 @@ def main(argv: list[str] | None = None) -> None:
         help="one request per conversation (default) or per mention",
     )
     parser.add_argument("--examen", action="store_true", help="the test set: only once, at the end")
-    parser.add_argument(
-        "--lote",
-        choices=sorted(rutas.LOTES),
-        help="another annotated batch instead of the sertraline sample (common/rutas.LOTES)",
-    )
     parser.add_argument("--limite", type=int, help="only the first N conversations (a quick check)")
     parser.add_argument(
         "--hilos", type=int, default=2, help="simultaneous requests (server: 5 total)"
@@ -65,10 +72,15 @@ def main(argv: list[str] | None = None) -> None:
         "--etiqueta", default="", help="suffix for the run name, e.g. rep2 to repeat a run"
     )
     parser.add_argument("--report", type=Path, default=Path("reports/triage_eval.json"))
+    parser.add_argument(
+        "--lote",
+        help="another annotated batch: data/<lote>/lote_<lote>_{dev,test}.jsonl and "
+        "gold_<lote>_{dev,test}.jsonl (e.g. lorazepam, or extra_lorazepam)",
+    )
     args = parser.parse_args(argv)
 
     split = "test" if args.examen else "dev"
-    mentions_file, gold_file = rutas.LOTES[args.lote][split] if args.lote else SPLITS[split]
+    mentions_file, gold_file = lot_files(args.lote, split) if args.lote else SPLITS[split]
     for f in (mentions_file, gold_file):
         if not f.exists():
             raise SystemExit(
@@ -86,9 +98,7 @@ def main(argv: list[str] | None = None) -> None:
         mentions = [m for m in mentions if m.hilo_id in set(keep)]
     version = "palabras" if args.brain == "palabras" else args.version
     name = (
-        f"{version}_{args.brain}_{args.por}_"
-        + (f"{args.lote}_" if args.lote else "")
-        + split
+        run_name(version, args.brain, args.por, split, args.lote)
         + (f"_lim{args.limite}" if args.limite else "")
         + (f"_{args.etiqueta}" if args.etiqueta else "")
     )
@@ -124,7 +134,6 @@ def main(argv: list[str] | None = None) -> None:
         "cerebro": args.brain,
         "prompt": version,
         "por": args.por,
-        "lote": args.lote or "sertralina",
         **result,
         "coste": asdict(cost),
     }
