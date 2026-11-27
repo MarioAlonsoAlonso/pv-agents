@@ -248,7 +248,7 @@ footer .wrap { display: grid; gap: .5rem; }
         <div class="chain2">
           <div class="node">
             <span class="t">Técnico</span>
-            <span class="d">«¿Hay algo que tenga que notificar ya?»</span>
+            <span class="d">«¿Hay algo que tenga que notificar ya?» Desde un chat, una página web o la API.</span>
           </div>
           <span class="arrow" aria-hidden="true"></span>
           <div class="node agent">
@@ -258,7 +258,7 @@ footer .wrap { display: grid; gap: .5rem; }
           </div>
           <span class="arrow" aria-hidden="true"></span>
           <div class="tools">
-            <div class="node"><span class="t">Nuestros casos</span><span class="d">Los de la parte A: buscar, contar, resumir.</span></div>
+            <div class="node"><span class="t">Casos y etapas</span><span class="d">Los casos de la parte A, qué encontró el rastreador y qué descartó el triaje. Puede lanzar un rastreo o un triaje nuevo.</span></div>
             <div class="node"><span class="t">Fichas técnicas y guías</span><span class="d">Buscador (RAG) en 34 fichas de la AEMPS y 3 guías de la EMA.</span></div>
             <div class="node agent"><span class="t">Codificador MedDRA</span><span class="d">Pasa «no pego ojo» a <span class="mono">Insomnia</span>.</span><span class="tag">Qwen3-1.7B entrenado por nosotros</span></div>
             <div class="node"><span class="t">FAERS y señal</span><span class="d">Cuenta notificaciones en la base de EE. UU. y calcula si hay señal (PRR).</span></div>
@@ -358,7 +358,7 @@ footer .wrap { display: grid; gap: .5rem; }
           <div class="group">
             <p>Rastreador <span>· menciones encontradas</span></p>
             <div class="row" title="Búsqueda por palabras: 70 %"><span class="n">Búsqueda por palabras</span><div class="track"><div class="bar" style="width:70%"></div></div><span class="v">70 %</span></div>
-            <div class="row win" title="Búsqueda + agente: 97 %"><span class="n">Búsqueda + agente</span><div class="track"><div class="bar" style="width:97%"></div></div><span class="v">97 %</span></div>
+            <div class="row win" title="Búsqueda + agente: 98 %"><span class="n">Búsqueda + agente</span><div class="track"><div class="bar" style="width:98%"></div></div><span class="v">98 %</span></div>
           </div>
 
           <div class="group">
@@ -398,6 +398,12 @@ footer .wrap { display: grid; gap: .5rem; }
         <div><b>0 / 86</b><span>referencias de PubMed inventadas por el agente de literatura</span></div>
         <div><b>7 s</b><span>tiempo típico por pregunta (unos 18 000 tokens). Codificar con MedDRA tarda unos 2 minutos.</span></div>
       </div>
+      <div class="more">
+        <div><b>109 → 38</b><span>respuestas del agente del rastreador que no hablaban del fármaco, tras ajustar su prompt (cambio F)</span></div>
+        <div><b>157 / 161</b><span>efectos adversos que sigue encontrando el rastreador con ese cambio: el coste es el 2,5 %</span></div>
+        <div><b>80 → 83 %</b><span>precisión del triaje en su examen con menos ruido del rastreador</span></div>
+        <div><b>14 / 14</b><span>preguntas sobre las etapas (qué encontró el rastreador, qué descartó el triaje); 2 / 14 sin esas herramientas</span></div>
+      </div>
     </div>
   </section>
 
@@ -414,7 +420,7 @@ footer .wrap { display: grid; gap: .5rem; }
         </div>
         <div>
           <h3>Un agente solo donde hace falta criterio</h3>
-          <p>Buscar por palabras lo hace el código gratis. El agente solo lee conversaciones. Así encuentra el 97 % de las menciones con la mitad de coste que un agente que lo hace todo.</p>
+          <p>Buscar por palabras lo hace el código gratis. El agente solo lee conversaciones. Así encuentra el 98 % de las menciones con la mitad de coste que un agente que lo hace todo.</p>
         </div>
         <div>
           <h3>Entrenar un modelo pequeño triplica su acierto, pero el grande sabe más</h3>
@@ -438,7 +444,8 @@ footer .wrap { display: grid; gap: .5rem; }
           </div>
           <ul>
             <li>Solo hay casos de un fármaco (sertralina) y de una red social en español.</li>
-            <li>El triaje pierde 1 de cada 5 efectos adversos.</li>
+            <li>El triaje pierde 1 de cada 5 efectos adversos. Estamos midiendo un triaje más permisivo con un lote nuevo de lorazepam.</li>
+            <li>Las hojas de soluciones las anotó un modelo y se contrastaron con el 27B; la revisión humana fue parcial.</li>
             <li>El diccionario MedDRA del repositorio tiene 90 términos, porque el completo requiere licencia.</li>
             <li>En las comparativas, a veces consulta solo una ficha técnica.</li>
           </ul>
@@ -449,7 +456,8 @@ footer .wrap { display: grid; gap: .5rem; }
             <h2>Para llevarlo a producción</h2>
           </div>
           <ul>
-            <li>Rastreo diario programado, con más fármacos y más redes.</li>
+            <li>Rastreo diario programado (el vigilante que rastrea y tría solo lo nuevo ya existe), con más fármacos y más redes.</li>
+            <li>Una cola de revisión humana para los casos dudosos.</li>
             <li>MedDRA completo con licencia.</li>
             <li>Conexión con el sistema oficial de notificación, siempre con una persona que confirme.</li>
             <li>Medir el triaje en lotes nuevos, para no ajustarse a los mismos datos.</li>
