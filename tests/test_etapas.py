@@ -456,3 +456,12 @@ def test_the_frozen_sample_ignores_the_monitors_state(live, tmp_path):
     for store, last in ((seen_live, "2026-11-26"), (frozen, "nunca")):
         got = make_registry(store).call("estado_del_sistema", {"farmaco": "sertralina"}).result
         assert got["farmacos"]["sertralina"]["ultimo_rastreo_del_vigilante"] == last
+
+
+def test_web_tildes_are_not_strikethrough():
+    from coordinator.web import _full, _plain_tildes
+
+    assert _plain_tildes("mialgias (~53 %), artralgias (~48 %)") == (
+        "mialgias (\~53 %), artralgias (\~48 %)"
+    )
+    assert "ver completo" in _full("<b>x</b>") and "&lt;b&gt;" in _full("<b>x</b>")

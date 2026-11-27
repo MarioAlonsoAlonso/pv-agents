@@ -59,10 +59,20 @@ def main(argv: list[str] | None = None) -> None:
         "--etiqueta", default="", help="suffix for the run name, e.g. rep2 to repeat a run"
     )
     parser.add_argument("--report", type=Path, default=Path("reports/triage_eval.json"))
+    parser.add_argument(
+        "--lote",
+        help="another annotated batch: data/<lote>/lote_<lote>_{dev,test}.jsonl and "
+        "gold_<lote>_{dev,test}.jsonl (e.g. lorazepam, or extra_lorazepam)",
+    )
     args = parser.parse_args(argv)
 
     split = "test" if args.examen else "dev"
     mentions_file, gold_file = SPLITS[split]
+    if args.lote:
+        folder = DATA / args.lote.removeprefix("extra_")
+        stem = args.lote if args.lote.startswith("extra_") else f"lote_{args.lote}"
+        mentions_file = folder / f"{stem}_{split}.jsonl"
+        gold_file = folder / f"gold_{args.lote}_{split}.jsonl"
     for f in (mentions_file, gold_file):
         if not f.exists():
             raise SystemExit(
@@ -81,6 +91,7 @@ def main(argv: list[str] | None = None) -> None:
     version = "palabras" if args.brain == "palabras" else args.version
     name = (
         f"{version}_{args.brain}_{args.por}_{split}"
+        + (f"_{args.lote}" if args.lote else "")
         + (f"_lim{args.limite}" if args.limite else "")
         + (f"_{args.etiqueta}" if args.etiqueta else "")
     )

@@ -41,6 +41,21 @@ def _card(title: str, body: str, kind: str) -> str:
     )
 
 
+def _plain_tildes(text: str) -> str:
+    """The chat renders Markdown, where two ``~`` strike the text between them: the model writes
+    "~53 %" for "about 53 %" (2026-11-27, isotretinoin answer half struck through)."""
+    return text.replace("~", "\\~")
+
+
+def _full(body: str) -> str:
+    """The whole tool result, folded: the card shows the start, this shows where each number
+    came from (to check a citation against what the tool returned)."""
+    return (
+        '<details style="margin:-2px 0 6px 0;font-size:0.85em"><summary>ver completo</summary>'
+        f'<div style="white-space:pre-wrap">{html.escape(body)}</div></details>'
+    )
+
+
 class Panel:
     """What the page shows and does, independent of Gradio."""
 
@@ -76,7 +91,9 @@ class Panel:
         )
 
     def _show(self, response, label: str | None = None) -> None:
-        self.history.append({"role": "assistant", "content": response.final_answer})
+        self.history.append(
+            {"role": "assistant", "content": _plain_tildes(response.final_answer or "")}
+        )
         cards = []
         for step in response.steps:
             if step.action:
@@ -87,6 +104,8 @@ class Panel:
                 cards.append(
                     _card("resultado", obs[:500] + ("…" if len(obs) > 500 else ""), "observation")
                 )
+                if len(obs) > 500:
+                    cards.append(_full(obs))
         for action in response.pending_actions:
             cards.append(_card("pendiente de confirmación", action.name, "pending"))
         title = html.escape(label or "Última respuesta")
