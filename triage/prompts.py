@@ -66,7 +66,13 @@ def render_mentions(mentions: list[RawMention]) -> str:
     blocks = []
     for m in mentions:
         chain = conversation_text(m) or "(es el primer post de la conversación)"
-        blocks.append(f"### id: {m.id}\nConversación anterior:\n{chain}\nPost: {m.texto}")
+        # A notification by e-mail or phone (contract 1.2) says so; a post shows as before.
+        origin = (
+            f"Origen: notificación recibida por {m.fuente} (no es un post)\n"
+            if m.fuente != "bluesky"
+            else ""
+        )
+        blocks.append(f"### id: {m.id}\n{origin}Conversación anterior:\n{chain}\nPost: {m.texto}")
     return "\n\n".join(blocks)
 
 
@@ -275,7 +281,94 @@ Responde SOLO con una lista JSON, un objeto por post, con su "id" y los campos d
   "grave": "...", "criterio_gravedad": "", "desenlace": "..."}}]"""
 
 
-PROMPTS = {"v0": PRELABEL_PROMPT, "v1": PROMPT_V1, "v2": PROMPT_V2}
+def _edit(text: str, old: str, new: str) -> str:
+    """One change of v3 over v2, which must apply exactly once (a changed v2 fails here)."""
+    if text.count(old) != 1:
+        raise ValueError(f"v3: the text to change is not once in v2: {old[:60]!r}")
+    return text.replace(old, new)
+
+
+# v3 (change G, 2026-11-27): v2 plus the rules of the annotation guide that the 27B (v0) broke on
+# the lorazepam batch (Mario, comparing the two annotations): unnamed medication, symptoms of the
+# illness, "it does not knock me out" is not lack of efficacy, fiction and general opinions; and
+# in the other direction, alcohol, next-day drowsiness, dependence and paradoxical reactions.
+# Rules with invented examples, not copied from posts. And the notifications by e-mail or phone.
+V3_CHANGES = [
+    (
+        "Se anota lo que dice el post (leído con su conversación).",
+        "Se anota lo que dice el post (leído con su conversación).\n"
+        "A veces no es un post sino una notificación que llegó al centro por correo o por teléfono\n"  # noqa: E501
+        "(lo dice su «Origen»): trátala igual; en ella el paciente suele ser un tercero.",
+    ),
+    (
+        "- usa el nombre para otra cosa (un personaje, una canción).",
+        "- usa el nombre para otra cosa (un personaje, una canción);\n"
+        '- habla de "las pastillas", "la medicación", "mi tratamiento" o de un grupo de fármacos en\n'  # noqa: E501
+        '  general ("los ansiolíticos", "las benzos") sin que se sepa que es {farmaco}, o de otro\n'
+        "  fármaco que sale en la conversación (también por su marca).",
+    ),
+    (
+        '- falta de eficacia: "llevo dos meses y no me hace nada";',
+        '- falta de eficacia ("llevo dos meses y no me hace nada"), solo si no le funciona para\n'
+        '  aquello por lo que lo toma ("otra noche en blanco aunque me la tomé"); "no me deja KO" o\n'  # noqa: E501
+        '  "no me tumba" sin más NO es falta de eficacia;\n'
+        '- mezclarlo con alcohol, café u otras sustancias y notar algo ("con una cerveza me sube\n'
+        '  muchísimo");\n'
+        "- somnolencia, resaca o atontamiento al día siguiente;\n"
+        '- dependencia o tolerancia ("ya no duermo sin ella", "cada vez necesito más");\n'
+        "- reacción paradójica, lo contrario de lo esperado: nervios, agitación, agresividad;",
+    ),
+    (
+        "opiniones sobre los psicofármacos, noticias, memes;",
+        "opiniones sobre los psicofármacos, noticias, memes; también relatos, casos de famosos o\n"
+        '  de terceros que salen en las noticias y opiniones generales ("la {farmaco} engancha")\n'
+        "  aunque nombren un efecto;",
+    ),
+    (
+        "Un síntoma que el autor atribuye a otra causa también;",
+        "Un síntoma que el autor atribuye a otra causa también, y los que ya tenía antes de\n"
+        "  tomarlo o son de su enfermedad (el dolor de una migraña, las pesadillas de un trauma\n"
+        "  antiguo, la ansiedad que trata);",
+    ),
+    (
+        "## Posts\n",
+        '- "Me tomé la {farmaco} con dos cervezas y al día siguiente no era persona" →\n'
+        '  {{"es_efecto_adverso": "si", "reacciones": "al día siguiente no era persona", …}}\n'
+        '- "Me dieron {farmaco} para calmarme y me puse aún más nervioso" →\n'
+        '  {{"es_efecto_adverso": "si", "reacciones": "me puse aún más nervioso", …}}\n'
+        '- "Las pastillas de la ansiedad me dejan atontada" (sin que se sepa cuáles) →\n'
+        '  {{"es_efecto_adverso": "no", "motivo_no": "no_es_mencion"}}\n'
+        '- "La {farmaco} no me deja KO como a otros, pero duermo bien" →\n'
+        '  {{"es_efecto_adverso": "no", "motivo_no": "sin_reaccion"}}\n\n## Posts\n',
+    ),
+]
+PROMPT_V3 = PROMPT_V2
+for _old, _new in V3_CHANGES:
+    PROMPT_V3 = _edit(PROMPT_V3, _old, _new)
+
+# v3p, the permissive triage (change G): v3 plus a "duda" field. A "no" the model is not sure of
+# goes to a person as a possible adverse event, marked "dudoso" (``triage.agent.apply_doubt``).
+PROMPT_V3P = _edit(
+    _edit(
+        PROMPT_V3,
+        'Marca "no" cuando de verdad no lo hay.',
+        'Marca "no" cuando de verdad no lo hay.\n\n'
+        'Además, di si dudas: "duda": "si" cuando no estás seguro de tu respuesta (no sabes si el\n'
+        "síntoma es del fármaco o de la enfermedad, si el post habla de {farmaco}, si es una broma\n"  # noqa: E501
+        "o le pasó de verdad). Una persona revisará esas menciones. "
+        'Si lo tienes claro, "duda": "no".',
+    ),
+    '[{{"id": "...", "es_efecto_adverso": "si|no",',
+    '[{{"id": "...", "duda": "si|no", "es_efecto_adverso": "si|no",',
+)
+
+PROMPTS = {
+    "v0": PRELABEL_PROMPT,
+    "v1": PROMPT_V1,
+    "v2": PROMPT_V2,
+    "v3": PROMPT_V3,
+    "v3p": PROMPT_V3P,
+}
 
 
 REPAIR = """Algunas respuestas no se pudieron usar:

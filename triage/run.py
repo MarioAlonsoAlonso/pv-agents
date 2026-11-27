@@ -4,6 +4,7 @@
     uv run python -m triage.run --version v1 --limite 5          # quick check on the DGX
     uv run python -m triage.run --version v1                     # development set (DGX)
     uv run python -m triage.run --version v1 --examen            # the exam: ONCE, at the end
+    uv run python -m triage.run --version v3 --por mencion --lote lorazepam   # another batch
 
 Outputs, under ``data/triaje/eval/`` (out of git: they contain the posts' text):
 ``<name>_respuestas.jsonl`` (one answer per mention), ``<name>_coste.json`` and
@@ -50,6 +51,11 @@ def main(argv: list[str] | None = None) -> None:
         help="one request per conversation (default) or per mention",
     )
     parser.add_argument("--examen", action="store_true", help="the test set: only once, at the end")
+    parser.add_argument(
+        "--lote",
+        choices=sorted(rutas.LOTES),
+        help="another annotated batch instead of the sertraline sample (common/rutas.LOTES)",
+    )
     parser.add_argument("--limite", type=int, help="only the first N conversations (a quick check)")
     parser.add_argument(
         "--hilos", type=int, default=2, help="simultaneous requests (server: 5 total)"
@@ -62,7 +68,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     split = "test" if args.examen else "dev"
-    mentions_file, gold_file = SPLITS[split]
+    mentions_file, gold_file = rutas.LOTES[args.lote][split] if args.lote else SPLITS[split]
     for f in (mentions_file, gold_file):
         if not f.exists():
             raise SystemExit(
@@ -80,7 +86,9 @@ def main(argv: list[str] | None = None) -> None:
         mentions = [m for m in mentions if m.hilo_id in set(keep)]
     version = "palabras" if args.brain == "palabras" else args.version
     name = (
-        f"{version}_{args.brain}_{args.por}_{split}"
+        f"{version}_{args.brain}_{args.por}_"
+        + (f"{args.lote}_" if args.lote else "")
+        + split
         + (f"_lim{args.limite}" if args.limite else "")
         + (f"_{args.etiqueta}" if args.etiqueta else "")
     )
@@ -116,6 +124,7 @@ def main(argv: list[str] | None = None) -> None:
         "cerebro": args.brain,
         "prompt": version,
         "por": args.por,
+        "lote": args.lote or "sertralina",
         **result,
         "coste": asdict(cost),
     }

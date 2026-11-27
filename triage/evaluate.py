@@ -29,7 +29,7 @@ from pathlib import Path
 from common.stats import wilson
 from crawler.annotate import kappa
 from crawler.store import RawMention, conversation_text, read_mentions
-from triage.esquema import normalise
+from triage.esquema import is_doubtful, normalise
 
 CASE = ["paciente", "edad", "sexo", "grave", "desenlace"]
 MOTIVES = ["no_es_mencion", "pregunta_o_consejo", "broma_opinion_noticia", "sin_reaccion"]
@@ -90,6 +90,14 @@ def score(answers: dict[str, dict], gold: dict[str, dict], mentions: dict[str, R
         **detection(ids, answers, gold),
         "sin_respuesta": sum(i not in answers for i in ids),
         "a_revision_humana": sum(answers.get(i, {}).get("estado") == "sin_respuesta" for i in ids),
+        # v3p: marked "dudoso" (a "no" the model was not sure of goes to a person as a "si")
+        "dudosos": {
+            "total": sum(is_doubtful(answers.get(i, {})) for i in ids),
+            "efectos_adversos": sum(
+                is_doubtful(answers.get(i, {})) and gold[i]["es_efecto_adverso"] == "si"
+                for i in ids
+            ),
+        },
         "acierto_si_no": share(
             sum(pred[i]["es_efecto_adverso"] == gold[i]["es_efecto_adverso"] for i in ids), len(ids)
         ),

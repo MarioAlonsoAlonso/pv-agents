@@ -30,7 +30,7 @@ from pathlib import Path
 
 from crawler.store import RawMention
 from crawler.text import fold
-from triage.esquema import LABELS, normalise, validate
+from triage.esquema import DOUBT, LABELS, normalise, validate
 from triage.prompts import REPAIR, build_prompt
 
 FIELDS = [f for f in LABELS if f != "notas"]
@@ -85,6 +85,23 @@ def fix(item: dict) -> dict:
     return row
 
 
+def apply_doubt(item: dict) -> tuple[dict, str]:
+    """The permissive triage (v3p, change G, 2026-11-27): a "no" the model is not sure of goes
+    on as a possible adverse event for a person to review, marked in ``notas``. A missed case is
+    the expensive error (nobody sees it again); a doubtful one costs a look. Answers without
+    ``duda`` (v0-v3) are untouched."""
+    doubt = str(item.get("duda", "")).strip().lower() in {"si", "sí", "true", "yes"}
+    if not doubt:
+        return item, ""
+    if str(item.get("es_efecto_adverso", "")).strip().lower() in {"si", "sí", "true", "yes"}:
+        return item, f"{DOUBT}: el triaje dice sí, pero duda"
+    reason = str(item.get("motivo_no") or "").strip() or "sin motivo"
+    return (
+        {**item, "es_efecto_adverso": "si", "motivo_no": "", "reacciones": item.get("reacciones")},
+        f"{DOUBT}: el triaje dudó y habría dicho no ({reason}); revisión humana",
+    )
+
+
 def parse_answers(raw: str, ids: set[str]) -> tuple[dict[str, dict], dict[str, str]]:
     """The valid answers in a completion, by id, and what was wrong with the others.
 
@@ -101,12 +118,13 @@ def parse_answers(raw: str, ids: set[str]) -> tuple[dict[str, dict], dict[str, s
         i = item.get("id") if isinstance(item, dict) else None
         if i not in ids:
             continue  # an id we did not send: ignored
+        item, note = apply_doubt(item)
         row = fix(item)
         error = validate(row)
         if error:
             problems[i] = error
         else:
-            answers[i] = normalise({**row, "notas": ""})
+            answers[i] = normalise({**row, "notas": note})
             problems.pop(i, None)
     for i in ids - set(answers) - set(problems):
         problems[i] = "falta la respuesta"

@@ -41,6 +41,13 @@ VALUES = {
     "desenlace": {"recuperado", "recuperandose", "no_recuperado", "desconocido"},
 }
 CASE_FIELDS = ["paciente", "sexo", "sexo_fuente", "grave", "criterio_gravedad", "desenlace"]
+# The permissive triage (v3p) marks in ``notas`` the answers the model was not sure of: they go
+# to a person as possible adverse events (``triage.agent.apply_doubt``).
+DOUBT = "dudoso"
+
+
+def is_doubtful(answer: dict) -> bool:
+    return (answer.get("notas") or "").startswith(DOUBT)
 
 
 def normalise(row: dict) -> dict:

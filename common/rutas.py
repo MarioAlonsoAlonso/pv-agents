@@ -36,6 +36,21 @@ TRIAJE_EVAL = TRIAJE / "eval"
 GOLD_TRIAJE = {s: TRIAJE / f"gold_triaje_{s}.jsonl" for s in SPLITS}
 # The triage's final configuration (v2, one post per request, 27B) on the sample.
 RESPUESTAS_TRIAJE = {s: TRIAJE_EVAL / f"v2_27b_mencion_{s}_respuestas.jsonl" for s in SPLITS}
+# Other annotated batches for the triage (change G, 2026-11-27): lorazepam, split by conversation
+# into development and exam. "lorazepam" is a random sample of what the crawler found (the real
+# share of adverse events); "extra_lorazepam" was chosen by keywords to have more adverse events
+# (detection only: its share of "yes" is not the real one).
+LORAZEPAM = DATA / "lorazepam"
+LOTES = {
+    "lorazepam": {
+        s: (LORAZEPAM / f"lote_lorazepam_{s}.jsonl", LORAZEPAM / f"gold_lorazepam_{s}.jsonl")
+        for s in SPLITS
+    },
+    "extra_lorazepam": {
+        s: (LORAZEPAM / f"extra_lorazepam_{s}.jsonl", LORAZEPAM / f"gold_extra_lorazepam_{s}.jsonl")
+        for s in SPLITS
+    },
+}
 COORDINADOR = DATA / "coordinador"
 # Notifications the technician registers from the coordinator (an e-mail, a phone call): the
 # same two files as the monitor, so they go through the same triage and become the same cases.
