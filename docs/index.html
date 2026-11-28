@@ -373,7 +373,8 @@ footer .wrap { display: grid; gap: .5rem; }
             <div class="row" title="Qwen3-1.7B sin entrenar: 18,5 %"><span class="n">Pequeño sin entrenar</span><div class="track"><div class="bar" style="width:18.5%"></div></div><span class="v">18,5 %</span></div>
             <div class="row win" title="Qwen3-1.7B entrenado (SFT + GRPO): 56,5 %"><span class="n">Pequeño entrenado</span><div class="track"><div class="bar" style="width:56.5%"></div></div><span class="v">56,5 %</span></div>
             <div class="row" title="Qwen3.8-27B sin entrenar, perdonando el formato de la respuesta: 67,5 %"><span class="n">Grande (27B)*</span><div class="track"><div class="bar" style="width:67.5%"></div></div><span class="v">67,5 %</span></div>
-            <p class="muted" style="font-weight:400;font-size:.85rem">* Perdonando el formato de la respuesta; exigiéndolo, el 27B se queda en el 46 %.</p>
+            <div class="row" title="Qwen3.8-27B con el código que pide el formato y le devuelve los términos que no existen: 86,5 %"><span class="n">Grande + código**</span><div class="track"><div class="bar" style="width:86.5%"></div></div><span class="v">86,5 %</span></div>
+            <p class="muted" style="font-weight:400;font-size:.85rem">* Perdonando el formato de la respuesta; exigiéndolo, el 27B se queda en el 46 %.<br>** El código le pide el formato y, si da un término que no está en nuestro diccionario de 90, se lo devuelve con la lista. Con el MedDRA completo no se puede dar la lista.</p>
           </div>
 
           <div class="axis"><span></span><div><span>0</span><span>50</span><span>100 %</span></div><span></span></div>
@@ -425,7 +426,7 @@ footer .wrap { display: grid; gap: .5rem; }
         </div>
         <div>
           <h3>Entrenar un modelo pequeño triplica su acierto, pero el grande sabe más</h3>
-          <p>Con SFT y GRPO, Qwen3-1.7B pasa del 18,5 % al 56,5 % de términos MedDRA exactos y siempre responde en el formato pedido. El 27B, sin entrenar, acierta más si se le perdona el formato (67,5 %) y sobre todo en términos que el pequeño nunca vio (74 % frente a 38 %). El pequeño gana en coste y en funcionar en local.</p>
+          <p>Con SFT y GRPO, Qwen3-1.7B pasa del 18,5 % al 56,5 % de términos MedDRA exactos y siempre responde en el formato pedido. El 27B, sin entrenar, acierta más si se le perdona el formato (67,5 %) y sobre todo en términos que el pequeño nunca vio (74 % frente a 38 %). Si el código le pide el formato y le devuelve los términos que no existen, llega al 86,5 %. El pequeño gana en coste y en funcionar en local.</p>
         </div>
         <div>
           <h3>Un examen aparte cambia la historia</h3>
@@ -445,7 +446,7 @@ footer .wrap { display: grid; gap: .5rem; }
           </div>
           <ul>
             <li>Solo hay casos de un fármaco (sertralina) y de una red social en español.</li>
-            <li>El triaje pierde 1 de cada 5 efectos adversos. Estamos midiendo un triaje más permisivo con un lote nuevo de lorazepam.</li>
+            <li>El triaje pierde 1 de cada 5 efectos adversos. Con un fármaco nuevo, el lorazepam, pierde más: detecta 10 de 16, y 4 de cada 10 de sus «sí» son efectos adversos. Un prompt con más reglas no lo arregló en el examen.</li>
             <li>Las hojas de soluciones las anotó un modelo y se contrastaron con el 27B; la revisión humana fue parcial.</li>
             <li>El diccionario MedDRA del repositorio tiene 90 términos, porque el completo requiere licencia.</li>
             <li>En las comparativas, a veces consulta solo una ficha técnica.</li>

@@ -1,0 +1,248 @@
+{
+ "dev": {
+  "conjunto": "dev",
+  "menciones": 154,
+  "efectos_adversos": 14,
+  "versiones": {
+   "v2": {
+    "deteccion_ambos_lotes": {
+     "k": 8,
+     "n": 14,
+     "valor": 0.571,
+     "ic95": [
+      0.326,
+      0.786
+     ]
+    },
+    "deteccion_lote_normal": {
+     "k": 3,
+     "n": 7,
+     "valor": 0.429,
+     "ic95": [
+      0.158,
+      0.75
+     ]
+    },
+    "precision_lote_normal": {
+     "k": 3,
+     "n": 4,
+     "valor": 0.75,
+     "ic95": [
+      0.301,
+      0.954
+     ]
+    },
+    "falsas_alarmas_lote_normal": 1,
+    "a_revision_lote_normal": {
+     "menciones": 4,
+     "de_cada_100": 3.8,
+     "dudosos": 0
+    },
+    "sin_respuesta": 0
+   },
+   "v3": {
+    "deteccion_ambos_lotes": {
+     "k": 10,
+     "n": 14,
+     "valor": 0.714,
+     "ic95": [
+      0.454,
+      0.883
+     ]
+    },
+    "deteccion_lote_normal": {
+     "k": 4,
+     "n": 7,
+     "valor": 0.571,
+     "ic95": [
+      0.25,
+      0.842
+     ]
+    },
+    "precision_lote_normal": {
+     "k": 4,
+     "n": 4,
+     "valor": 1.0,
+     "ic95": [
+      0.51,
+      1.0
+     ]
+    },
+    "falsas_alarmas_lote_normal": 0,
+    "a_revision_lote_normal": {
+     "menciones": 4,
+     "de_cada_100": 3.8,
+     "dudosos": 0
+    },
+    "sin_respuesta": 0
+   },
+   "v3p": {
+    "deteccion_ambos_lotes": {
+     "k": 9,
+     "n": 14,
+     "valor": 0.643,
+     "ic95": [
+      0.388,
+      0.837
+     ]
+    },
+    "deteccion_lote_normal": {
+     "k": 3,
+     "n": 7,
+     "valor": 0.429,
+     "ic95": [
+      0.158,
+      0.75
+     ]
+    },
+    "precision_lote_normal": {
+     "k": 3,
+     "n": 6,
+     "valor": 0.5,
+     "ic95": [
+      0.188,
+      0.812
+     ]
+    },
+    "falsas_alarmas_lote_normal": 3,
+    "a_revision_lote_normal": {
+     "menciones": 6,
+     "de_cada_100": 5.8,
+     "dudosos": 0
+    },
+    "sin_respuesta": 0
+   }
+  },
+  "comparaciones": {
+   "v2 frente a v3": {
+    "todas": {
+     "solo_a": 1,
+     "solo_b": 4,
+     "p": 0.375
+    },
+    "efectos_adversos": {
+     "solo_a": 0,
+     "solo_b": 2,
+     "p": 0.5
+    }
+   },
+   "v2 frente a v3p": {
+    "todas": {
+     "solo_a": 5,
+     "solo_b": 1,
+     "p": 0.2188
+    },
+    "efectos_adversos": {
+     "solo_a": 0,
+     "solo_b": 1,
+     "p": 1.0
+    }
+   },
+   "v3 frente a v3p": {
+    "todas": {
+     "solo_a": 7,
+     "solo_b": 0,
+     "p": 0.0156
+    },
+    "efectos_adversos": {
+     "solo_a": 1,
+     "solo_b": 0,
+     "p": 1.0
+    }
+   }
+  }
+ },
+ "test": {
+  "conjunto": "test",
+  "menciones": 257,
+  "efectos_adversos": 16,
+  "versiones": {
+   "v2": {
+    "deteccion_ambos_lotes": {
+     "k": 10,
+     "n": 16,
+     "valor": 0.625,
+     "ic95": [
+      0.386,
+      0.815
+     ]
+    },
+    "deteccion_lote_normal": {
+     "k": 4,
+     "n": 9,
+     "valor": 0.444,
+     "ic95": [
+      0.189,
+      0.733
+     ]
+    },
+    "precision_lote_normal": {
+     "k": 4,
+     "n": 10,
+     "valor": 0.4,
+     "ic95": [
+      0.168,
+      0.687
+     ]
+    },
+    "falsas_alarmas_lote_normal": 6,
+    "a_revision_lote_normal": {
+     "menciones": 10,
+     "de_cada_100": 5.1,
+     "dudosos": 0
+    },
+    "sin_respuesta": 0
+   },
+   "v3": {
+    "deteccion_ambos_lotes": {
+     "k": 8,
+     "n": 16,
+     "valor": 0.5,
+     "ic95": [
+      0.28,
+      0.72
+     ]
+    },
+    "deteccion_lote_normal": {
+     "k": 3,
+     "n": 9,
+     "valor": 0.333,
+     "ic95": [
+      0.121,
+      0.646
+     ]
+    },
+    "precision_lote_normal": {
+     "k": 3,
+     "n": 10,
+     "valor": 0.3,
+     "ic95": [
+      0.108,
+      0.603
+     ]
+    },
+    "falsas_alarmas_lote_normal": 7,
+    "a_revision_lote_normal": {
+     "menciones": 10,
+     "de_cada_100": 5.1,
+     "dudosos": 0
+    },
+    "sin_respuesta": 0
+   }
+  },
+  "comparaciones": {
+   "v2 frente a v3": {
+    "todas": {
+     "solo_a": 6,
+     "solo_b": 5,
+     "p": 1.0
+    },
+    "efectos_adversos": {
+     "solo_a": 2,
+     "solo_b": 0,
+     "p": 0.5
+    }
+   }
+  }
+ }
+}

@@ -29,6 +29,15 @@ RUNS = [
     ("27B razonando · test · tolerante", P27, "test·thinking", True),
     ("27B sin razonar · OOD · tolerante", P27, "ood·sin_thinking", True),
     ("27B razonando · OOD · tolerante", P27, "ood·thinking", True),
+    # Change A (2026-11-28): the coder the system uses (rlm/coder27b.py); it reads the answer
+    # without tags itself, so strict and tolerant are the same.
+    ("27B final sin razonar · test", P27, "test·sin_thinking·final", False),
+    ("27B final razonando · test", P27, "test·thinking·final", False),
+    ("27B final sin razonar · OOD", P27, "ood·sin_thinking·final", False),
+    ("27B final razonando · OOD", P27, "ood·thinking·final", False),
+    # Phase 1 v2 (2026-11-25): the same 1.7B and recipe, SFT on the 27B's traces.
+    ("1.7B SFT del 27B · test", "reports/phase1_eval_1.7b_profesor27b.json", "sft27", False),
+    ("1.7B SFT del 27B · OOD", "reports/phase1_eval_ood_1.7b_profesor27b.json", "sft27", False),
 ]  # fmt: skip
 
 

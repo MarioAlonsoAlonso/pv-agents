@@ -1059,3 +1059,96 @@ examen, falsas alarmas 18 → 14, precisión 80 % → 83 % (respuestas indirecta
 casos detectados 70 → 69. Casi todo el ruido que quita el cambio F el triaje ya lo descartaba: el
 beneficio para el triaje es real pero pequeño.
 
+### 2026-11-25 · Fase 1 v2 · El 27B como profesor del 1,7B
+
+**Qué queríamos saber.** Si un profesor que codifica mejor (el 27B del curso) da un alumno mejor
+que el Qwen3-4B de la fase 1, con el mismo alumno y la misma receta.
+
+**Qué hicimos.** Trazas del 27B razonando, verificadas, de 800 palabras como mucho y sin los
+códigos MedDRA que recitaba (el alumno colapsaba en «(1000000…»); SFT con LoRA del Qwen3-1.7B
+como en la fase 1 (`make rlm-distill-27b rlm-sft-27b rlm-eval-27b`). Sin GRPO.
+
+**Qué pasó.** Test: 36 % [30–43] frente al 51,5 % del SFT con el 4B (13 problemas que solo
+resuelve el nuevo, 44 que solo resuelve el del 4B, p < 0,001); fuera de distribución, 27 % frente
+al 30 %. En 75 de 200 no cierra la respuesta con `<answer>` (el SFT del 4B, en 27). Por término:
+precisión 68 % y recall 50 % (el del 4B, 75 % y 68 %).
+
+**Qué concluimos.** Un profesor más grande no da un alumno mejor: el 1,7B no aprende a terminar
+como él. Nos quedamos con el profesor 4B y no hicimos el GRPO desde este SFT.
+
+### 2026-11-28 · Proyecto final · Triaje con un fármaco nuevo, lorazepam: reglas v3 y la duda (cambio G)
+
+**Qué queríamos saber.** El triaje se ajustó con sertralina. Con un fármaco nuevo, ¿detecta lo
+mismo? ¿Pierde menos casos un prompt con reglas para los errores vistos (v3) o uno que pueda
+dudar y mande lo dudoso a una persona (v3p)?
+
+**Qué hicimos.** Lotes de lorazepam de Mario, separados en desarrollo y examen: el normal (104 y
+196 menciones, 7 y 9 efectos adversos) y uno extra elegido por palabras de efecto (50 y 61, 7 y
+7), para tener más casos. Detección sobre los dos; precisión y carga de revisión solo sobre el
+normal, que tiene la proporción real. v3 es v2 con reglas escritas mirando los errores de
+desarrollo; v3p, v3 con un campo «duda» que convierte un «no» dudoso en un «sí» marcado para
+revisión humana. La regla para elegir la versión del examen se fijó antes de ver resultados
+(`scripts/ultima_tanda.sh`); examen una vez, v2 frente a la elegida (`triage.lotes`).
+
+**Qué pasó.** Desarrollo (14 efectos adversos): v2 detecta 8, v3 10 y v3p 9; en el lote normal,
+v3 sin falsas alarmas (4 de 4) y v3p con 3 (3 de 6). v3p dijo dudar en 1 de 154 menciones. La
+regla eligió v3. Examen (16 efectos adversos): v2 detecta 10, 62 % [39–82], y v3 8, 50 % [28–72];
+2 que solo ve v2 y ninguno que solo vea v3 (p = 0,5). En el lote normal, v2 detecta 4 de 9 (44 %
+[19–73]) con precisión 40 % [17–69] (6 falsas alarmas de 10 «sí»); v3, 3 de 9 y 30 %. A revisión
+van 5 de cada 100 menciones con las dos. v3 gasta un 23 % más de tokens de entrada.
+
+**Qué concluimos.** Ni v3 ni v3p: lo que v3 ganaba en desarrollo (+2 de 14) no se mantiene en el
+examen, como pasó con la sertralina (90 % → 79 %). Con tan pocos casos nada es significativo, pero
+no hay motivo para cambiar: el sistema sigue con v2. El modelo casi nunca dice que duda, así que
+una cola de revisión no puede apoyarse en su propia duda. Lo importante es otra cosa: con
+lorazepam, v2 detecta bastante menos que con sertralina (44 % frente a 79 %, con intervalos
+anchos) y la precisión baja al 40 %. Un fármaco nuevo necesita su hoja de soluciones y su ajuste.
+La hoja de lorazepam la anotó Mario con Claude y quedan 28 desacuerdos sin revisar por una
+persona.
+
+### 2026-11-28 · Proyecto final · El 27B como codificador MedDRA del sistema (cambio A)
+
+**Qué queríamos saber.** El 27B sabía los términos, pero sin razonar 97 de sus 124 errores del
+test eran términos correctos sin `<answer>`, y razonando daba 157 nombres fuera de los 90 PT del
+repositorio. ¿Cuánto acierta si eso se arregla en el código, y gana al 1,7B entrenado?
+
+**Qué hicimos.** `rlm/coder27b.py`, un solo codificador para la evaluación y el coordinador: el
+prompt de la fase 1 con el formato pedido y un ejemplo, la lectura de una respuesta corta sin
+etiquetas y, si no hay respuesta o un nombre no está en el diccionario, una devolución con el
+error y la lista de los 90 términos válidos. Comprobación en 50 problemas de train (96 % sin
+razonar, 86 % razonando; no se iteró) y examen una vez: test (200) y fuera de distribución (100).
+
+**Qué pasó.**
+
+| Codificador | Test | Fuera de distribución | Por término (test): precisión · recall |
+|---|---|---|---|
+| 1,7B SFT + GRPO | 56,5 % | 38 % | 77 % · 73 % |
+| 27B directo, perdonando el formato (sin razonar · razonando) | 60 % · 67,5 % | 57 % · 74 % | 76 % · 78 % (sin razonar) |
+| **27B final, sin razonar** (14 s por problema) | **86,5 %** [81–91] | **89 %** [81–94] | 90 % · 95 % |
+| 27B final, razonando (43 s) | 91,5 % [87–95] | 90 % [83–94] | 94 % · 94 % |
+
+Frente al 1,7B en los mismos problemas: 68 que solo resuelve el 27B y 8 que solo resuelve el 1,7B
+(sin razonar, p < 0,001); fuera de distribución, 53 frente a 2. Razonar frente a no razonar: 17
+frente a 7 en test (p = 0,06) y 5 frente a 4 fuera de distribución. De dónde sale la subida: la
+primera respuesta acierta el 63,5 % (sin razonar) y la devolución arregla 46 de las 60 devueltas.
+
+**Qué concluimos.** Con el diccionario cerrado del repositorio, el 27B con la devolución es con
+diferencia el mejor codificador; razonar no compensa el triple de tiempo. Tres matices: la lista
+de términos solo se puede dar con un diccionario pequeño (con el MedDRA completo la devolución solo
+nombra el error, y cabe esperar algo entre el 63,5 % y el 86,5 %); al 1,7B no se le dio la misma
+devolución, así que se comparan sistemas, no modelos; y el 27B necesita el servidor. El sistema
+sigue con el 1,7B por defecto, porque el examen del coordinador se hizo con él; el 27B queda medido
+como opción (`ARCA_MEDDRA_CODER=27b`) y es el que usaríamos en producción.
+
+### 2026-11-28 · Proyecto final · ¿Codifica mejor si el triaje le dice lo que leyó? (cambio I)
+
+**Qué hicimos.** El test de la fase 1 (200) con el 27B final sin razonar, con y sin las reacciones
+y lo negado que extrae el triaje (v3) añadidos a la pregunta (`rlm.evaluate_pista`).
+
+**Qué pasó.** 87,5 % con la pista y 86,5 % sin ella: 19 problemas que solo resuelve con la pista y
+17 que solo resuelve sin ella (p = 0,87). Ayuda en los diagnósticos (9 frente a 2) y estorba con
+varios acontecimientos (6 frente a 12), con el doble de tiempo (21 s frente a 11 s). Dos
+ejecuciones del mismo codificador sin pista dan el mismo total y difieren en 28 de 200 problemas:
+la diferencia está dentro del ruido.
+
+**Qué concluimos.** No se activa: `ARCA_MEDDRA_PISTA` sigue a 0.

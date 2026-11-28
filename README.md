@@ -52,7 +52,8 @@ frente a la alternativa sencilla. Intervalos de Wilson al 95 % y McNemar entre s
 |---|---|---|---|
 | Rastreador | Menciones encontradas (66 en 567 posts anotados) | **98 %** (híbrido v5), 19 de 19 indirectas | 70 % búsqueda fija, 0 de 19 · 91 % un agente que lo hace todo, con el doble de tokens |
 | Triaje | Efectos adversos detectados · precisión (438 menciones) | **79 %** [69–86] · **80 %** [70–87] (83 % con el rastreador v5) | 46 % · 51 % con palabras clave |
-| Codificador MedDRA | Conjunto exacto de *Preferred Terms* (200 notificaciones) | **56,5 %** el 1,7B entrenado (18,5 % sin entrenar) | Qwen3.8-27B: 46 %, 67,5 % perdonando el formato; 74 % frente a 38 % en términos nunca vistos |
+| Triaje, fármaco nuevo | Lorazepam: efectos adversos detectados · precisión (257 menciones, 16 efectos adversos) | **62 %** [39–82] · **40 %** [17–69] (v2, el mismo prompt) | v3, con reglas para los errores de desarrollo: 50 % · 30 % |
+| Codificador MedDRA | Conjunto exacto de *Preferred Terms* (200 notificaciones) | **56,5 %** el 1,7B entrenado (18,5 % sin entrenar) | Qwen3.8-27B: 46 %, 67,5 % perdonando el formato; con el código que le devuelve los términos inexistentes ([`rlm/coder27b.py`](rlm/coder27b.py)), **86,5 %**, y 89 % frente a 38 % en términos nunca vistos |
 | Coordinador | Peticiones de técnico bien resueltas (59) | **54 / 59** (92 %) | Sin RAG 30 (p < 0,0001) · sin MedDRA 52 · sin literatura 51 |
 | Coordinador | Preguntas generales · nombres raros y comparativas · etapas | **27 / 27** · **11 / 13** · **14 / 14** | — · 8 / 13 sin las herramientas de nombres · 2 / 14 sin las de etapas |
 | Literatura | Referencias de PubMed inventadas | **0 / 86** | — |
@@ -96,7 +97,8 @@ Reproducir las evaluaciones:
 |---|---|---|
 | Rastreador | `make crawler-eval` | ver [`crawler/README.md`](crawler/README.md) |
 | Triaje | `make triage-base`, `make triage-dev` | `make triage-examen` |
-| Codificador MedDRA | `make rlm-data rlm-distill rlm-sft rlm-grpo` | `make rlm-eval rlm-ablations`; el 27B: `uv run python -m rlm.evaluate_remote` |
+| Triaje, lorazepam | `uv run python -m triage.run --version v2 --por mencion --lote lorazepam` (y `--lote extra_lorazepam`) | lo mismo con `--examen`; las cifras: `uv run python -m triage.lotes --versiones v2 v3 --examen` |
+| Codificador MedDRA | `make rlm-data rlm-distill rlm-sft rlm-grpo` | `make rlm-eval rlm-ablations`; el 27B: `uv run python -m rlm.evaluate_remote --codificador final` |
 | Coordinador | `uv run python -m coordinator.evaluate --bench coordinator/bench/tareas_v2.jsonl --conjunto dev` | lo mismo con `--conjunto test`; etapas: `make coordinador-examen-etapas` |
 | Validaciones sin GPU | `uv run python -m rlm.term_pr` · `uv run python -m triage.regla_revision` | — |
 

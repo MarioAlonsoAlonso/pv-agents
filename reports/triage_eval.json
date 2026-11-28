@@ -2109,5 +2109,2132 @@
    "seconds": 581.2715556630064,
    "no_answer": 0
   }
+ },
+ "v2_27b_mencion_dev_lorazepam": {
+  "fecha": "2026-11-28T09:21:05+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "mencion",
+  "menciones": 104,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 3,
+   "n": 7,
+   "valor": 0.42857142857142855,
+   "ic95": [
+    0.158,
+    0.75
+   ]
+  },
+  "precision": {
+   "k": 3,
+   "n": 4,
+   "valor": 0.75,
+   "ic95": [
+    0.301,
+    0.954
+   ]
+  },
+  "f1": 0.545,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 99,
+   "n": 104,
+   "valor": 0.9519230769230769,
+   "ic95": [
+    0.892,
+    0.979
+   ]
+  },
+  "kappa_si_no": 0.522,
+  "descarte_no_es_mencion": {
+   "k": 7,
+   "n": 7,
+   "valor": 1.0,
+   "ic95": [
+    0.646,
+    1.0
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 63,
+    "n": 96,
+    "valor": 0.65625,
+    "ic95": [
+     0.557,
+     0.744
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 5,
+     "broma_opinion_noticia": 1,
+     "sin_reaccion": 1
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 5
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 26,
+     "no_es_mencion": 10,
+     "sin_reaccion": 6
+    },
+    "sin_reaccion": {
+     "no_es_mencion": 6,
+     "sin_reaccion": 27,
+     "pregunta_o_consejo": 9
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 3,
+   "n": 7,
+   "valor": 0.42857142857142855,
+   "ic95": [
+    0.158,
+    0.75
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 3
+    }
+   },
+   "edad": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 3
+    }
+   },
+   "sexo": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 2,
+     "mujer": 1
+    }
+   },
+   "grave": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 3
+    }
+   },
+   "desenlace": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 2,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 89,
+    "efectos_adversos": 7,
+    "deteccion": {
+     "k": 3,
+     "n": 7,
+     "valor": 0.42857142857142855,
+     "ic95": [
+      0.158,
+      0.75
+     ]
+    },
+    "precision": {
+     "k": 3,
+     "n": 4,
+     "valor": 0.75,
+     "ic95": [
+      0.301,
+      0.954
+     ]
+    },
+    "f1": 0.545
+   },
+   "agente": {
+    "menciones": 15,
+    "efectos_adversos": 0,
+    "deteccion": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "precision": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "f1": null
+   }
+  },
+  "coste": {
+   "calls": 104,
+   "repairs": 0,
+   "prompt_tokens": 235286,
+   "completion_tokens": 9283,
+   "seconds": 168.54327116707282,
+   "no_answer": 0
+  }
+ },
+ "v2_27b_mencion_dev_extra_lorazepam": {
+  "fecha": "2026-11-28T09:21:48+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "mencion",
+  "menciones": 50,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 5,
+   "n": 7,
+   "valor": 0.7142857142857143,
+   "ic95": [
+    0.359,
+    0.918
+   ]
+  },
+  "precision": {
+   "k": 5,
+   "n": 6,
+   "valor": 0.8333333333333334,
+   "ic95": [
+    0.436,
+    0.97
+   ]
+  },
+  "f1": 0.769,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 47,
+   "n": 50,
+   "valor": 0.94,
+   "ic95": [
+    0.838,
+    0.979
+   ]
+  },
+  "kappa_si_no": 0.735,
+  "descarte_no_es_mencion": {
+   "k": 15,
+   "n": 15,
+   "valor": 1.0,
+   "ic95": [
+    0.796,
+    1.0
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 22,
+    "n": 42,
+    "valor": 0.5238095238095238,
+    "ic95": [
+     0.377,
+     0.666
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 5,
+     "sin_reaccion": 10
+    },
+    "pregunta_o_consejo": {
+     "broma_opinion_noticia": 1,
+     "pregunta_o_consejo": 3,
+     "no_es_mencion": 1
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 1,
+     "broma_opinion_noticia": 5,
+     "pregunta_o_consejo": 1,
+     "sin_reaccion": 2
+    },
+    "sin_reaccion": {
+     "pregunta_o_consejo": 2,
+     "no_es_mencion": 2,
+     "sin_reaccion": 9
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 5,
+   "n": 7,
+   "valor": 0.7142857142857143,
+   "ic95": [
+    0.359,
+    0.918
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 4,
+     "desconocido": 1
+    }
+   },
+   "edad": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 4,
+     "87": 1
+    }
+   },
+   "sexo": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 5
+    }
+   },
+   "grave": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 5
+    }
+   },
+   "desenlace": {
+    "k": 4,
+    "n": 5,
+    "valor": 0.8,
+    "ic95": [
+     0.376,
+     0.964
+    ],
+    "valores_hoja": {
+     "desconocido": 3,
+     "recuperado": 2
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 30,
+    "efectos_adversos": 5,
+    "deteccion": {
+     "k": 5,
+     "n": 5,
+     "valor": 1.0,
+     "ic95": [
+      0.566,
+      1.0
+     ]
+    },
+    "precision": {
+     "k": 5,
+     "n": 6,
+     "valor": 0.8333333333333334,
+     "ic95": [
+      0.436,
+      0.97
+     ]
+    },
+    "f1": 0.909
+   },
+   "agente": {
+    "menciones": 20,
+    "efectos_adversos": 2,
+    "deteccion": {
+     "k": 0,
+     "n": 2,
+     "valor": 0.0,
+     "ic95": [
+      0.0,
+      0.658
+     ]
+    },
+    "precision": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "f1": 0.0
+   }
+  },
+  "coste": {
+   "calls": 50,
+   "repairs": 0,
+   "prompt_tokens": 115291,
+   "completion_tokens": 4558,
+   "seconds": 84.5703274000407,
+   "no_answer": 0
+  }
+ },
+ "v3_27b_mencion_dev_lorazepam": {
+  "fecha": "2026-11-28T09:23:12+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v3",
+  "por": "mencion",
+  "menciones": 104,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 4,
+   "n": 7,
+   "valor": 0.5714285714285714,
+   "ic95": [
+    0.25,
+    0.842
+   ]
+  },
+  "precision": {
+   "k": 4,
+   "n": 4,
+   "valor": 1.0,
+   "ic95": [
+    0.51,
+    1.0
+   ]
+  },
+  "f1": 0.727,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 101,
+   "n": 104,
+   "valor": 0.9711538461538461,
+   "ic95": [
+    0.919,
+    0.99
+   ]
+  },
+  "kappa_si_no": 0.713,
+  "descarte_no_es_mencion": {
+   "k": 7,
+   "n": 7,
+   "valor": 1.0,
+   "ic95": [
+    0.646,
+    1.0
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 61,
+    "n": 97,
+    "valor": 0.6288659793814433,
+    "ic95": [
+     0.53,
+     0.718
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 5,
+     "broma_opinion_noticia": 1,
+     "sin_reaccion": 1
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 4,
+     "no_es_mencion": 1
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 28,
+     "no_es_mencion": 10,
+     "sin_reaccion": 4
+    },
+    "sin_reaccion": {
+     "no_es_mencion": 9,
+     "sin_reaccion": 24,
+     "pregunta_o_consejo": 7,
+     "broma_opinion_noticia": 3
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 4,
+   "n": 7,
+   "valor": 0.5714285714285714,
+   "ic95": [
+    0.25,
+    0.842
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 4,
+    "n": 4,
+    "valor": 1.0,
+    "ic95": [
+     0.51,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 4
+    }
+   },
+   "edad": {
+    "k": 4,
+    "n": 4,
+    "valor": 1.0,
+    "ic95": [
+     0.51,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 4
+    }
+   },
+   "sexo": {
+    "k": 2,
+    "n": 4,
+    "valor": 0.5,
+    "ic95": [
+     0.15,
+     0.85
+    ],
+    "valores_hoja": {
+     "desconocido": 3,
+     "mujer": 1
+    }
+   },
+   "grave": {
+    "k": 4,
+    "n": 4,
+    "valor": 1.0,
+    "ic95": [
+     0.51,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 4
+    }
+   },
+   "desenlace": {
+    "k": 3,
+    "n": 4,
+    "valor": 0.75,
+    "ic95": [
+     0.301,
+     0.954
+    ],
+    "valores_hoja": {
+     "desconocido": 3,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 89,
+    "efectos_adversos": 7,
+    "deteccion": {
+     "k": 4,
+     "n": 7,
+     "valor": 0.5714285714285714,
+     "ic95": [
+      0.25,
+      0.842
+     ]
+    },
+    "precision": {
+     "k": 4,
+     "n": 4,
+     "valor": 1.0,
+     "ic95": [
+      0.51,
+      1.0
+     ]
+    },
+    "f1": 0.727
+   },
+   "agente": {
+    "menciones": 15,
+    "efectos_adversos": 0,
+    "deteccion": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "precision": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "f1": null
+   }
+  },
+  "coste": {
+   "calls": 104,
+   "repairs": 0,
+   "prompt_tokens": 288638,
+   "completion_tokens": 9322,
+   "seconds": 167.59095375004108,
+   "no_answer": 0
+  }
+ },
+ "v3_27b_mencion_dev_extra_lorazepam": {
+  "fecha": "2026-11-28T09:23:55+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v3",
+  "por": "mencion",
+  "menciones": 50,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 6,
+   "n": 7,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.487,
+    0.974
+   ]
+  },
+  "precision": {
+   "k": 6,
+   "n": 7,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.487,
+    0.974
+   ]
+  },
+  "f1": 0.857,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 48,
+   "n": 50,
+   "valor": 0.96,
+   "ic95": [
+    0.865,
+    0.989
+   ]
+  },
+  "kappa_si_no": 0.834,
+  "descarte_no_es_mencion": {
+   "k": 14,
+   "n": 15,
+   "valor": 0.9333333333333333,
+   "ic95": [
+    0.702,
+    0.988
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 24,
+    "n": 42,
+    "valor": 0.5714285714285714,
+    "ic95": [
+     0.422,
+     0.709
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 6,
+     "sin_reaccion": 8
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 4,
+     "no_es_mencion": 1
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 1,
+     "broma_opinion_noticia": 5,
+     "pregunta_o_consejo": 2,
+     "sin_reaccion": 2
+    },
+    "sin_reaccion": {
+     "pregunta_o_consejo": 1,
+     "no_es_mencion": 3,
+     "sin_reaccion": 9
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 6,
+   "n": 7,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.487,
+    0.974
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 5,
+     "desconocido": 1
+    }
+   },
+   "edad": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 5,
+     "87": 1
+    }
+   },
+   "sexo": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 6
+    }
+   },
+   "grave": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 6
+    }
+   },
+   "desenlace": {
+    "k": 5,
+    "n": 6,
+    "valor": 0.8333333333333334,
+    "ic95": [
+     0.436,
+     0.97
+    ],
+    "valores_hoja": {
+     "desconocido": 3,
+     "recuperado": 2,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 30,
+    "efectos_adversos": 5,
+    "deteccion": {
+     "k": 5,
+     "n": 5,
+     "valor": 1.0,
+     "ic95": [
+      0.566,
+      1.0
+     ]
+    },
+    "precision": {
+     "k": 5,
+     "n": 5,
+     "valor": 1.0,
+     "ic95": [
+      0.566,
+      1.0
+     ]
+    },
+    "f1": 1.0
+   },
+   "agente": {
+    "menciones": 20,
+    "efectos_adversos": 2,
+    "deteccion": {
+     "k": 1,
+     "n": 2,
+     "valor": 0.5,
+     "ic95": [
+      0.095,
+      0.905
+     ]
+    },
+    "precision": {
+     "k": 1,
+     "n": 2,
+     "valor": 0.5,
+     "ic95": [
+      0.095,
+      0.905
+     ]
+    },
+    "f1": 0.5
+   }
+  },
+  "coste": {
+   "calls": 50,
+   "repairs": 0,
+   "prompt_tokens": 140941,
+   "completion_tokens": 4598,
+   "seconds": 85.20494037405297,
+   "no_answer": 0
+  }
+ },
+ "v3p_27b_mencion_dev_lorazepam": {
+  "fecha": "2026-11-28T09:25:27+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v3p",
+  "por": "mencion",
+  "menciones": 104,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 3,
+   "n": 7,
+   "valor": 0.42857142857142855,
+   "ic95": [
+    0.158,
+    0.75
+   ]
+  },
+  "precision": {
+   "k": 3,
+   "n": 6,
+   "valor": 0.5,
+   "ic95": [
+    0.188,
+    0.812
+   ]
+  },
+  "f1": 0.462,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 97,
+   "n": 104,
+   "valor": 0.9326923076923077,
+   "ic95": [
+    0.868,
+    0.967
+   ]
+  },
+  "kappa_si_no": 0.426,
+  "descarte_no_es_mencion": {
+   "k": 7,
+   "n": 7,
+   "valor": 1.0,
+   "ic95": [
+    0.646,
+    1.0
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 62,
+    "n": 94,
+    "valor": 0.6595744680851063,
+    "ic95": [
+     0.559,
+     0.747
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 6,
+     "broma_opinion_noticia": 1
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 3,
+     "broma_opinion_noticia": 1,
+     "no_es_mencion": 1
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 27,
+     "no_es_mencion": 9,
+     "sin_reaccion": 6
+    },
+    "sin_reaccion": {
+     "no_es_mencion": 9,
+     "sin_reaccion": 26,
+     "pregunta_o_consejo": 5
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 3,
+   "n": 7,
+   "valor": 0.42857142857142855,
+   "ic95": [
+    0.158,
+    0.75
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 3
+    }
+   },
+   "edad": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 3
+    }
+   },
+   "sexo": {
+    "k": 2,
+    "n": 3,
+    "valor": 0.6666666666666666,
+    "ic95": [
+     0.208,
+     0.939
+    ],
+    "valores_hoja": {
+     "desconocido": 2,
+     "mujer": 1
+    }
+   },
+   "grave": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 3
+    }
+   },
+   "desenlace": {
+    "k": 2,
+    "n": 3,
+    "valor": 0.6666666666666666,
+    "ic95": [
+     0.208,
+     0.939
+    ],
+    "valores_hoja": {
+     "desconocido": 2,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 89,
+    "efectos_adversos": 7,
+    "deteccion": {
+     "k": 3,
+     "n": 7,
+     "valor": 0.42857142857142855,
+     "ic95": [
+      0.158,
+      0.75
+     ]
+    },
+    "precision": {
+     "k": 3,
+     "n": 6,
+     "valor": 0.5,
+     "ic95": [
+      0.188,
+      0.812
+     ]
+    },
+    "f1": 0.462
+   },
+   "agente": {
+    "menciones": 15,
+    "efectos_adversos": 0,
+    "deteccion": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "precision": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "f1": null
+   }
+  },
+  "coste": {
+   "calls": 104,
+   "repairs": 0,
+   "prompt_tokens": 298102,
+   "completion_tokens": 10072,
+   "seconds": 184.22178488790814,
+   "no_answer": 0
+  }
+ },
+ "v3p_27b_mencion_dev_extra_lorazepam": {
+  "fecha": "2026-11-28T09:26:12+00:00",
+  "conjunto": "dev",
+  "cerebro": "27b",
+  "prompt": "v3p",
+  "por": "mencion",
+  "menciones": 50,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 6,
+   "n": 7,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.487,
+    0.974
+   ]
+  },
+  "precision": {
+   "k": 6,
+   "n": 10,
+   "valor": 0.6,
+   "ic95": [
+    0.313,
+    0.832
+   ]
+  },
+  "f1": 0.706,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 1,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 45,
+   "n": 50,
+   "valor": 0.9,
+   "ic95": [
+    0.786,
+    0.957
+   ]
+  },
+  "kappa_si_no": 0.648,
+  "descarte_no_es_mencion": {
+   "k": 13,
+   "n": 15,
+   "valor": 0.8666666666666667,
+   "ic95": [
+    0.621,
+    0.963
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 19,
+    "n": 39,
+    "valor": 0.48717948717948717,
+    "ic95": [
+     0.339,
+     0.638
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 5,
+     "sin_reaccion": 7,
+     "pregunta_o_consejo": 1
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 2,
+     "sin_reaccion": 1,
+     "no_es_mencion": 2
+    },
+    "broma_opinion_noticia": {
+     "no_es_mencion": 2,
+     "broma_opinion_noticia": 4,
+     "pregunta_o_consejo": 1,
+     "sin_reaccion": 2
+    },
+    "sin_reaccion": {
+     "pregunta_o_consejo": 2,
+     "sin_reaccion": 8,
+     "no_es_mencion": 2
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 6,
+   "n": 7,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.487,
+    0.974
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 5,
+     "desconocido": 1
+    }
+   },
+   "edad": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 5,
+     "87": 1
+    }
+   },
+   "sexo": {
+    "k": 5,
+    "n": 6,
+    "valor": 0.8333333333333334,
+    "ic95": [
+     0.436,
+     0.97
+    ],
+    "valores_hoja": {
+     "desconocido": 6
+    }
+   },
+   "grave": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 6
+    }
+   },
+   "desenlace": {
+    "k": 5,
+    "n": 6,
+    "valor": 0.8333333333333334,
+    "ic95": [
+     0.436,
+     0.97
+    ],
+    "valores_hoja": {
+     "desconocido": 3,
+     "recuperado": 2,
+     "no_recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 30,
+    "efectos_adversos": 5,
+    "deteccion": {
+     "k": 5,
+     "n": 5,
+     "valor": 1.0,
+     "ic95": [
+      0.566,
+      1.0
+     ]
+    },
+    "precision": {
+     "k": 5,
+     "n": 7,
+     "valor": 0.7142857142857143,
+     "ic95": [
+      0.359,
+      0.918
+     ]
+    },
+    "f1": 0.833
+   },
+   "agente": {
+    "menciones": 20,
+    "efectos_adversos": 2,
+    "deteccion": {
+     "k": 1,
+     "n": 2,
+     "valor": 0.5,
+     "ic95": [
+      0.095,
+      0.905
+     ]
+    },
+    "precision": {
+     "k": 1,
+     "n": 3,
+     "valor": 0.3333333333333333,
+     "ic95": [
+      0.061,
+      0.792
+     ]
+    },
+    "f1": 0.4
+   }
+  },
+  "coste": {
+   "calls": 50,
+   "repairs": 0,
+   "prompt_tokens": 145491,
+   "completion_tokens": 4988,
+   "seconds": 89.78078236308647,
+   "no_answer": 0
+  }
+ },
+ "v2_27b_mencion_test_lorazepam": {
+  "fecha": "2026-11-28T09:28:59+00:00",
+  "conjunto": "test",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "mencion",
+  "menciones": 196,
+  "efectos_adversos": 9,
+  "deteccion": {
+   "k": 4,
+   "n": 9,
+   "valor": 0.4444444444444444,
+   "ic95": [
+    0.189,
+    0.733
+   ]
+  },
+  "precision": {
+   "k": 4,
+   "n": 10,
+   "valor": 0.4,
+   "ic95": [
+    0.168,
+    0.687
+   ]
+  },
+  "f1": 0.421,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 185,
+   "n": 196,
+   "valor": 0.9438775510204082,
+   "ic95": [
+    0.902,
+    0.968
+   ]
+  },
+  "kappa_si_no": 0.392,
+  "descarte_no_es_mencion": {
+   "k": 19,
+   "n": 19,
+   "valor": 1.0,
+   "ic95": [
+    0.832,
+    1.0
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 109,
+    "n": 181,
+    "valor": 0.6022099447513812,
+    "ic95": [
+     0.529,
+     0.671
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 4,
+     "no_es_mencion": 13,
+     "broma_opinion_noticia": 2
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 18,
+     "no_es_mencion": 4,
+     "sin_reaccion": 4
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 28,
+     "sin_reaccion": 17,
+     "no_es_mencion": 21,
+     "pregunta_o_consejo": 1
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 50,
+     "broma_opinion_noticia": 2,
+     "pregunta_o_consejo": 5,
+     "no_es_mencion": 12
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 4,
+   "n": 9,
+   "valor": 0.4444444444444444,
+   "ic95": [
+    0.189,
+    0.733
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 4,
+    "n": 4,
+    "valor": 1.0,
+    "ic95": [
+     0.51,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 4
+    }
+   },
+   "edad": {
+    "k": 4,
+    "n": 4,
+    "valor": 1.0,
+    "ic95": [
+     0.51,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 4
+    }
+   },
+   "sexo": {
+    "k": 2,
+    "n": 4,
+    "valor": 0.5,
+    "ic95": [
+     0.15,
+     0.85
+    ],
+    "valores_hoja": {
+     "desconocido": 4
+    }
+   },
+   "grave": {
+    "k": 4,
+    "n": 4,
+    "valor": 1.0,
+    "ic95": [
+     0.51,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 4
+    }
+   },
+   "desenlace": {
+    "k": 4,
+    "n": 4,
+    "valor": 1.0,
+    "ic95": [
+     0.51,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 4
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 138,
+    "efectos_adversos": 8,
+    "deteccion": {
+     "k": 3,
+     "n": 8,
+     "valor": 0.375,
+     "ic95": [
+      0.137,
+      0.694
+     ]
+    },
+    "precision": {
+     "k": 3,
+     "n": 6,
+     "valor": 0.5,
+     "ic95": [
+      0.188,
+      0.812
+     ]
+    },
+    "f1": 0.429
+   },
+   "agente": {
+    "menciones": 58,
+    "efectos_adversos": 1,
+    "deteccion": {
+     "k": 1,
+     "n": 1,
+     "valor": 1.0,
+     "ic95": [
+      0.207,
+      1.0
+     ]
+    },
+    "precision": {
+     "k": 1,
+     "n": 4,
+     "valor": 0.25,
+     "ic95": [
+      0.046,
+      0.699
+     ]
+    },
+    "f1": 0.4
+   }
+  },
+  "coste": {
+   "calls": 196,
+   "repairs": 0,
+   "prompt_tokens": 446422,
+   "completion_tokens": 17487,
+   "seconds": 332.0829475579667,
+   "no_answer": 0
+  }
+ },
+ "v2_27b_mencion_test_extra_lorazepam": {
+  "fecha": "2026-11-28T09:29:54+00:00",
+  "conjunto": "test",
+  "cerebro": "27b",
+  "prompt": "v2",
+  "por": "mencion",
+  "menciones": 61,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 6,
+   "n": 7,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.487,
+    0.974
+   ]
+  },
+  "precision": {
+   "k": 6,
+   "n": 12,
+   "valor": 0.5,
+   "ic95": [
+    0.254,
+    0.746
+   ]
+  },
+  "f1": 0.632,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 54,
+   "n": 61,
+   "valor": 0.8852459016393442,
+   "ic95": [
+    0.782,
+    0.943
+   ]
+  },
+  "kappa_si_no": 0.569,
+  "descarte_no_es_mencion": {
+   "k": 6,
+   "n": 9,
+   "valor": 0.6666666666666666,
+   "ic95": [
+    0.354,
+    0.879
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 34,
+    "n": 48,
+    "valor": 0.7083333333333334,
+    "ic95": [
+     0.568,
+     0.818
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "sin_reaccion": 2,
+     "no_es_mencion": 3,
+     "pregunta_o_consejo": 1
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 3,
+     "no_es_mencion": 1
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 9,
+     "no_es_mencion": 3
+    },
+    "sin_reaccion": {
+     "no_es_mencion": 5,
+     "sin_reaccion": 19,
+     "pregunta_o_consejo": 2
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 6,
+   "n": 7,
+   "valor": 0.8571428571428571,
+   "ic95": [
+    0.487,
+    0.974
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 6
+    }
+   },
+   "edad": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 6
+    }
+   },
+   "sexo": {
+    "k": 5,
+    "n": 6,
+    "valor": 0.8333333333333334,
+    "ic95": [
+     0.436,
+     0.97
+    ],
+    "valores_hoja": {
+     "desconocido": 5,
+     "mujer": 1
+    }
+   },
+   "grave": {
+    "k": 6,
+    "n": 6,
+    "valor": 1.0,
+    "ic95": [
+     0.61,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 6
+    }
+   },
+   "desenlace": {
+    "k": 2,
+    "n": 6,
+    "valor": 0.3333333333333333,
+    "ic95": [
+     0.097,
+     0.7
+    ],
+    "valores_hoja": {
+     "no_recuperado": 3,
+     "desconocido": 2,
+     "recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 39,
+    "efectos_adversos": 6,
+    "deteccion": {
+     "k": 5,
+     "n": 6,
+     "valor": 0.8333333333333334,
+     "ic95": [
+      0.436,
+      0.97
+     ]
+    },
+    "precision": {
+     "k": 5,
+     "n": 8,
+     "valor": 0.625,
+     "ic95": [
+      0.306,
+      0.863
+     ]
+    },
+    "f1": 0.714
+   },
+   "agente": {
+    "menciones": 22,
+    "efectos_adversos": 1,
+    "deteccion": {
+     "k": 1,
+     "n": 1,
+     "valor": 1.0,
+     "ic95": [
+      0.207,
+      1.0
+     ]
+    },
+    "precision": {
+     "k": 1,
+     "n": 4,
+     "valor": 0.25,
+     "ic95": [
+      0.046,
+      0.699
+     ]
+    },
+    "f1": 0.4
+   }
+  },
+  "coste": {
+   "calls": 61,
+   "repairs": 0,
+   "prompt_tokens": 140313,
+   "completion_tokens": 5773,
+   "seconds": 108.1424867441383,
+   "no_answer": 0
+  }
+ },
+ "v3_27b_mencion_test_lorazepam": {
+  "fecha": "2026-11-28T09:32:31+00:00",
+  "conjunto": "test",
+  "cerebro": "27b",
+  "prompt": "v3",
+  "por": "mencion",
+  "menciones": 196,
+  "efectos_adversos": 9,
+  "deteccion": {
+   "k": 3,
+   "n": 9,
+   "valor": 0.3333333333333333,
+   "ic95": [
+    0.121,
+    0.646
+   ]
+  },
+  "precision": {
+   "k": 3,
+   "n": 10,
+   "valor": 0.3,
+   "ic95": [
+    0.108,
+    0.603
+   ]
+  },
+  "f1": 0.316,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 183,
+   "n": 196,
+   "valor": 0.9336734693877551,
+   "ic95": [
+    0.89,
+    0.961
+   ]
+  },
+  "kappa_si_no": 0.281,
+  "descarte_no_es_mencion": {
+   "k": 19,
+   "n": 19,
+   "valor": 1.0,
+   "ic95": [
+    0.832,
+    1.0
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 106,
+    "n": 180,
+    "valor": 0.5888888888888889,
+    "ic95": [
+     0.516,
+     0.658
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 16,
+     "sin_reaccion": 3
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 19,
+     "no_es_mencion": 5,
+     "sin_reaccion": 1,
+     "broma_opinion_noticia": 1
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 27,
+     "sin_reaccion": 16,
+     "no_es_mencion": 21,
+     "pregunta_o_consejo": 3
+    },
+    "sin_reaccion": {
+     "sin_reaccion": 44,
+     "pregunta_o_consejo": 8,
+     "broma_opinion_noticia": 2,
+     "no_es_mencion": 14
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 3,
+   "n": 9,
+   "valor": 0.3333333333333333,
+   "ic95": [
+    0.121,
+    0.646
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 3
+    }
+   },
+   "edad": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 3
+    }
+   },
+   "sexo": {
+    "k": 2,
+    "n": 3,
+    "valor": 0.6666666666666666,
+    "ic95": [
+     0.208,
+     0.939
+    ],
+    "valores_hoja": {
+     "desconocido": 3
+    }
+   },
+   "grave": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 3
+    }
+   },
+   "desenlace": {
+    "k": 3,
+    "n": 3,
+    "valor": 1.0,
+    "ic95": [
+     0.438,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 3
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 138,
+    "efectos_adversos": 8,
+    "deteccion": {
+     "k": 3,
+     "n": 8,
+     "valor": 0.375,
+     "ic95": [
+      0.137,
+      0.694
+     ]
+    },
+    "precision": {
+     "k": 3,
+     "n": 10,
+     "valor": 0.3,
+     "ic95": [
+      0.108,
+      0.603
+     ]
+    },
+    "f1": 0.333
+   },
+   "agente": {
+    "menciones": 58,
+    "efectos_adversos": 1,
+    "deteccion": {
+     "k": 0,
+     "n": 1,
+     "valor": 0.0,
+     "ic95": [
+      0.0,
+      0.793
+     ]
+    },
+    "precision": {
+     "k": 0,
+     "n": 0,
+     "valor": null,
+     "ic95": null
+    },
+    "f1": 0.0
+   }
+  },
+  "coste": {
+   "calls": 196,
+   "repairs": 0,
+   "prompt_tokens": 546970,
+   "completion_tokens": 17517,
+   "seconds": 314.60828289903293,
+   "no_answer": 0
+  }
+ },
+ "v3_27b_mencion_test_extra_lorazepam": {
+  "fecha": "2026-11-28T09:33:23+00:00",
+  "conjunto": "test",
+  "cerebro": "27b",
+  "prompt": "v3",
+  "por": "mencion",
+  "menciones": 61,
+  "efectos_adversos": 7,
+  "deteccion": {
+   "k": 5,
+   "n": 7,
+   "valor": 0.7142857142857143,
+   "ic95": [
+    0.359,
+    0.918
+   ]
+  },
+  "precision": {
+   "k": 5,
+   "n": 9,
+   "valor": 0.5555555555555556,
+   "ic95": [
+    0.267,
+    0.811
+   ]
+  },
+  "f1": 0.625,
+  "sin_respuesta": 0,
+  "a_revision_humana": 0,
+  "dudosos": {
+   "total": 0,
+   "efectos_adversos": 0
+  },
+  "acierto_si_no": {
+   "k": 55,
+   "n": 61,
+   "valor": 0.9016393442622951,
+   "ic95": [
+    0.802,
+    0.954
+   ]
+  },
+  "kappa_si_no": 0.569,
+  "descarte_no_es_mencion": {
+   "k": 8,
+   "n": 9,
+   "valor": 0.8888888888888888,
+   "ic95": [
+    0.565,
+    0.98
+   ]
+  },
+  "motivo_no": {
+   "acierto": {
+    "k": 33,
+    "n": 50,
+    "valor": 0.66,
+    "ic95": [
+     0.522,
+     0.776
+    ]
+   },
+   "confusion": {
+    "no_es_mencion": {
+     "no_es_mencion": 6,
+     "pregunta_o_consejo": 1,
+     "sin_reaccion": 1
+    },
+    "pregunta_o_consejo": {
+     "pregunta_o_consejo": 4
+    },
+    "broma_opinion_noticia": {
+     "broma_opinion_noticia": 8,
+     "no_es_mencion": 3,
+     "pregunta_o_consejo": 1
+    },
+    "sin_reaccion": {
+     "no_es_mencion": 4,
+     "pregunta_o_consejo": 6,
+     "sin_reaccion": 15,
+     "broma_opinion_noticia": 1
+    }
+   }
+  },
+  "deteccion_sin_revision": {
+   "k": 5,
+   "n": 7,
+   "valor": 0.7142857142857143,
+   "ic95": [
+    0.359,
+    0.918
+   ]
+  },
+  "caso": {
+   "paciente": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "autor": 5
+    }
+   },
+   "edad": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 5
+    }
+   },
+   "sexo": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "desconocido": 4,
+     "mujer": 1
+    }
+   },
+   "grave": {
+    "k": 5,
+    "n": 5,
+    "valor": 1.0,
+    "ic95": [
+     0.566,
+     1.0
+    ],
+    "valores_hoja": {
+     "no_consta": 5
+    }
+   },
+   "desenlace": {
+    "k": 1,
+    "n": 5,
+    "valor": 0.2,
+    "ic95": [
+     0.036,
+     0.624
+    ],
+    "valores_hoja": {
+     "no_recuperado": 3,
+     "desconocido": 1,
+     "recuperado": 1
+    }
+   }
+  },
+  "por_origen": {
+   "busqueda_fija": {
+    "menciones": 39,
+    "efectos_adversos": 6,
+    "deteccion": {
+     "k": 5,
+     "n": 6,
+     "valor": 0.8333333333333334,
+     "ic95": [
+      0.436,
+      0.97
+     ]
+    },
+    "precision": {
+     "k": 5,
+     "n": 8,
+     "valor": 0.625,
+     "ic95": [
+      0.306,
+      0.863
+     ]
+    },
+    "f1": 0.714
+   },
+   "agente": {
+    "menciones": 22,
+    "efectos_adversos": 1,
+    "deteccion": {
+     "k": 0,
+     "n": 1,
+     "valor": 0.0,
+     "ic95": [
+      0.0,
+      0.793
+     ]
+    },
+    "precision": {
+     "k": 0,
+     "n": 1,
+     "valor": 0.0,
+     "ic95": [
+      0.0,
+      0.793
+     ]
+    },
+    "f1": 0.0
+   }
+  },
+  "coste": {
+   "calls": 61,
+   "repairs": 0,
+   "prompt_tokens": 171606,
+   "completion_tokens": 5656,
+   "seconds": 102.34682806798082,
+   "no_answer": 0
+  }
  }
 }
